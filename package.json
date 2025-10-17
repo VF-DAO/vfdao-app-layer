@@ -1,0 +1,31 @@
+{
+  "name": "vfdao-eco-engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "�� VF Eco Engine - Core infrastructure for Vegan Friends DAO",
+  "scripts": {
+    "dev:portal": "pnpm --filter @vfdao/portal dev",
+    "dev:app": "pnpm --filter @vfdao/app dev",
+    "dev": "pnpm --parallel dev:portal dev:app",
+    "build": "pnpm --filter @vfdao/portal build && pnpm --filter @vfdao/app build",
+    "start:portal": "pnpm --filter @vfdao/portal start",
+    "start:app": "pnpm --filter @vfdao/app start",
+    "lint": "pnpm --filter @vfdao/portal lint && pnpm --filter @vfdao/app lint",
+    "type-check": "pnpm --filter @vfdao/portal type-check && pnpm --filter @vfdao/app type-check"
+  },
+  "keywords": [
+    "vegan",
+    "dao",
+    "web3",
+    "near",
+    "blockchain",
+    "sustainability",
+    "eco"
+  ],
+  "author": "VFDAO Builders",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/VF-DAO/vfdao-eco-engine.git"
+  }
+}

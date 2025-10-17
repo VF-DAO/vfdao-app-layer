@@ -1,0 +1,111 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* VF DAO Light Mode - Sophisticated Monochrome with Strategic Accents */
+    --background: 0 0% 100%;                    /* #FFFFFF - Pure white */
+    --foreground: 0 0% 0%;                      /* #000000 - Pure black text */
+    
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
+    
+    /* Primary: Dark Forest Green #072E14 - VF DAO Brand Identity */
+    --primary: 146 70% 11%;
+    --primary-foreground: 0 0% 100%;
+    
+    /* Secondary: Light Sage Green #9DC491 - Interactive Elements */
+    --secondary: 108 34% 68%;
+    --secondary-foreground: 0 0% 0%;
+    
+    /* Muted: Light Gray #F5F5F5 */
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+    
+    /* Accent: Golden Yellow #F6C638 - Strategic CTAs */
+    --accent: 45 91% 59%;
+    --accent-foreground: 0 0% 0%;
+    
+    /* Orange #FE8E4B - Secondary CTAs & Hover States */
+    --orange: 25 99% 64%;
+    --orange-foreground: 0 0% 0%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Borders: Light Gray #E5E5E5 */
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 146 70% 11%;                        /* Dark forest green focus ring */
+    
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* VF DAO Dark Mode - Sophisticated Monochrome with Strategic Accents */
+    --background: 0 0% 4%;                      /* #0A0A0A - Subtle off-black (premium) */
+    --foreground: 0 0% 100%;                    /* #FFFFFF - Pure white text */
+    
+    --card: 0 0% 8%;                            /* #141414 - Slightly lighter for depth */
+    --card-foreground: 0 0% 100%;
+    
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 100%;
+    
+    /* Primary: Light Sage Green #9DC491 - Stands out on dark */
+    --primary: 108 34% 68%;
+    --primary-foreground: 0 0% 0%;
+    
+    /* Secondary: Forest Green #0F7D2A - VF DAO Brand */
+    --secondary: 142 79% 27%;
+    --secondary-foreground: 0 0% 100%;
+    
+    /* Muted: Dark Gray #374151 */
+    --muted: 210 20% 25%;
+    --muted-foreground: 0 0% 70%;
+    
+    /* Accent: Brighter Golden Yellow #F6C638 - CTAs pop on black */
+    --accent: 45 91% 65%;
+    --accent-foreground: 0 0% 0%;
+    
+    /* Orange #FE8E4B - Secondary CTAs & Hover States */
+    --orange: 25 99% 64%;
+    --orange-foreground: 0 0% 0%;
+    
+    --destructive: 0 62.8% 55%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Borders: Subtle Gray #333333 */
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 108 34% 68%;                        /* Light sage focus ring */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    line-height: 1.5;
+  }
+  
+  /* Ensure consistent line heights across themes */
+  p, span, li {
+    line-height: 1.5;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    line-height: 1.2;
+  }
+}
+
+/* Remove smooth scroll if not needed */
+html {
+  scroll-behavior: smooth;
+}
