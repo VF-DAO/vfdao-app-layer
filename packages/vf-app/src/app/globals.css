@@ -1,0 +1,98 @@
+/* stylelint-disable-next-line at-rule-no-unknown */
+@tailwind base;
+/* stylelint-disable-next-line at-rule-no-unknown */
+@tailwind components;
+/* stylelint-disable-next-line at-rule-no-unknown */
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light Mode - Same as vf-portal */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 45 91% 59%;
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --primary: 146 70% 11%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 146 70% 11%;
+    --verified: 45 91% 59%;
+    --radius: 0.5rem;
+    
+    /* Scrollbar colors for light mode */
+    --scrollbar-thumb: 0 0% 60%;
+    --scrollbar-thumb-hover: 0 0% 40%;
+  }
+
+  .dark {
+    /* Dark Mode - Same as vf-portal */
+    --background: 0 0% 4%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 100%;
+    --muted: 210 20% 25%;
+    --muted-foreground: 0 0% 70%;
+    --accent: 45 91% 65%;
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 62.8% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 20% 18%;
+    --input: 210 20% 18%;
+    --primary: 108 34% 68%;
+    --primary-foreground: 0 0% 0%;
+    --ring: 108 34% 68%;
+    --verified: 45 91% 65%;
+    
+    /* Scrollbar colors for dark mode */
+    --scrollbar-thumb: 210 20% 25%;
+    --scrollbar-thumb-hover: 0 0% 70%;
+  }
+}
+
+* {
+  @apply border-border;
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  @apply bg-background text-foreground;
+}
+
+/* Custom Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--scrollbar-thumb));
+  border-radius: 5px;
+  border: 2px solid hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--scrollbar-thumb-hover));
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-color: hsl(var(--scrollbar-thumb)) hsl(var(--background));
+  scrollbar-width: thin;
+}

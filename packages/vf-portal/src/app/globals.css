@@ -43,6 +43,10 @@
     --ring: 146 70% 11%;                        /* Dark forest green focus ring */
     
     --radius: 0.5rem;
+    
+    /* Scrollbar colors for light mode */
+    --scrollbar-thumb: 0 0% 60%;
+    --scrollbar-thumb-hover: 0 0% 40%;
   }
 
   .dark {
@@ -83,6 +87,10 @@
     --border: 0 0% 20%;
     --input: 0 0% 20%;
     --ring: 108 34% 68%;                        /* Light sage focus ring */
+    
+    /* Scrollbar colors for dark mode */
+    --scrollbar-thumb: 210 20% 25%;
+    --scrollbar-thumb-hover: 0 0% 70%;
   }
 }
 
@@ -108,4 +116,29 @@
 /* Remove smooth scroll if not needed */
 html {
   scroll-behavior: smooth;
+}
+
+/* Custom Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--scrollbar-thumb));
+  border-radius: 5px;
+  border: 2px solid hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--scrollbar-thumb-hover));
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-color: hsl(var(--scrollbar-thumb)) hsl(var(--background));
+  scrollbar-width: thin;
 }

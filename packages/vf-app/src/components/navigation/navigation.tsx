@@ -3,16 +3,16 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, ArrowRight } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme-toggle'
-import Logo from '@/components/logo'
+import { WalletButton } from '@/components/wallet-button'
+import Logo from '@/components/ui/logo'
 
 const navItems = [
   { label: 'Home', href: '#' },
-  { label: 'Who This Is For', href: '#learn-more' },
-  { label: 'Real-world scenarios', href: '#use-cases' },
-  { label: 'The Journey Ahead', href: '#timeline' },
+  { label: 'Dashboard', href: '/dashboard' },
+  { label: 'Marketplace', href: '/marketplace' },
   { label: 'Community', href: '#community' },
 ]
 
@@ -105,15 +105,9 @@ export function Navigation() {
             <div className="hidden md:block">
               <ThemeToggle />
             </div>
-            <Link
-              href="http://localhost:3001"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden md:inline-flex items-center justify-center gap-2 border border-verified bg-verified/10 text-primary hover:text-primary px-4 py-2 rounded-full font-semibold transition-all hover:shadow-md hover:shadow-verified/20 group text-sm whitespace-nowrap"
-            >
-              Launch App
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform flex-shrink-0" />
-            </Link>
+            <div className="hidden md:block">
+              <WalletButton />
+            </div>
             
             {/* Mobile Menu Button */}
             <button
@@ -168,16 +162,8 @@ export function Navigation() {
                     </Link>
                   )
                 })}
-                <div className="px-4 pt-4 border-t flex items-center justify-between gap-2">
-                  <Link
-                    href="http://localhost:3001"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-1 border border-verified bg-verified/10 text-primary px-3 py-1.5 rounded-full font-medium transition-all text-xs whitespace-nowrap"
-                  >
-                    Launch App
-                    <ArrowRight className="w-3 h-3 flex-shrink-0" />
-                  </Link>
+                <div className="px-4 pt-2 border-t flex items-center justify-between">
+                  <WalletButton />
                   <ThemeToggle />
                 </div>
               </div>

@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from '@/components/providers/theme-provider'
-import { WalletProvider } from '@/contexts/wallet-context'
 import { Navigation } from '@/components/navigation/navigation'
 import Logo from '@/components/logo'
 import { Send, Github, BookOpen, Users, Mail, Code, Heart } from 'lucide-react'
@@ -37,9 +36,8 @@ export default function RootLayout({
           disableTransitionOnChange
           storageKey="vf-theme"
         >
-          <WalletProvider contractId="vfdao.testnet" network="testnet">
-            <Navigation />
-            <main className="min-h-screen" suppressHydrationWarning>{children}</main>
+          <Navigation />
+          <main className="min-h-screen" suppressHydrationWarning>{children}</main>
             <footer className="border-t py-12 px-4 bg-card/30">
               <div className="max-w-6xl mx-auto">
                 <div className="grid md:grid-cols-4 gap-8 mb-8">
@@ -94,9 +92,8 @@ export default function RootLayout({
                 </div>
               </div>
             </footer>
-          </WalletProvider>
-        </ThemeProvider>
-      </body>
-    </html>
+          </ThemeProvider>
+        </body>
+      </html>
   )
 }

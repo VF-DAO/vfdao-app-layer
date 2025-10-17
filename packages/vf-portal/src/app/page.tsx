@@ -3,14 +3,46 @@
 import { ArrowRight, Heart, Leaf, Users, Clock, Shield, Scan, CheckCircle2, Zap, Network } from 'lucide-react'
 import Link from 'next/link'
 import { useTheme } from 'next-themes'
+import { useEffect, useState } from 'react'
 import { VerificationFlow } from '@/components/verification-flow'
 import { UseCaseCarousel } from '@/components/use-case-carousel'
 
 export default function Home() {
   const { theme } = useTheme()
-  const isDark = theme === 'dark'
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const isDark = mounted && theme === 'dark'
   const glowColor = isDark ? 'rgba(246,198,56,0.6)' : 'rgba(157,196,145,0.6)'
   const glowStyle = `drop-shadow-[0_0_12px_${glowColor}]`
+
+  if (!mounted) {
+    return (
+      <div className="flex flex-col">
+        {/* Hero Section - Mission-Driven */}
+        <section className="relative flex flex-col items-center justify-center min-h-screen px-4 overflow-hidden">
+          {/* Subtle Dot Grid Background - Represents verification checkpoints */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(0,0,0,0.08)_1.5px,transparent_1.5px)] dark:bg-[radial-gradient(circle,rgba(255,255,255,0.08)_1.5px,transparent_1.5px)] bg-[size:40px_40px]" />
+          <div className="text-center space-y-6 sm:space-y-8 md:space-y-12 max-w-5xl relative z-10 pt-16 sm:pt-20 pb-8 sm:pb-12">
+            <div className="space-y-4 sm:space-y-6">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-foreground tracking-tighter sm:tracking-tight leading-tight">
+                Don't trust.
+                <br />
+                It's already <span className="text-verified">verified.</span>
+              </h1>
+              <p className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+                Scan any product. See its complete journey from farm to shelf. 
+                <span className="text-foreground font-medium"> Every ingredient verified animal-free.</span>
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col">
