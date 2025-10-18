@@ -1,16 +1,19 @@
 {
-  "name": "vfdao-eco-engine",
+  "name": "vfdao-app-layer",
   "version": "0.1.0",
   "private": true,
-  "description": "�� VF Eco Engine - Core infrastructure for Vegan Friends DAO",
+  "description": "🌱 VF App Layer - Frontend infrastructure and user interfaces for Vegan Friends DAO",
   "scripts": {
     "dev:portal": "pnpm --filter @vfdao/portal dev",
     "dev:app": "pnpm --filter @vfdao/app dev",
-    "dev": "pnpm --parallel dev:portal dev:app",
+    "dev": "pnpm --parallel --filter @vfdao/portal --filter @vfdao/app dev",
     "build": "pnpm --filter @vfdao/portal build && pnpm --filter @vfdao/app build",
     "start:portal": "pnpm --filter @vfdao/portal start",
     "start:app": "pnpm --filter @vfdao/app start",
     "lint": "pnpm --filter @vfdao/portal lint && pnpm --filter @vfdao/app lint",
+    "lint:fix": "pnpm --filter @vfdao/portal lint:fix && pnpm --filter @vfdao/app lint:fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
     "type-check": "pnpm --filter @vfdao/portal type-check && pnpm --filter @vfdao/app type-check"
   },
   "keywords": [
@@ -26,6 +29,15 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/VF-DAO/vfdao-eco-engine.git"
+    "url": "https://github.com/VF-DAO/vfdao-app-layer.git"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.38.0",
+    "eslint": "^9.38.0",
+    "eslint-config-next": "^15.5.6",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "next": "^15.5.6",
+    "prettier": "^3.6.2"
   }
 }

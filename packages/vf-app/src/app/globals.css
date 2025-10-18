@@ -27,7 +27,7 @@
     --ring: 146 70% 11%;
     --verified: 45 91% 59%;
     --radius: 0.5rem;
-    
+
     /* Scrollbar colors for light mode */
     --scrollbar-thumb: 0 0% 60%;
     --scrollbar-thumb-hover: 0 0% 40%;
@@ -53,7 +53,7 @@
     --primary-foreground: 0 0% 0%;
     --ring: 108 34% 68%;
     --verified: 45 91% 65%;
-    
+
     /* Scrollbar colors for dark mode */
     --scrollbar-thumb: 210 20% 25%;
     --scrollbar-thumb-hover: 0 0% 70%;

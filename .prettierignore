@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+.next/
+**/.next/
+out/
+**/out/
+dist/
+**/dist/
+build/
+**/build/
+
+# Cache
+.turbo/
+**/.turbo/
+.cache/
+**/.cache/
+
+# Coverage
+coverage/
+**/coverage/
+
+# Logs
+*.log
+
+# Lock files
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Environment
+.env
+.env.*
+
+# Generated files
+next-env.d.ts
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Compiled
+*.min.js
+*.min.css
+
+# Other
+*.snap
+
+# Invalid/placeholder files
+packages/vf-app/pools.json

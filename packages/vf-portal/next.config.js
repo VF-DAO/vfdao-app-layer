@@ -27,11 +27,11 @@ const nextConfig = {
         zlib: false,
         net: false,
         tls: false,
-      }
+      };
     }
 
-    return config
+    return config;
   },
-}
+};
 
-module.exports = nextConfig
+export default nextConfig;

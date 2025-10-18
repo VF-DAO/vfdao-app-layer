@@ -2,12 +2,16 @@
   "name": "@vfdao/app",
   "version": "0.1.0",
   "private": true,
-  "description": "🌿 VF App - User Dashboard for VeganFriends DAO",
+  "type": "module",
+  "description": "VF App - User Dashboard for VeganFriends DAO",
   "scripts": {
     "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start -p 3001",
-    "lint": "next lint",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css}\"",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
@@ -39,13 +43,14 @@
     "@near-wallet-selector/welldone-wallet": "^10.0.0",
     "@near-wallet-selector/xdefi": "^10.0.0",
     "@radix-ui/react-slot": "^1.1.0",
+    "@ref-finance/ref-sdk": "^1.4.8",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "framer-motion": "^11.11.11",
     "lenis": "^1.1.19",
     "lucide-react": "^0.460.0",
     "near-api-js": "^6.3.0",
-    "next": "^14.2.15",
+    "next": "^15.5.6",
     "next-themes": "^0.3.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -54,14 +59,21 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
+    "@eslint/js": "^9.38.0",
+    "@next/eslint-plugin-next": "^15.5.6",
     "@types/node": "^24.0.10",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
     "autoprefixer": "^10.4.20",
-    "eslint": "^9.30.1",
-    "eslint-config-next": "^14.2.15",
+    "eslint": "^9.38.0",
+    "eslint-config-next": "^15.5.6",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.0",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.14",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.18.0"
   }
 }

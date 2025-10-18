@@ -23,15 +23,12 @@ const nextConfig = {
         crypto: false,
         stream: false,
         http: false,
-        https: false,
-        zlib: false,
-        net: false,
         tls: false,
-      }
+      };
     }
 
-    return config
+    return config;
   },
-}
+};
 
-module.exports = nextConfig
+export default nextConfig;

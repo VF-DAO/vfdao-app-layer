@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import { CheckCircle2, Leaf, TrendingUp, Award } from 'lucide-react'
+import { Award, CheckCircle2, Leaf, TrendingUp } from 'lucide-react';
 
 export default function ConsumerDashboard() {
   const stats = [
@@ -8,39 +8,44 @@ export default function ConsumerDashboard() {
       icon: <CheckCircle2 className="w-8 h-8" />,
       label: 'Products Verified',
       value: '0',
-      color: 'text-verified'
+      color: 'text-verified',
     },
     {
       icon: <Leaf className="w-8 h-8" />,
       label: 'Carbon Saved',
       value: '0 kg',
-      color: 'text-green-500'
+      color: 'text-green-500',
     },
     {
       icon: <Award className="w-8 h-8" />,
       label: 'Badges Earned',
       value: '0',
-      color: 'text-yellow-500'
+      color: 'text-yellow-500',
     },
     {
       icon: <TrendingUp className="w-8 h-8" />,
       label: '$VF Rewards',
       value: '0',
-      color: 'text-primary'
-    }
-  ]
+      color: 'text-primary',
+    },
+  ];
 
   return (
     <div className="p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground mb-2">Welcome to VeganFriends</h1>
-        <p className="text-muted-foreground">Connect your wallet to start verifying products and earning rewards.</p>
+        <p className="text-muted-foreground">
+          Connect your wallet to start verifying products and earning rewards.
+        </p>
       </div>
 
       {/* Stats Grid */}
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {stats.map((stat, i) => (
-          <div key={i} className="p-6 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all">
+          <div
+            key={i}
+            className="p-6 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all"
+          >
             <div className={`${stat.color} mb-4`}>{stat.icon}</div>
             <p className="text-sm text-muted-foreground mb-1">{stat.label}</p>
             <p className="text-3xl font-bold text-foreground">{stat.value}</p>
@@ -55,14 +60,19 @@ export default function ConsumerDashboard() {
           <h2 className="text-xl font-bold text-foreground mb-4">Recent Verifications</h2>
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="p-4 rounded-lg bg-muted/50 flex items-center justify-between hover:bg-muted transition-colors">
+              <div
+                key={i}
+                className="p-4 rounded-lg bg-muted/50 flex items-center justify-between hover:bg-muted transition-colors"
+              >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center text-primary font-bold">
                     {i}
                   </div>
                   <div>
                     <p className="font-medium text-foreground">No verifications yet</p>
-                    <p className="text-xs text-muted-foreground">Start scanning products to build your history</p>
+                    <p className="text-xs text-muted-foreground">
+                      Start scanning products to build your history
+                    </p>
                   </div>
                 </div>
               </div>
@@ -93,5 +103,5 @@ export default function ConsumerDashboard() {
         </div>
       </div>
     </div>
-  )
+  );
 }

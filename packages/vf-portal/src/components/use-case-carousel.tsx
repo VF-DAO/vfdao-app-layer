@@ -1,100 +1,141 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { User, Store, Award, MoveHorizontal, Leaf } from 'lucide-react'
+import { useEffect, useState } from 'react';
+import { Award, Leaf, MoveHorizontal, Store, User } from 'lucide-react';
+
+interface DragState {
+  id?: number;
+  startX?: number;
+  startY?: number;
+  currentX?: number;
+  currentY?: number;
+  isDragging?: boolean;
+  removing?: boolean;
+}
 
 const useCases = [
   {
     id: 1,
     icon: User,
     title: "Sarah's Morning Coffee",
-    role: "Conscious Consumer",
-    scenario: "Sarah scans an oat milk carton at her local café.",
-    result: "In 0.3 seconds: Swedish oats, verified vegan farms, no animal products in the entire supply chain.",
-    impact: "100% certainty her choice is plant-based.",
-    bgColor: "#F6C638"
+    role: 'Conscious Consumer',
+    scenario: 'Sarah scans an oat milk carton at her local café.',
+    result:
+      'In 0.3 seconds: Swedish oats, verified vegan farms, no animal products in the entire supply chain.',
+    impact: '100% certainty her choice is plant-based.',
+    bgColor: '#F6C638',
   },
   {
     id: 2,
     icon: Leaf,
-    title: "Green Valley Farms",
-    role: "Organic Producer",
-    scenario: "A small California farm grows organic strawberries using plant-based fertilizers.",
-    result: "Every harvest logged on blockchain. Customers trace berries to specific fields and growing practices.",
-    impact: "Transparent practices = premium prices.",
-    bgColor: "#9DC491"
+    title: 'Green Valley Farms',
+    role: 'Organic Producer',
+    scenario: 'A small California farm grows organic strawberries using plant-based fertilizers.',
+    result:
+      'Every harvest logged on blockchain. Customers trace berries to specific fields and growing practices.',
+    impact: 'Transparent practices = premium prices.',
+    bgColor: '#9DC491',
   },
   {
     id: 3,
     icon: Store,
-    title: "Whole Earth Market",
-    role: "Ethical Retailer",
+    title: 'Whole Earth Market',
+    role: 'Ethical Retailer',
     scenario: "A grocery chain wants to guarantee their 'vegan' section is 100% animal-free.",
-    result: "Complete supply chain verification on every product. Customers scan and verify instantly.",
-    impact: "40% increase in customer loyalty.",
-    bgColor: "#FE8E4B"
+    result:
+      'Complete supply chain verification on every product. Customers scan and verify instantly.',
+    impact: '40% increase in customer loyalty.',
+    bgColor: '#FE8E4B',
   },
   {
     id: 4,
     icon: Award,
-    title: "VegCert International",
-    role: "Certification Body",
-    scenario: "A certification org issues thousands of vegan certificates annually on paper.",
-    result: "Switch to blockchain: unforgeable, instantly verifiable, 70% cheaper to issue.",
-    impact: "Certificate fraud becomes impossible.",
-    bgColor: "#F6C638"
-  }
-]
+    title: 'VegCert International',
+    role: 'Certification Body',
+    scenario: 'A certification org issues thousands of vegan certificates annually on paper.',
+    result: 'Switch to blockchain: unforgeable, instantly verifiable, 70% cheaper to issue.',
+    impact: 'Certificate fraud becomes impossible.',
+    bgColor: '#F6C638',
+  },
+];
 
 export function UseCaseCarousel() {
-  const [currentCards, setCurrentCards] = useState(useCases)
-  const [dragState, setDragState] = useState<any>({})
+  const [currentCards, setCurrentCards] = useState(useCases);
+  const [dragState, setDragState] = useState<DragState>({});
+  const [isMobile, setIsMobile] = useState(false);
 
-  const handleDragStart = (e: any, id: number) => {
-    e.preventDefault()
-    const startX = e.type === 'mousedown' ? e.clientX : e.touches[0].clientX
-    const startY = e.type === 'mousedown' ? e.clientY : e.touches[0].clientY
-    setDragState({ id, startX, startY, currentX: 0, currentY: 0, isDragging: true })
-  }
+  useEffect(() => {
+    setIsMobile(window.innerWidth < 768);
+  }, []);
 
-  const handleDragMove = (e: any) => {
-    if (!dragState.isDragging) return
-    
-    const clientX = e.type === 'mousemove' ? e.clientX : e.touches[0].clientX
-    const clientY = e.type === 'mousemove' ? e.clientY : e.touches[0].clientY
-    const deltaX = clientX - dragState.startX
-    const deltaY = clientY - dragState.startY
-    
-    setDragState((prev: any) => ({ ...prev, currentX: deltaX, currentY: deltaY }))
-  }
+  const handleDragStart = (
+    e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>,
+    id: number
+  ) => {
+    e.preventDefault();
+    const startX =
+      e.type === 'mousedown'
+        ? (e as React.MouseEvent<HTMLDivElement>).clientX
+        : (e as React.TouchEvent<HTMLDivElement>).touches[0].clientX;
+    const startY =
+      e.type === 'mousedown'
+        ? (e as React.MouseEvent<HTMLDivElement>).clientY
+        : (e as React.TouchEvent<HTMLDivElement>).touches[0].clientY;
+    setDragState({ id, startX, startY, currentX: 0, currentY: 0, isDragging: true });
+  };
+
+  const handleDragMove = (
+    e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>
+  ) => {
+    if (!dragState.isDragging) return;
+
+    const clientX =
+      e.type === 'mousemove'
+        ? (e as React.MouseEvent<HTMLDivElement>).clientX
+        : (e as React.TouchEvent<HTMLDivElement>).touches[0].clientX;
+    const clientY =
+      e.type === 'mousemove'
+        ? (e as React.MouseEvent<HTMLDivElement>).clientY
+        : (e as React.TouchEvent<HTMLDivElement>).touches[0].clientY;
+    const deltaX = clientX - (dragState.startX ?? 0);
+    const deltaY = clientY - (dragState.startY ?? 0);
+
+    setDragState((prev) => ({ ...prev, currentX: deltaX, currentY: deltaY }));
+  };
 
   const handleDragEnd = () => {
-    if (!dragState.isDragging) return
-    
-    const threshold = 100
-    const { currentX, id } = dragState
-    
-    if (Math.abs(currentX) > threshold) {
+    if (!dragState.isDragging) return;
+
+    const threshold = 100;
+    const { currentX, id } = dragState;
+
+    if (Math.abs(currentX ?? 0) > threshold) {
       // Animate card off screen
-      const direction = currentX > 0 ? 1000 : -1000
-      setDragState((prev: any) => ({ ...prev, currentX: direction, removing: true, isDragging: false }))
-      
+      const direction = (currentX ?? 0) > 0 ? 1000 : -1000;
+      setDragState((prev) => ({
+        ...prev,
+        currentX: direction,
+        removing: true,
+        isDragging: false,
+      }));
+
       // Move card to back of stack
       setTimeout(() => {
-        setCurrentCards(prev => {
-          const removed = prev.find(c => c.id === id)
-          const remaining = prev.filter(c => c.id !== id)
-          return [...remaining, removed!]
-        })
-        setDragState({})
-      }, 300)
+        setCurrentCards((prev) => {
+          const removed = prev.find((c) => c.id === id);
+          if (!removed) return prev;
+          const remaining = prev.filter((c) => c.id !== id);
+          return [...remaining, removed];
+        });
+        setDragState({});
+      }, 300);
     } else {
-      setDragState({})
+      setDragState({});
     }
-  }
+  };
 
   return (
-    <div 
+    <div
       className="w-full max-w-4xl mx-auto"
       onMouseMove={handleDragMove}
       onMouseUp={handleDragEnd}
@@ -104,24 +145,29 @@ export function UseCaseCarousel() {
       {/* Card Stack */}
       <div className="relative h-[460px] md:h-[520px] max-w-sm md:max-w-md mx-auto mb-8">
         {currentCards.map((card, index) => {
-          const Icon = card.icon
-          const isTop = index === 0
-          const isBeingDragged = dragState.id === card.id
-          const isRemoving = isBeingDragged && dragState.removing
-          const x = isBeingDragged ? dragState.currentX : 0
-          const y = isBeingDragged ? dragState.currentY : 0
-          const rotation = isBeingDragged ? dragState.currentX / 10 : 0
-          const opacity = isRemoving ? 0 : (isBeingDragged ? Math.max(0.7, 1 - Math.abs(dragState.currentX) / 300) : 1)
-          const scale = isRemoving ? 0.8 : (1 - (index * 0.05))
-          const translateY = index * -4
-          
+          const Icon = card.icon;
+          const isTop = index === 0;
+          const isBeingDragged = dragState.id === card.id;
+          const isRemoving = isBeingDragged && dragState.removing;
+          const x = isBeingDragged ? (dragState.currentX ?? 0) : 0;
+          const y = isBeingDragged ? (dragState.currentY ?? 0) : 0;
+          const rotation = isBeingDragged ? (dragState.currentX ?? 0) / 10 : 0;
+          const opacity = isRemoving
+            ? 0
+            : isBeingDragged
+              ? Math.max(0.7, 1 - Math.abs(dragState.currentX ?? 0) / 300)
+              : 1;
+          const scale = isRemoving ? 0.8 : 1 - index * (isMobile ? 0.03 : 0.05);
+          const translateY = index * -4;
+
           return (
             <div
               key={card.id}
               className={`absolute inset-0 select-none ${isTop ? 'cursor-grab active:cursor-grabbing' : ''}`}
               style={{
                 transform: `translateX(${x}px) translateY(${y + translateY}px) rotate(${rotation}deg) scale(${scale}) rotate(${index > 0 ? '-3deg' : '0deg'})`,
-                transition: isBeingDragged && !isRemoving ? 'none' : 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                transition:
+                  isBeingDragged && !isRemoving ? 'none' : 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 zIndex: currentCards.length - index,
                 opacity: index < 3 ? opacity : 0,
                 pointerEvents: isTop && !isRemoving ? 'auto' : 'none',
@@ -136,7 +182,9 @@ export function UseCaseCarousel() {
                     <Icon className="w-5 h-5 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-xl md:text-2xl font-bold text-foreground truncate">{card.title}</h3>
+                    <h3 className="text-xl md:text-2xl font-bold text-foreground truncate">
+                      {card.title}
+                    </h3>
                     <p className="text-xs md:text-sm text-primary font-medium">{card.role}</p>
                   </div>
                 </div>
@@ -144,17 +192,27 @@ export function UseCaseCarousel() {
                 {/* Content */}
                 <div className="space-y-5 flex-1">
                   <div>
-                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">The Situation</h4>
-                    <p className="text-sm md:text-base text-foreground leading-relaxed">{card.scenario}</p>
+                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                      The Situation
+                    </h4>
+                    <p className="text-sm md:text-base text-foreground leading-relaxed">
+                      {card.scenario}
+                    </p>
                   </div>
 
                   <div>
-                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">The Solution</h4>
-                    <p className="text-sm md:text-base text-foreground leading-relaxed">{card.result}</p>
+                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                      The Solution
+                    </h4>
+                    <p className="text-sm md:text-base text-foreground leading-relaxed">
+                      {card.result}
+                    </p>
                   </div>
 
                   <div className="pt-3 mt-auto">
-                    <p className="text-sm md:text-base text-primary font-semibold">✓ {card.impact}</p>
+                    <p className="text-sm md:text-base text-primary font-semibold">
+                      ✓ {card.impact}
+                    </p>
                   </div>
                 </div>
 
@@ -166,27 +224,25 @@ export function UseCaseCarousel() {
                 )}
               </div>
             </div>
-          )
+          );
         })}
       </div>
 
       {/* Progress Indicator */}
       <div className="flex items-center justify-center gap-2">
         {useCases.map((card) => {
-          const currentTopCard = currentCards[0]
-          const isActive = card.id === currentTopCard.id
+          const currentTopCard = currentCards[0];
+          const isActive = card.id === currentTopCard.id;
           return (
             <div
               key={card.id}
               className={`transition-all duration-300 rounded-full ${
-                isActive
-                  ? 'w-8 h-2 bg-primary'
-                  : 'w-2 h-2 bg-border'
+                isActive ? 'w-8 h-2 bg-primary' : 'w-2 h-2 bg-border'
               }`}
             />
-          )
+          );
         })}
       </div>
     </div>
-  )
+  );
 }

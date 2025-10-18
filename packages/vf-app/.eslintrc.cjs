@@ -1,6 +1,0 @@
-module.exports = {
-  extends: 'next/core-web-vitals',
-  rules: {
-    'react-hooks/rules-of-hooks': 'error',
-  },
-}

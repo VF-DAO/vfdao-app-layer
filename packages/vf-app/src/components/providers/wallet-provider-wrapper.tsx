@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import dynamic from 'next/dynamic'
-import { ReactNode } from 'react'
+import dynamic from 'next/dynamic';
+import { type ReactNode } from 'react';
 
 // Dynamically import WalletProvider with ssr disabled to avoid server-side issues
 const WalletProviderDynamic = dynamic(
@@ -10,12 +10,12 @@ const WalletProviderDynamic = dynamic(
     loading: () => <div>{/* Loading wallet provider */}</div>,
     ssr: false,
   }
-)
+);
 
 interface WalletProviderWrapperProps {
-  children: ReactNode
-  contractId?: string
-  network?: 'testnet' | 'mainnet'
+  children: ReactNode;
+  contractId?: string;
+  network?: 'testnet' | 'mainnet';
 }
 
 export function WalletProviderWrapper({
@@ -27,5 +27,5 @@ export function WalletProviderWrapper({
     <WalletProviderDynamic contractId={contractId} network={network}>
       {children}
     </WalletProviderDynamic>
-  )
+  );
 }

@@ -1,12 +1,11 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, ArrowRight } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { ThemeToggle } from '@/components/theme-toggle'
-import Logo from '@/components/logo'
+import { useState } from 'react';
+import Link from 'next/link';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowRight, Menu, X } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme-toggle';
+import Logo from '@/components/logo';
 
 const navItems = [
   { label: 'Home', href: '#' },
@@ -14,58 +13,56 @@ const navItems = [
   { label: 'Real-world scenarios', href: '#use-cases' },
   { label: 'The Journey Ahead', href: '#timeline' },
   { label: 'Community', href: '#community' },
-]
+];
 
 export function Navigation() {
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(false);
 
   const scrollToTop = () => {
     // Ensure we scroll on the window/document
     window.scrollTo({
       top: 0,
       behavior: 'smooth',
-    })
+    });
     // Fallback for documentElement
     document.documentElement.scrollTo({
       top: 0,
       behavior: 'smooth',
-    })
-  }
+    });
+  };
 
   const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
     if (href === '#') {
-      scrollToTop()
-      return
+      scrollToTop();
+      return;
     }
-    
+
     if (href.startsWith('#')) {
       // Use setTimeout to ensure DOM is ready and menu is closed first
       setTimeout(() => {
-        const element = document.querySelector(href)
+        const element = document.querySelector(href);
         if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-      }, 0)
+      }, 0);
     }
-  }
+  };
 
   return (
-    <nav
-      className="fixed top-0 left-0 right-0 z-50 border-b bg-background/95 backdrop-blur-sm shadow-sm dark:shadow-white/5"
-    >
+    <nav className="fixed top-0 left-0 right-0 z-50 border-b bg-background/95 backdrop-blur-sm shadow-sm dark:shadow-white/5">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <button 
+          <button
             onClick={(e) => {
-              e.stopPropagation()
-              setIsOpen(false)
+              e.stopPropagation();
+              setIsOpen(false);
               setTimeout(() => {
-                scrollToTop()
-              }, 0)
-            }} 
+                scrollToTop();
+              }, 0);
+            }}
             className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
           >
             <Logo width={96} height={60} className="w-24 h-15" />
@@ -79,13 +76,13 @@ export function Navigation() {
                   <button
                     key={item.label}
                     onClick={() => {
-                      scrollToTop()
+                      scrollToTop();
                     }}
                     className="text-sm font-medium text-foreground hover:text-primary transition-colors"
                   >
                     {item.label}
                   </button>
-                )
+                );
               }
               return (
                 <Link
@@ -96,7 +93,7 @@ export function Navigation() {
                 >
                   {item.label}
                 </Link>
-              )
+              );
             })}
           </div>
 
@@ -114,7 +111,7 @@ export function Navigation() {
               Launch App
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform flex-shrink-0" />
             </Link>
-            
+
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsOpen(!isOpen)}
@@ -142,31 +139,31 @@ export function Navigation() {
                       <button
                         key={item.label}
                         onClick={() => {
-                          setIsOpen(false)
+                          setIsOpen(false);
                           // Delay scroll to allow menu close animation to complete
                           setTimeout(() => {
-                            scrollToTop()
-                          }, 100)
+                            scrollToTop();
+                          }, 100);
                         }}
                         className="block w-full text-left px-4 py-2 text-sm font-medium hover:bg-accent/10 rounded-md transition-colors"
                       >
                         {item.label}
                       </button>
-                    )
+                    );
                   }
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
                       onClick={(e) => {
-                        setIsOpen(false)
-                        handleSmoothScroll(e, item.href)
+                        setIsOpen(false);
+                        handleSmoothScroll(e, item.href);
                       }}
                       className="block px-4 py-2 text-sm font-medium hover:bg-accent/10 rounded-md transition-colors"
                     >
                       {item.label}
                     </Link>
-                  )
+                  );
                 })}
                 <div className="px-4 pt-4 border-t flex items-center justify-between gap-2">
                   <Link
@@ -186,5 +183,5 @@ export function Navigation() {
         </AnimatePresence>
       </div>
     </nav>
-  )
+  );
 }

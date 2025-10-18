@@ -1,17 +1,18 @@
 # 🌱 VF Portal
 
-> The Green Heart of Vegan Web3
+> Core hub for ecosystem overview and community engagement.
 
-Main website and Web3 portal for Vegan Friends DAO.
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
 
 ## Features
 
-- 🎨 Modern, responsive design with dark mode
-- 🔐 NEAR wallet integration (20+ wallet providers)
-- ⚡ Built with Next.js 14 App Router
-- 🎭 Smooth animations with Framer Motion
-- 🌊 Butter-smooth scrolling with Lenis
-- 💚 Green theme optimized for vegan community
+- Who it's designed for
+- Interactive use case demonstrations
+- Project timeline and roadmap
+- Community engagement sections
+- Developer documentation
 
 ## Development
 
@@ -33,21 +34,19 @@ Visit [http://localhost:3000](http://localhost:3000)
 
 ## Tech Stack
 
-- **Framework**: Next.js 14
+- **Framework**: Next.js 15
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
 - **Animations**: Framer Motion
-- **Wallet**: NEAR Wallet Selector
-- **Blockchain**: NEAR Protocol
+- **Deployment**: Vercel-ready
 
-## Deployment
+## Related Projects
 
-Ready to deploy to Vercel:
+- **[VF App Layer](https://github.com/VF-DAO/vfdao-app-layer)**: Frontend infrastructure and user
+  interfaces
+- **[VF Chain Layer](https://github.com/VF-DAO/vfdao-chain-layer)**: Smart contract development
 
-```bash
-npx vercel
-```
+## Contributing
 
----
-
-Built with 💚 by VFDAO Builders
+💡 Have an idea? [Open an issue](https://github.com/VF-DAO/vfdao-app-layer/issues) →
+[submit a PR](https://github.com/VF-DAO/vfdao-app-layer/pulls)

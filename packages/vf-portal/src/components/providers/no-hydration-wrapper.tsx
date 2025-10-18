@@ -1,20 +1,20 @@
-'use client'
+'use client';
 
-import { ReactNode, useEffect, useState } from 'react'
+import { type ReactNode, useEffect, useState } from 'react';
 
 /**
  * Prevents hydration mismatch by ensuring content only renders after client-side mount
  */
 export function NoHydrationWrapper({ children }: { children: ReactNode }) {
-  const [mounted, setMounted] = useState(false)
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    setMounted(true);
+  }, []);
 
   if (!mounted) {
-    return null
+    return null;
   }
 
-  return <>{children}</>
+  return <>{children}</>;
 }

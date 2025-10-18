@@ -1,37 +1,37 @@
-'use client'
+'use client';
 
-import { useState, useRef, useEffect } from 'react'
-import { Wallet, ChevronDown, LogOut, RefreshCw, User, ExternalLink } from 'lucide-react'
-import { useWallet } from '@/contexts/wallet-context'
+import { useEffect, useRef, useState } from 'react';
+import { ChevronDown, ExternalLink, LogOut, RefreshCw, User, Wallet } from 'lucide-react';
+import { useWallet } from '@/contexts/wallet-context';
 
 export function WalletButton() {
-const { modal, accountId, isConnected, selector } = useWallet()
-const [showMenu, setShowMenu] = useState(false)
-const menuRef = useRef<HTMLDivElement>(null)
+  const { modal, accountId, isConnected, selector } = useWallet();
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-// Close dropdown when clicking outside
-useEffect(() => {
-function handleClickOutside(event: MouseEvent) {
-if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-setShowMenu(false)
-}
-}
-document.addEventListener('mousedown', handleClickOutside)
-return () => document.removeEventListener('mousedown', handleClickOutside)
-}, [])
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-const handleDisconnect = async () => {
-if (selector) {
-const wallet = await selector.wallet()
-await wallet.signOut()
-setShowMenu(false)
-}
-}
+  const handleDisconnect = async () => {
+    if (selector) {
+      const wallet = await selector.wallet();
+      await wallet.signOut();
+      setShowMenu(false);
+    }
+  };
 
-const handleSwitchWallet = () => {
-modal?.show()
-setShowMenu(false)
-}
+  const handleSwitchWallet = () => {
+    modal?.show();
+    setShowMenu(false);
+  };
 
   if (!isConnected) {
     return (
@@ -43,7 +43,7 @@ setShowMenu(false)
         <Wallet className="w-3.5 h-3.5 transition-all duration-150" />
         <span className="hidden sm:inline">Connect Wallet</span>
       </button>
-    )
+    );
   }
 
   return (
@@ -71,15 +71,19 @@ setShowMenu(false)
       {showMenu && (
         <div className="absolute right-0 md:right-0 left-0 md:left-auto mt-2 w-64 bg-popover/95 border border-primary/20 rounded-3xl shadow-lg z-50 overflow-hidden backdrop-blur-md">
           <div className="p-4 border-b border-primary/10 bg-muted/30">
-            <p className="text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">Connected Account</p>
-            <p className="text-foreground text-sm font-medium truncate tracking-tight">{accountId}</p>
+            <p className="text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">
+              Connected Account
+            </p>
+            <p className="text-foreground text-sm font-medium truncate tracking-tight">
+              {accountId}
+            </p>
           </div>
 
           <div className="py-2">
             <button
               onClick={() => {
-                window.open(`https://testnet.nearblocks.io/address/${accountId}`, '_blank')
-                setShowMenu(false)
+                window.open(`https://testnet.nearblocks.io/address/${accountId}`, '_blank');
+                setShowMenu(false);
               }}
               className="w-full px-4 py-2 flex items-center gap-3 hover:bg-muted/50 transition-all duration-150 text-left group"
             >
@@ -99,15 +103,17 @@ setShowMenu(false)
             <div className="h-px bg-border my-2 mx-3"></div>
 
             <button
-              onClick={handleDisconnect}
+              onClick={() => void handleDisconnect()}
               className="w-full px-4 py-2 flex items-center gap-3 hover:bg-destructive/5 transition-all duration-150 text-left group"
             >
               <LogOut className="w-4 h-4 text-muted-foreground group-hover:text-destructive transition-colors duration-150" />
-              <span className="text-sm text-muted-foreground group-hover:text-destructive font-medium transition-colors duration-150">Disconnect</span>
+              <span className="text-sm text-muted-foreground group-hover:text-destructive font-medium transition-colors duration-150">
+                Disconnect
+              </span>
             </button>
           </div>
         </div>
       )}
     </div>
-  )
+  );
 }

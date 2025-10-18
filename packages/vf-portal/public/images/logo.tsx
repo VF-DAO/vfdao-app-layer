@@ -1,4 +1,4 @@
-import * as React from "react";
+import * as React from 'react';
 
 interface SVGComponentProps extends React.SVGProps<SVGSVGElement> {}
 

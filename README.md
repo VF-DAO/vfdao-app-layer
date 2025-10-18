@@ -1,31 +1,30 @@
-# 🌱 VF Eco Engine
+# 🌱 VF App Layer
 
-> The Green Heart of Vegan Web3
-
-Core infrastructure for Vegan Friends DAO. Built on NEAR Protocol with OnSocial contracts.
+> Frontend infrastructure and user interfaces for Vegan Friends DAO. Built on NEAR Protocol with
+> OnSocial contracts.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![NEAR Protocol](https://img.shields.io/badge/NEAR-Protocol-000000?logo=near)](https://near.org)
+[![Status](https://img.shields.io/badge/status-in%20development-orange)]()
 
 ## 🌿 About
 
-VF Eco Engine provides decentralized infrastructure for the vegan community:
+VF App Layer houses all core applications and frontend infrastructure for the Vegan Friends DAO
+ecosystem:
 
-- 🌐 **Transparent Vegan Economy** - Track and verify sustainable products
-- 🔐 **Wallet-Based Authentication** - Built on NEAR Protocol
-- 💚 **Community Rewards** - Earn tokens and badges for verification
-- 🛒 **NFT Marketplace** - Trade product certificates and community badges
-- � **Impact Tracking** - Measure participation and verification metrics
+- **Transparent Vegan Economy** - Track and verify sustainable products
+- **Wallet-Based Authentication** - Built on NEAR Protocol
+- **Community Rewards** - Earn tokens and badges for verification
+- **NFT Marketplace** - Trade product certificates and community badges
+- **Impact Tracking** - Measure participation and verification metrics
 
 ## 🏗️ Project Structure
 
 ```
-vfdao-eco-engine/
+vfdao-app-layer/
 ├── packages/
-│   ├── vf-portal/          # Marketing website & community hub
-│   └── vf-app/             # Consumer dashboard & product verification
-├── contracts/
-│   └── vf-staking/         # Staking and verification contracts
+│   ├── vf-portal/          # Landing page
+│   └── vf-app/             # Interactive app
 └── docs/                   # Documentation
 ```
 
@@ -40,8 +39,8 @@ vfdao-eco-engine/
 
 ```bash
 # Clone the repository
-git clone https://github.com/VF-DAO/vfdao-eco-engine.git
-cd vfdao-eco-engine
+git clone https://github.com/VF-DAO/vfdao-app-layer.git
+cd vfdao-app-layer
 
 # Install dependencies
 pnpm install
@@ -55,7 +54,8 @@ Visit [http://localhost:3000](http://localhost:3000)
 ## 📦 Packages
 
 ### VF Portal
-Marketing website and community hub for Vegan Friends DAO. Learn about stakeholders, explore use cases, and engage with the community.
+
+Core hub for ecosystem overview and community engagement.
 
 ```bash
 cd packages/vf-portal
@@ -63,14 +63,19 @@ pnpm dev   # Runs on http://localhost:3000
 ```
 
 **Features:**
-- 🎯 Hero landing page with stakeholder information
-- 📚 Educational content about the vegan economy
-- 🗺️ Use case explorer
-- 📅 Timeline and roadmap
-- 🤝 Community engagement hub
+
+- Hero landing page with stakeholder information
+- Educational content about the vegan economy
+- Use case explorer
+- Timeline and roadmap
+- Community engagement hub
 
 ### VF App
-Consumer dashboard for product verification, rewards tracking, and NFT marketplace access. Requires wallet authentication.
+
+Consumer dashboard for product verification, rewards tracking, and NFT marketplace access. On-chain
+native with wallet authentication.
+
+_Currently in active development with core features being implemented._
 
 ```bash
 cd packages/vf-app
@@ -78,12 +83,15 @@ pnpm dev   # Runs on http://localhost:3001
 ```
 
 **Features:**
-- 🔐 NEAR wallet authentication
-- 📱 Product QR code scanner
-- ✅ Verification history tracking
-- 🏆 Rewards and badges system
-- 🎨 NFT marketplace (coming soon)
-- 📊 Consumer statistics dashboard
+
+_Most features currently in development_
+
+- NEAR wallet authentication
+- Stakeholder dashboards (consumers, producers, certifiers)
+- Product verification workflows
+- Rewards and badges system
+- NFT marketplace
+- Analytics and reporting
 
 ## 🔗 Running Both Apps
 
@@ -110,9 +118,9 @@ MIT License - see [LICENSE](LICENSE) for details.
 ## 🔗 Links
 
 - **Website**: [vfdao.org](https://vfdao.org) (coming soon)
-- **GitHub**: [github.com/VF-DAO](https://github.com/VF-DAO)
+- **GitHub**: [github.com/VF-DAO/vfdao-app-layer](https://github.com/VF-DAO/vfdao-app-layer)
 - **Built with**: [OnSocial Protocol](https://github.com/OnSocial-Labs/onsocial-protocol)
 
 ---
 
-Built with 💚 by VFDAO Builders
+Built with 💚 love by VFDAO Builders
