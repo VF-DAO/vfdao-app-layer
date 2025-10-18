@@ -10,12 +10,13 @@
 ## 🌿 About
 
 VF App Layer houses all core applications and frontend infrastructure for the Vegan Friends DAO
-ecosystem:
+ecosystem. Planned features include:
 
 - **Transparent Vegan Economy** - Track and verify sustainable products
 - **Wallet-Based Authentication** - Built on NEAR Protocol
+- **Stakeholder Dashboards** - Personalized interfaces for consumers, producers, and certifiers
 - **Community Rewards** - Earn tokens and badges for verification
-- **NFT Marketplace** - Trade product certificates and community badges
+- **NFT Marketplace** - Trade digital art and collectibles
 - **Impact Tracking** - Measure participation and verification metrics
 
 ## 🏗️ Project Structure
@@ -32,8 +33,8 @@ vfdao-app-layer/
 
 ### Prerequisites
 
-- Node.js 18+
-- pnpm 8+
+- Node.js 20+
+- pnpm 9+
 
 ### Installation
 
