@@ -216,7 +216,7 @@ export default function Home() {
               items={[
                 '$VF token launched with initial liquidity ✅',
                 'OnSocial Protocol contracts in testing',
-                '8-layer verification system architected',
+                '7-layer verification system architected',
                 'Community building & partnership discussions',
               ]}
             />
@@ -238,7 +238,7 @@ export default function Home() {
               title="Infrastructure Build"
               items={[
                 'Stakeholder portals development',
-                'Consumer app (mobile + web)',
+                'Consumer app',
                 'Substreams indexer deployment',
               ]}
             />
