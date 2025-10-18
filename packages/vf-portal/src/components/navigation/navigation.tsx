@@ -17,6 +17,12 @@ const navItems = [
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
+  const [showComingSoon, setShowComingSoon] = useState(false);
+
+  const handleLaunchClick = () => {
+    setShowComingSoon(true);
+    setTimeout(() => setShowComingSoon(false), 1000);
+  };
 
   const scrollToTop = () => {
     // Ensure we scroll on the window/document
@@ -102,15 +108,25 @@ export function Navigation() {
             <div className="hidden md:block">
               <ThemeToggle />
             </div>
-            <Link
-              href="http://localhost:3001"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden md:inline-flex items-center justify-center gap-2 border border-verified bg-verified/10 text-primary hover:text-primary px-4 py-2 rounded-full font-semibold transition-all hover:shadow-md hover:shadow-verified/20 group text-sm whitespace-nowrap"
-            >
-              Launch App
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform flex-shrink-0" />
-            </Link>
+            <div className="relative">
+              <button
+                onClick={handleLaunchClick}
+                className="hidden md:inline-flex items-center justify-center gap-2 border border-verified bg-verified/10 text-primary hover:text-primary px-4 py-2 rounded-full font-semibold transition-all hover:shadow-md hover:shadow-verified/20 group text-sm whitespace-nowrap"
+              >
+                Launch App
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform flex-shrink-0" />
+              </button>
+              {showComingSoon && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground shadow-lg whitespace-nowrap z-50"
+                >
+                  Coming Soon! 🌱
+                </motion.div>
+              )}
+            </div>
 
             {/* Mobile Menu Button */}
             <button
@@ -166,15 +182,25 @@ export function Navigation() {
                   );
                 })}
                 <div className="px-4 pt-4 border-t flex items-center justify-between gap-2">
-                  <Link
-                    href="http://localhost:3001"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-1 border border-verified bg-verified/10 text-primary px-3 py-1.5 rounded-full font-medium transition-all text-xs whitespace-nowrap"
-                  >
-                    Launch App
-                    <ArrowRight className="w-3 h-3 flex-shrink-0" />
-                  </Link>
+                  <div className="relative">
+                    <button
+                      onClick={handleLaunchClick}
+                      className="inline-flex items-center justify-center gap-1 border border-verified bg-verified/10 text-primary px-3 py-1.5 rounded-full font-medium transition-all text-xs whitespace-nowrap"
+                    >
+                      Launch App
+                      <ArrowRight className="w-3 h-3 flex-shrink-0" />
+                    </button>
+                    {showComingSoon && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground shadow-lg whitespace-nowrap z-50"
+                      >
+                        Coming Soon! 🌱
+                      </motion.div>
+                    )}
+                  </div>
                   <ThemeToggle />
                 </div>
               </div>

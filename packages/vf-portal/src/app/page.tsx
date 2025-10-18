@@ -307,7 +307,7 @@ export default function Home() {
                 Community Member
               </h3>
               <p className="text-xs sm:text-sm text-muted-foreground mb-4">
-                Connect with other vegans building transparency
+                Connect with vegan friends
               </p>
               <Link
                 href="https://t.me/veganfriendsdao"

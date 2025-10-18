@@ -49,7 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     </span>
                   </div>
                   <p className="text-xs sm:text-sm text-muted-foreground">
-                    Built by vegans, for vegans. Making transparency the standard.
+                    Making transparency the standard.
                   </p>
                 </div>
 
