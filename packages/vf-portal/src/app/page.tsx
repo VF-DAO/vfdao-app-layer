@@ -1,30 +1,27 @@
 'use client';
 
-import { ArrowRight, Clock, Leaf, Scan, Shield, Users, Zap } from 'lucide-react';
+import { ArrowRight, Leaf, Scan, Shield, Users } from 'lucide-react';
 import Link from 'next/link';
-import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { VerificationFlow } from '@/components/verification-flow';
 import { UseCaseCarousel } from '@/components/use-case-carousel';
 
 export default function Home() {
-  const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const isDark = mounted && theme === 'dark';
-
   if (!mounted) {
     return (
       <div className="flex flex-col">
         {/* Hero Section - Mission-Driven */}
-        <section className="relative flex flex-col items-center justify-center min-h-screen px-4 overflow-hidden">
-          {/* Subtle Dot Grid Background - Represents verification checkpoints */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(0,0,0,0.08)_1.5px,transparent_1.5px)] dark:bg-[radial-gradient(circle,rgba(255,255,255,0.08)_1.5px,transparent_1.5px)] bg-[size:40px_40px]" />
-          <div className="text-center space-y-6 sm:space-y-8 md:space-y-12 max-w-5xl relative z-10 pt-16 sm:pt-20 pb-8 sm:pb-12">
+        <section className="pt-28 sm:pt-36 pb-16 sm:pb-24 px-4 border-t border-border bg-muted/30">
+          <div className="max-w-6xl mx-auto">
+            {/* Subtle Dot Grid Background - Represents verification checkpoints */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(0,0,0,0.08)_1.5px,transparent_1.5px)] dark:bg-[radial-gradient(circle,rgba(255,255,255,0.08)_1.5px,transparent_1.5px)] bg-[size:40px_40px]" />
+            <div className="text-center space-y-6 sm:space-y-8 md:space-y-12 max-w-5xl mx-auto relative z-10">
             <div className="space-y-4 sm:space-y-6">
               <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-foreground tracking-tighter sm:tracking-tight leading-tight">
                 Don't trust.
@@ -32,13 +29,10 @@ export default function Home() {
                 It's already <span className="text-verified">verified.</span>
               </h1>
               <p className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-                Scan any product. See its complete journey from farm to shelf.
-                <span className="text-foreground font-medium">
-                  {' '}
-                  Every ingredient verified animal-free.
-                </span>
+                Permissionless access. Record. Scan. Verify. Vegan ingredients, fully transparent.
               </p>
             </div>
+          </div>
           </div>
         </section>
       </div>
@@ -48,11 +42,12 @@ export default function Home() {
   return (
     <div className="flex flex-col">
       {/* Hero Section - Mission-Driven */}
-      <section className="relative flex flex-col items-center justify-center min-h-screen px-4 overflow-hidden">
-        {/* Subtle Dot Grid Background - Represents verification checkpoints */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(0,0,0,0.08)_1.5px,transparent_1.5px)] dark:bg-[radial-gradient(circle,rgba(255,255,255,0.08)_1.5px,transparent_1.5px)] bg-[size:40px_40px]" />
+      <section className="pt-28 sm:pt-36 pb-16 sm:pb-24 px-4 border-t border-border bg-muted/30">
+        <div className="max-w-6xl mx-auto">
+          {/* Subtle Dot Grid Background - Represents verification checkpoints */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(0,0,0,0.08)_1.5px,transparent_1.5px)] dark:bg-[radial-gradient(circle,rgba(255,255,255,0.08)_1.5px,transparent_1.5px)] bg-[size:40px_40px]" />
 
-        <div className="text-center space-y-6 sm:space-y-8 md:space-y-12 max-w-5xl relative z-10 pt-16 sm:pt-20 pb-8 sm:pb-12">
+          <div className="text-center max-w-5xl mx-auto relative z-10">
           {/* Main Headline */}
           <div className="space-y-4 sm:space-y-6">
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-foreground tracking-tighter sm:tracking-tight leading-tight">
@@ -62,35 +57,26 @@ export default function Home() {
             </h1>
 
             <p className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Scan any product. See its complete journey from farm to shelf.
-              <span className="text-foreground font-medium">
-                {' '}
-                Every ingredient verified animal-free.
-              </span>
+              Permissionless access. Record. Scan. Verify. Vegan ingredients, fully transparent.
             </p>
           </div>
 
           {/* Simple Explanation */}
-          <div className="inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-1 px-3 sm:px-4 py-2 rounded-full border border-primary/20 bg-primary/5 text-primary text-xs sm:text-sm font-medium">
-            <span className="inline-flex items-center gap-2">
-              <Zap className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-              <span className="whitespace-nowrap">
-                Blockchain-powered supply chain transparency
-              </span>
-            </span>
-            <span className="whitespace-nowrap">• Launching Q1 2026</span>
+          <div className="inline-flex items-center px-3 py-2 rounded-full border border-primary/20 bg-primary/5 text-primary text-sm font-medium mt-8 sm:mt-12">
+            Launching Q1 2026
           </div>
 
           {/* Verification Flow Animation */}
-          <div>
+          <div className="mt-0">
             <VerificationFlow />
           </div>
 
           {/* CTAs */}
-          <div className="flex flex-row gap-2 justify-center w-full flex-wrap">
+                    {/* CTAs */}
+          <div className="flex flex-row gap-4 justify-center w-full flex-wrap">
             <Link
               href="#learn-more"
-              className="inline-flex items-center justify-center gap-2 border border-primary bg-primary hover:bg-primary/90 text-primary-foreground px-3 sm:px-6 md:px-8 py-2 sm:py-3 md:py-4 rounded-full font-semibold transition-all hover:shadow-md hover:shadow-primary/10 group text-xs sm:text-sm md:text-base whitespace-nowrap"
+              className="inline-flex items-center justify-center gap-2 border border-primary bg-primary hover:bg-primary/90 text-primary-foreground px-3 sm:px-6 md:px-8 py-2 sm:py-3 md:py-4 rounded-full font-semibold transition-all hover:shadow-md hover:shadow-primary/10 group text-sm md:text-base whitespace-nowrap"
             >
               Learn More
               <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 group-hover:translate-x-1 transition-transform flex-shrink-0" />
@@ -98,12 +84,13 @@ export default function Home() {
 
             <Link
               href="#community"
-              className="inline-flex items-center justify-center gap-2 border border-verified hover:border-verified/80 text-primary hover:text-primary px-3 sm:px-6 md:px-8 py-2 sm:py-3 md:py-4 rounded-full font-semibold transition-all hover:shadow-md hover:shadow-verified/10 group text-xs sm:text-sm md:text-base whitespace-nowrap"
+              className="inline-flex items-center justify-center gap-2 border border-verified hover:border-verified/80 text-primary hover:text-primary px-3 sm:px-6 md:px-8 py-2 sm:py-3 md:py-4 rounded-full font-semibold transition-all hover:shadow-md hover:shadow-verified/10 group text-sm md:text-base whitespace-nowrap"
             >
               Join the Movement
               <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 group-hover:translate-x-1 transition-transform flex-shrink-0" />
             </Link>
           </div>
+        </div>
         </div>
       </section>
 
@@ -111,14 +98,11 @@ export default function Home() {
       <section id="learn-more" className="py-16 sm:py-24 px-4 border-t border-border bg-muted/30">
         <div className="max-w-6xl mx-auto">
           <div className="text-center space-y-3 sm:space-y-4 mb-10 sm:mb-16">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground inline-flex items-center justify-center gap-3">
-              <Users
-                className={`w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-primary ${isDark ? 'drop-shadow-[0_0_20px_rgba(246,198,56,0.8)]' : 'drop-shadow-[0_0_20px_rgba(157,196,145,0.8)]'}`}
-              />
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground">
               Who This Is For
             </h2>
             <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
-              Whether you consume, produce, or certify — we're building this together
+              Consumers seeking truth, producers committed to ethics, and certifiers upholding standards — together we're creating a future where trust is earned, not assumed.
             </p>
           </div>
 
@@ -174,14 +158,11 @@ export default function Home() {
       <section id="use-cases" className="py-16 sm:py-24 px-4 border-t border-border">
         <div className="max-w-6xl mx-auto">
           <div className="text-center space-y-3 sm:space-y-4 mb-10 sm:mb-16">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground inline-flex items-center justify-center gap-3">
-              <Zap
-                className={`w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-primary ${isDark ? 'drop-shadow-[0_0_20px_rgba(246,198,56,0.8)]' : 'drop-shadow-[0_0_20px_rgba(157,196,145,0.8)]'}`}
-              />
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground">
               Real-world scenarios
             </h2>
             <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
-              From coffee shops to farms, from retailers to certifiers—see how VeganFriends
+              From coffee shops to farms, from retailers to certifiers — see how VeganFriends
               transforms daily decisions into verified truth.
             </p>
           </div>
@@ -197,10 +178,7 @@ export default function Home() {
       >
         <div className="max-w-4xl mx-auto">
           <div className="text-center space-y-3 sm:space-y-4 mb-10 sm:mb-16">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground inline-flex items-center justify-center gap-3">
-              <Clock
-                className={`w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-primary ${isDark ? 'drop-shadow-[0_0_20px_rgba(246,198,56,0.8)]' : 'drop-shadow-[0_0_20px_rgba(157,196,145,0.8)]'}`}
-              />
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground">
               The Journey Ahead
             </h2>
             <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -216,8 +194,8 @@ export default function Home() {
               items={[
                 '$VF token launched with initial liquidity ✅',
                 'OnSocial Protocol contracts in testing',
-                '7-layer verification system architected',
-                'Community building & partnership discussions',
+                'Verification system architected',
+                'Community growth & partnerships',
               ]}
             />
 
@@ -272,30 +250,26 @@ export default function Home() {
       <section id="community" className="py-16 sm:py-24 px-4 border-t border-border bg-muted/30">
         <div className="max-w-4xl mx-auto text-center space-y-6 sm:space-y-8">
           <div className="space-y-3 sm:space-y-4">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground inline-flex items-center justify-center gap-3">
-              <Leaf
-                className={`w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-primary ${isDark ? 'drop-shadow-[0_0_20px_rgba(246,198,56,0.8)]' : 'drop-shadow-[0_0_20px_rgba(157,196,145,0.8)]'}`}
-              />
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground">
               Build Transparency Together
             </h2>
 
             <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
-              Every verified product, every badge earned, every story shared—it all matters. Join a
-              community of builders, believers, and vegans making truth the standard.
+              Every verified product and shared story matters. Join our community of builders, believers, and changemakers.
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-4 sm:gap-6 pt-8">
             <div className="p-4 sm:p-6 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all hover:shadow-lg">
               <h3 className="text-base sm:text-lg font-bold text-foreground mb-2">Early Adopter</h3>
-              <p className="text-xs sm:text-sm text-muted-foreground mb-4">
+              <p className="text-sm text-muted-foreground mb-4">
                 Be first to try the platform when we launch
               </p>
               <Link
                 href="https://t.me/veganfriendsdao"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-xs sm:text-sm text-primary font-semibold hover:gap-3 transition-all"
+                className="inline-flex items-center gap-2 text-sm text-primary font-semibold hover:gap-3 transition-all"
               >
                 Get Early Access
                 <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-verified flex-shrink-0" />
@@ -306,14 +280,14 @@ export default function Home() {
               <h3 className="text-base sm:text-lg font-bold text-foreground mb-2">
                 Community Member
               </h3>
-              <p className="text-xs sm:text-sm text-muted-foreground mb-4">
-                Connect with vegan friends
+              <p className="text-sm text-muted-foreground mb-4">
+                You love being part of a vegan community.
               </p>
               <Link
                 href="https://t.me/veganfriendsdao"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-xs sm:text-sm text-primary font-semibold hover:gap-3 transition-all"
+                className="inline-flex items-center gap-2 text-sm text-primary font-semibold hover:gap-3 transition-all"
               >
                 Join Telegram
                 <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-verified flex-shrink-0" />
@@ -322,27 +296,17 @@ export default function Home() {
 
             <div className="p-4 sm:p-6 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all hover:shadow-lg">
               <h3 className="text-base sm:text-lg font-bold text-foreground mb-2">Partner</h3>
-              <p className="text-xs sm:text-sm text-muted-foreground mb-4">
+              <p className="text-sm text-muted-foreground mb-4">
                 Bring your brand or certification body onboard
               </p>
               <Link
                 href="#partners"
-                className="inline-flex items-center gap-2 text-xs sm:text-sm text-primary font-semibold hover:gap-3 transition-all"
+                className="inline-flex items-center gap-2 text-sm text-primary font-semibold hover:gap-3 transition-all"
               >
                 Get in Touch
                 <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-verified flex-shrink-0" />
               </Link>
             </div>
-          </div>
-
-          <div className="pt-8 sm:pt-12 space-y-4 sm:space-y-6">
-            <p className="text-lg sm:text-xl md:text-2xl font-bold text-foreground">
-              Don't trust. It's already <span className="text-verified">verified.</span>
-            </p>
-            <p className="text-xs sm:text-sm md:text-base text-muted-foreground">
-              Every person who joins makes this system stronger. Every product verified makes
-              ethical claims more trustworthy.
-            </p>
           </div>
         </div>
       </section>
@@ -380,22 +344,22 @@ function StakeholderCard({
         <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-foreground">{title}</h3>
 
         {/* Description */}
-        <p className="text-xs sm:text-sm md:text-base text-muted-foreground">{description}</p>
+        <p className="text-sm md:text-base text-muted-foreground">{description}</p>
 
         {/* Pain Point */}
-        <p className="text-xs sm:text-sm italic text-muted-foreground border-l-2 border-primary/30 pl-3 sm:pl-4">
+        <p className="text-sm italic text-muted-foreground border-l-2 border-primary/30 pl-3 sm:pl-4">
           {pain}
         </p>
 
         {/* Solution */}
-        <p className="text-xs sm:text-sm md:text-base text-foreground font-medium">{solution}</p>
+        <p className="text-sm md:text-base text-foreground font-medium">{solution}</p>
       </div>
 
       {/* CTA */}
       <div className="mt-4 sm:mt-6">
         <Link
           href={ctaHref}
-          className="inline-flex items-center gap-2 text-xs sm:text-sm text-primary font-semibold hover:gap-3 transition-all group"
+          className="inline-flex items-center gap-2 text-sm text-primary font-semibold hover:gap-3 transition-all group"
         >
           {cta}
           <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-verified flex-shrink-0" />
@@ -422,7 +386,7 @@ function TimelineItem({
       {/* Timeline marker */}
       <div className="flex flex-col items-center">
         <div
-          className={`w-10 sm:w-12 h-10 sm:h-12 rounded-full border-2 flex items-center justify-center font-bold text-xs sm:text-sm ${
+          className={`w-10 sm:w-12 h-10 sm:h-12 rounded-full border-2 flex items-center justify-center font-bold text-sm ${
             status === 'current'
               ? 'border-verified bg-verified/10 text-primary shadow-md shadow-verified/20'
               : status === 'completed'
@@ -442,19 +406,19 @@ function TimelineItem({
             {title}
           </h3>
           {status === 'current' && (
-            <span className="px-2 sm:px-3 py-1 text-xs rounded-full border border-verified bg-verified/10 text-primary font-medium shadow-md shadow-verified/20 whitespace-nowrap">
+            <span className="px-2 sm:px-3 py-1 text-sm rounded-full border border-verified bg-verified/10 text-primary font-medium shadow-md shadow-verified/20 whitespace-nowrap">
               Current
             </span>
           )}
         </div>
-        <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">{quarter}</p>
+        <p className="text-sm text-muted-foreground mb-2 sm:mb-3">{quarter}</p>
         <ul className="space-y-1 sm:space-y-2">
           {items.map((item, index) => {
             const hasCheckmark = item.includes('✅');
             return (
               <li
                 key={index}
-                className="flex items-start gap-2 text-xs sm:text-sm text-muted-foreground"
+                className="flex items-start gap-2 text-sm text-muted-foreground"
               >
                 <span
                   className={`mt-1 flex-shrink-0 ${hasCheckmark ? 'text-verified' : 'text-primary'}`}

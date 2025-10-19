@@ -87,10 +87,10 @@ export function VerificationFlow() {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto py-12 px-4">
+    <div className="w-full max-w-4xl mx-auto py-12 px-1 sm:px-4">
       {/* Stage Markers */}
       <div className="relative">
-        <div className="grid grid-cols-7 gap-2 sm:gap-4">
+        <div className="grid grid-cols-7 gap-3 sm:gap-5">
           {stages.map((stage) => {
             const opacity = getStageOpacity(stage.position);
             const scale = getStageScale(stage.position);
@@ -136,7 +136,7 @@ export function VerificationFlow() {
                   }}
                 >
                   <stage.icon
-                    className={`w-4 h-4 sm:w-5 sm:h-5 ${isActive ? 'text-primary' : 'text-muted-foreground'}`}
+                    className={`w-5 h-5 sm:w-6 sm:h-6 ${isActive ? 'text-primary' : 'text-muted-foreground'}`}
                     style={{
                       strokeWidth: 2,
                       transition: 'color 600ms ease-out',
@@ -145,21 +145,7 @@ export function VerificationFlow() {
                 </div>
 
                 {/* Label */}
-                <div
-                  className={`
-                    text-[10px] sm:text-xs font-medium text-center
-                    ${isActive ? 'text-foreground' : 'text-muted-foreground'}
-                  `}
-                  style={{
-                    transition: 'color 600ms ease-out',
-                    willChange: 'color',
-                    wordBreak: 'break-word',
-                    hyphens: 'auto',
-                    maxWidth: '100%',
-                  }}
-                >
-                  {stage.label}
-                </div>
+                {/* Removed text labels to focus on icon animation */}
               </div>
             );
           })}
@@ -170,7 +156,7 @@ export function VerificationFlow() {
       <div className="text-center mt-8">
         <p className="text-sm text-primary font-medium inline-flex items-center gap-2 justify-center">
           <CheckCircle className="w-4 h-4 flex-shrink-0" />
-          <span>Complete transparency. Every step verified on-chain.</span>
+          <span>Blockchain-verified supply chain integrity.</span>
         </p>
       </div>
     </div>

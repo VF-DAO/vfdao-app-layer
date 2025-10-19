@@ -143,7 +143,7 @@ export function UseCaseCarousel() {
       onTouchEnd={handleDragEnd}
     >
       {/* Card Stack */}
-      <div className="relative h-[460px] md:h-[520px] max-w-sm md:max-w-md mx-auto mb-8">
+      <div className="relative h-[440px] md:h-[500px] max-w-sm md:max-w-md mx-auto mb-8">
         {currentCards.map((card, index) => {
           const Icon = card.icon;
           const isTop = index === 0;
@@ -185,14 +185,14 @@ export function UseCaseCarousel() {
                     <h3 className="text-xl md:text-2xl font-bold text-foreground truncate">
                       {card.title}
                     </h3>
-                    <p className="text-xs md:text-sm text-primary font-medium">{card.role}</p>
+                    <p className="text-sm text-primary font-medium">{card.role}</p>
                   </div>
                 </div>
 
                 {/* Content */}
                 <div className="space-y-5 flex-1">
                   <div>
-                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                    <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">
                       The Situation
                     </h4>
                     <p className="text-sm md:text-base text-foreground leading-relaxed">
@@ -201,7 +201,7 @@ export function UseCaseCarousel() {
                   </div>
 
                   <div>
-                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                    <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">
                       The Solution
                     </h4>
                     <p className="text-sm md:text-base text-foreground leading-relaxed">

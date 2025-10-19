@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight, Menu, X } from 'lucide-react';
@@ -18,6 +18,23 @@ const navItems = [
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
   const [showComingSoon, setShowComingSoon] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node) && isOpen) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
 
   const handleLaunchClick = () => {
     setShowComingSoon(true);
@@ -71,7 +88,7 @@ export function Navigation() {
             }}
             className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
           >
-            <Logo width={96} height={60} className="w-24 h-15" />
+            <Logo width={80} height={54} className="w-20 h-14" />
           </button>
 
           {/* Desktop Navigation */}
@@ -121,7 +138,7 @@ export function Navigation() {
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground shadow-lg whitespace-nowrap z-50"
+                  className="hidden md:block absolute top-full mt-2 left-1/2 transform -translate-x-1/2 bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground shadow-lg whitespace-nowrap z-50"
                 >
                   Coming Soon! 🌱
                 </motion.div>
@@ -143,6 +160,7 @@ export function Navigation() {
         <AnimatePresence>
           {isOpen && (
             <motion.div
+              ref={menuRef}
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
@@ -185,7 +203,7 @@ export function Navigation() {
                   <div className="relative">
                     <button
                       onClick={handleLaunchClick}
-                      className="inline-flex items-center justify-center gap-1 border border-verified bg-verified/10 text-primary px-3 py-1.5 rounded-full font-medium transition-all text-xs whitespace-nowrap"
+                      className="inline-flex items-center justify-center gap-1 border border-verified bg-verified/10 text-primary px-3 py-1.5 rounded-full font-medium transition-all text-sm whitespace-nowrap"
                     >
                       Launch App
                       <ArrowRight className="w-3 h-3 flex-shrink-0" />
@@ -195,7 +213,7 @@ export function Navigation() {
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground shadow-lg whitespace-nowrap z-50"
+                        className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground shadow-lg whitespace-nowrap z-[60]"
                       >
                         Coming Soon! 🌱
                       </motion.div>
