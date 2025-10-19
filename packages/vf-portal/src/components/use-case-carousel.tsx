@@ -72,12 +72,14 @@ export function UseCaseCarousel() {
     e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>,
     id: number
   ) => {
+    // Stop propagation to prevent affecting other elements like the nav menu
     e.stopPropagation();
-    // For touch events, prevent default immediately to avoid scroll
+    
+    // Only prevent default for touch events on the card itself, not globally
     if (e.type === 'touchstart') {
+      // This prevents default scrolling only on the carousel card
       e.preventDefault();
     }
-    // For mouse events, allow natural behavior initially
 
     const startX =
       e.type === 'mousedown'
@@ -94,12 +96,6 @@ export function UseCaseCarousel() {
     e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>
   ) => {
     if (!dragState.isDragging) return;
-
-    // For touch events, always prevent default to avoid any scrolling
-    if (e.type.includes('touch')) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
 
     const clientX =
       e.type === 'mousemove'
@@ -122,11 +118,17 @@ export function UseCaseCarousel() {
       e.stopPropagation();
       setDragState((prev) => ({ ...prev, currentX: deltaX, currentY: 0 }));
     }
-    // For touch events, allow the drag but cancel if vertical dominates
+    // For touch events, only continue if horizontal movement dominates
     else if (e.type.includes('touch')) {
+      // Stop propagation to keep touch events contained to the carousel
+      e.stopPropagation();
+      
       if (absY > absX && absY > 10) {
-        setDragState({}); // Cancel drag for vertical scrolling
-      } else {
+        // Vertical movement detected - cancel drag to allow page scrolling
+        setDragState({});
+      } else if (absX > 5) {
+        // Horizontal movement detected - prevent default and update position
+        e.preventDefault();
         setDragState((prev) => ({ ...prev, currentX: deltaX, currentY: 0 }));
       }
     }
@@ -193,14 +195,16 @@ export function UseCaseCarousel() {
                 pointerEvents: isTop && !isRemoving ? 'auto' : 'none',
                 userSelect: 'none',
                 WebkitUserSelect: 'none',
-                touchAction: 'none',
+                touchAction: isTop ? 'pan-y' : 'auto',
               }}
               onMouseDown={isTop ? (e) => handleDragStart(e, card.id) : undefined}
               onMouseMove={isTop && dragState.isDragging ? handleDragMove : undefined}
               onMouseUp={isTop && dragState.isDragging ? handleDragEnd : undefined}
+              onMouseLeave={isTop && dragState.isDragging ? handleDragEnd : undefined}
               onTouchStart={isTop ? (e) => handleDragStart(e, card.id) : undefined}
               onTouchMove={isTop && dragState.isDragging ? handleDragMove : undefined}
               onTouchEnd={isTop && dragState.isDragging ? handleDragEnd : undefined}
+              onTouchCancel={isTop && dragState.isDragging ? handleDragEnd : undefined}
             >
               <div className="w-full h-full rounded-2xl border-2 border-border bg-card shadow-2xl p-4 md:p-6 flex flex-col">
                 {/* Header */}
