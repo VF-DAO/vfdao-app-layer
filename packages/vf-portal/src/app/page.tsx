@@ -17,7 +17,7 @@ export default function Home() {
     return (
       <div className="flex flex-col">
         {/* Hero Section - Mission-Driven */}
-        <section className="pt-28 sm:pt-36 pb-16 sm:pb-24 px-4 border-t border-border bg-muted/30">
+        <section className="pt-28 sm:pt-36 pb-16 sm:pb-24 px-4 border-t border-border">
           <div className="max-w-6xl mx-auto">
             {/* Subtle Dot Grid Background - Represents verification checkpoints */}
             <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(0,0,0,0.08)_1.5px,transparent_1.5px)] dark:bg-[radial-gradient(circle,rgba(255,255,255,0.08)_1.5px,transparent_1.5px)] bg-[size:40px_40px]" />
@@ -42,7 +42,7 @@ export default function Home() {
   return (
     <div className="flex flex-col">
       {/* Hero Section - Mission-Driven */}
-      <section className="pt-28 sm:pt-36 pb-16 sm:pb-24 px-4 border-t border-border bg-muted/30">
+      <section className="pt-28 sm:pt-36 pb-16 sm:pb-24 px-4 border-t border-border">
         <div className="max-w-6xl mx-auto">
           {/* Subtle Dot Grid Background - Represents verification checkpoints */}
           <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(0,0,0,0.08)_1.5px,transparent_1.5px)] dark:bg-[radial-gradient(circle,rgba(255,255,255,0.08)_1.5px,transparent_1.5px)] bg-[size:40px_40px]" />
@@ -155,7 +155,7 @@ export default function Home() {
       </section>
 
       {/* Use Cases - Real World Impact */}
-      <section id="use-cases" className="py-16 sm:py-24 px-4 border-t border-border">
+      <section id="use-cases" className="py-16 sm:py-24 px-4 border-t border-border bg-muted/30">
         <div className="max-w-6xl mx-auto">
           <div className="text-center space-y-3 sm:space-y-4 mb-10 sm:mb-16">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground">

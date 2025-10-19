@@ -17,7 +17,7 @@ const useCases = [
   {
     id: 1,
     icon: User,
-    title: "Sarah's Morning Coffee",
+    title: "Sarah's Coffee Break",
     role: 'Conscious Consumer',
     scenario: 'Sarah scans an oat milk carton at her local café.',
     result:
@@ -44,7 +44,7 @@ const useCases = [
     scenario: "A grocery chain wants to guarantee their 'vegan' section is 100% animal-free.",
     result:
       'Complete supply chain verification on every product. Customers scan and verify instantly.',
-    impact: '40% increase in customer loyalty.',
+    impact: 'Increase in customer loyalty.',
     bgColor: '#FE8E4B',
   },
   {
@@ -53,7 +53,7 @@ const useCases = [
     title: 'VegCert International',
     role: 'Certification Body',
     scenario: 'A certification org issues thousands of vegan certificates annually on paper.',
-    result: 'Switch to blockchain: unforgeable, instantly verifiable, 70% cheaper to issue.',
+    result: 'Switch to blockchain: unforgeable, instantly verifiable, much cheaper to issue.',
     impact: 'Certificate fraud becomes impossible.',
     bgColor: '#F6C638',
   },
@@ -72,9 +72,13 @@ export function UseCaseCarousel() {
     e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>,
     id: number
   ) => {
-    // Only prevent default if this is clearly intended as a horizontal drag
-    // For now, we'll prevent default and handle cancellation in move handler
-    e.preventDefault();
+    e.stopPropagation();
+    // For touch events, prevent default immediately to avoid scroll
+    if (e.type === 'touchstart') {
+      e.preventDefault();
+    }
+    // For mouse events, allow natural behavior initially
+
     const startX =
       e.type === 'mousedown'
         ? (e as React.MouseEvent<HTMLDivElement>).clientX
@@ -91,6 +95,12 @@ export function UseCaseCarousel() {
   ) => {
     if (!dragState.isDragging) return;
 
+    // For touch events, always prevent default to avoid any scrolling
+    if (e.type.includes('touch')) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
     const clientX =
       e.type === 'mousemove'
         ? (e as React.MouseEvent<HTMLDivElement>).clientX
@@ -102,21 +112,25 @@ export function UseCaseCarousel() {
     const deltaX = clientX - (dragState.startX ?? 0);
     const deltaY = clientY - (dragState.startY ?? 0);
 
-    // Check if movement is predominantly horizontal (allow scrolling if vertical)
+    // Check if movement is predominantly horizontal
     const absX = Math.abs(deltaX);
     const absY = Math.abs(deltaY);
-    
-    // If vertical movement is greater than horizontal, cancel drag (allow scrolling)
-    if (absY > absX && absY > 10) {
-      setDragState({});
-      return;
+
+    // For mouse events, only prevent default when clearly horizontal
+    if (e.type === 'mousemove' && absX > absY && absX > 5) {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragState((prev) => ({ ...prev, currentX: deltaX, currentY: 0 }));
     }
-
-    // Only allow horizontal dragging
-    setDragState((prev) => ({ ...prev, currentX: deltaX, currentY: 0 }));
-  };
-
-  const handleDragEnd = () => {
+    // For touch events, allow the drag but cancel if vertical dominates
+    else if (e.type.includes('touch')) {
+      if (absY > absX && absY > 10) {
+        setDragState({}); // Cancel drag for vertical scrolling
+      } else {
+        setDragState((prev) => ({ ...prev, currentX: deltaX, currentY: 0 }));
+      }
+    }
+  };  const handleDragEnd = () => {
     if (!dragState.isDragging) return;
 
     const threshold = 100;
@@ -148,9 +162,9 @@ export function UseCaseCarousel() {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto px-4 sm:px-0 relative" style={{ isolation: 'isolate' }}>
       {/* Card Stack */}
-      <div className="relative h-[440px] md:h-[500px] max-w-sm md:max-w-md mx-auto mb-8">
+      <div className="relative h-[410px] md:h-[520px] max-w-xs md:max-w-md mx-auto mb-8 isolate">
         {currentCards.map((card, index) => {
           const Icon = card.icon;
           const isTop = index === 0;
@@ -177,22 +191,25 @@ export function UseCaseCarousel() {
                 zIndex: currentCards.length - index,
                 opacity: index < 3 ? opacity : 0,
                 pointerEvents: isTop && !isRemoving ? 'auto' : 'none',
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                touchAction: 'none',
               }}
               onMouseDown={isTop ? (e) => handleDragStart(e, card.id) : undefined}
-              onTouchStart={isTop ? (e) => handleDragStart(e, card.id) : undefined}
               onMouseMove={isTop && dragState.isDragging ? handleDragMove : undefined}
               onMouseUp={isTop && dragState.isDragging ? handleDragEnd : undefined}
+              onTouchStart={isTop ? (e) => handleDragStart(e, card.id) : undefined}
               onTouchMove={isTop && dragState.isDragging ? handleDragMove : undefined}
               onTouchEnd={isTop && dragState.isDragging ? handleDragEnd : undefined}
             >
-              <div className="w-full h-full rounded-2xl border-2 border-border bg-card shadow-2xl p-6 md:p-8 flex flex-col">
+              <div className="w-full h-full rounded-2xl border-2 border-border bg-card shadow-2xl p-4 md:p-6 flex flex-col">
                 {/* Header */}
                 <div className="flex items-center gap-3 mb-6 pb-4 border-b border-border">
                   <div className="w-10 h-10 rounded-full bg-verified/10 border border-verified flex items-center justify-center flex-shrink-0 shadow-md shadow-verified/20">
                     <Icon className="w-5 h-5 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-xl md:text-2xl font-bold text-foreground truncate">
+                    <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-foreground truncate">
                       {card.title}
                     </h3>
                     <p className="text-sm text-primary font-medium">{card.role}</p>
@@ -203,7 +220,7 @@ export function UseCaseCarousel() {
                 <div className="space-y-5 flex-1">
                   <div>
                     <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">
-                      The Situation
+                      Scenario
                     </h4>
                     <p className="text-sm md:text-base text-foreground leading-relaxed">
                       {card.scenario}
@@ -212,7 +229,7 @@ export function UseCaseCarousel() {
 
                   <div>
                     <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">
-                      The Solution
+                      Our Solution
                     </h4>
                     <p className="text-sm md:text-base text-foreground leading-relaxed">
                       {card.result}
