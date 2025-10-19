@@ -72,6 +72,8 @@ export function UseCaseCarousel() {
     e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>,
     id: number
   ) => {
+    // Only prevent default if this is clearly intended as a horizontal drag
+    // For now, we'll prevent default and handle cancellation in move handler
     e.preventDefault();
     const startX =
       e.type === 'mousedown'
@@ -100,7 +102,18 @@ export function UseCaseCarousel() {
     const deltaX = clientX - (dragState.startX ?? 0);
     const deltaY = clientY - (dragState.startY ?? 0);
 
-    setDragState((prev) => ({ ...prev, currentX: deltaX, currentY: deltaY }));
+    // Check if movement is predominantly horizontal (allow scrolling if vertical)
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+    
+    // If vertical movement is greater than horizontal, cancel drag (allow scrolling)
+    if (absY > absX && absY > 10) {
+      setDragState({});
+      return;
+    }
+
+    // Only allow horizontal dragging
+    setDragState((prev) => ({ ...prev, currentX: deltaX, currentY: 0 }));
   };
 
   const handleDragEnd = () => {
@@ -135,13 +148,7 @@ export function UseCaseCarousel() {
   };
 
   return (
-    <div
-      className="w-full max-w-4xl mx-auto"
-      onMouseMove={handleDragMove}
-      onMouseUp={handleDragEnd}
-      onTouchMove={handleDragMove}
-      onTouchEnd={handleDragEnd}
-    >
+    <div className="w-full max-w-4xl mx-auto">
       {/* Card Stack */}
       <div className="relative h-[440px] md:h-[500px] max-w-sm md:max-w-md mx-auto mb-8">
         {currentCards.map((card, index) => {
@@ -150,7 +157,6 @@ export function UseCaseCarousel() {
           const isBeingDragged = dragState.id === card.id;
           const isRemoving = isBeingDragged && dragState.removing;
           const x = isBeingDragged ? (dragState.currentX ?? 0) : 0;
-          const y = isBeingDragged ? (dragState.currentY ?? 0) : 0;
           const rotation = isBeingDragged ? (dragState.currentX ?? 0) / 10 : 0;
           const opacity = isRemoving
             ? 0
@@ -165,7 +171,7 @@ export function UseCaseCarousel() {
               key={card.id}
               className={`absolute inset-0 select-none ${isTop ? 'cursor-grab active:cursor-grabbing' : ''}`}
               style={{
-                transform: `translateX(${x}px) translateY(${y + translateY}px) rotate(${rotation}deg) scale(${scale}) rotate(${index > 0 ? '-3deg' : '0deg'})`,
+                transform: `translateX(${x}px) translateY(${translateY}px) rotate(${rotation}deg) scale(${scale}) rotate(${index > 0 ? '-3deg' : '0deg'})`,
                 transition:
                   isBeingDragged && !isRemoving ? 'none' : 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 zIndex: currentCards.length - index,
@@ -174,6 +180,10 @@ export function UseCaseCarousel() {
               }}
               onMouseDown={isTop ? (e) => handleDragStart(e, card.id) : undefined}
               onTouchStart={isTop ? (e) => handleDragStart(e, card.id) : undefined}
+              onMouseMove={isTop && dragState.isDragging ? handleDragMove : undefined}
+              onMouseUp={isTop && dragState.isDragging ? handleDragEnd : undefined}
+              onTouchMove={isTop && dragState.isDragging ? handleDragMove : undefined}
+              onTouchEnd={isTop && dragState.isDragging ? handleDragEnd : undefined}
             >
               <div className="w-full h-full rounded-2xl border-2 border-border bg-card shadow-2xl p-6 md:p-8 flex flex-col">
                 {/* Header */}
