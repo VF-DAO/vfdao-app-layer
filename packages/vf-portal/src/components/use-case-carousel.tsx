@@ -62,11 +62,6 @@ const useCases = [
 export function UseCaseCarousel() {
   const [currentCards, setCurrentCards] = useState(useCases);
   const [dragState, setDragState] = useState<DragState>({});
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    setIsMobile(window.innerWidth < 768);
-  }, []);
 
   const handleDragStart = (
     e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>,
@@ -176,7 +171,7 @@ export function UseCaseCarousel() {
             : isBeingDragged
               ? Math.max(0.7, 1 - Math.abs(dragState.currentX ?? 0) / 300)
               : 1;
-          const scale = isRemoving ? 0.8 : 1 - index * (isMobile ? 0.03 : 0.05);
+          const scale = isRemoving ? 0.8 : 1 - index * 0.04; // Fixed scale value
           const translateY = index * -4;
 
           return (

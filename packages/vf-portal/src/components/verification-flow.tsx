@@ -5,11 +5,6 @@ import { CheckCircle, FlaskConical, Leaf, Link2, Package, Shield, Store } from '
 
 export function VerificationFlow() {
   const [progress, setProgress] = useState(0);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    setIsMobile(window.innerWidth < 768);
-  }, []);
 
   useEffect(() => {
     const duration = 8000; // 8 second loop (fast and dynamic)
@@ -77,10 +72,10 @@ export function VerificationFlow() {
       distance = 100 - distance;
     }
 
-    // Smooth gradient curve for scale
+    // Smooth gradient curve for scale - using fixed value since we removed isMobile
     if (distance < 10) {
       const scaleFactor = (10 - distance) / 10;
-      return 1 + scaleFactor * (isMobile ? 0.1 : 0.15); // Responsive scale: 1.1 max on mobile, 1.15 on desktop
+      return 1 + scaleFactor * 0.12; // Middle ground between mobile and desktop
     } else {
       return 1;
     }
