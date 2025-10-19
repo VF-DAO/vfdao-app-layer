@@ -52,7 +52,7 @@ const useCases = [
     icon: Award,
     title: 'VegCert International',
     role: 'Certification Body',
-    scenario: 'A certification org issues thousands of vegan certificates annually on paper.',
+    scenario: 'A certification org manages thousands of digital vegan certificates with complex global verification processes.',
     result: 'Switch to blockchain: unforgeable, instantly verifiable, much cheaper to issue.',
     impact: 'Certificate fraud becomes impossible.',
     bgColor: '#F6C638',
