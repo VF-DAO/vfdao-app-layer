@@ -75,11 +75,8 @@ export function UseCaseCarousel() {
     // Stop propagation to prevent affecting other elements like the nav menu
     e.stopPropagation();
     
-    // Only prevent default for touch events on the card itself, not globally
-    if (e.type === 'touchstart') {
-      // This prevents default scrolling only on the carousel card
-      e.preventDefault();
-    }
+    // DON'T preventDefault on touchstart - wait to see user's intent first
+    // This allows normal touch behavior until we confirm horizontal swipe
 
     const startX =
       e.type === 'mousedown'
@@ -166,7 +163,7 @@ export function UseCaseCarousel() {
   return (
     <div className="w-full max-w-4xl mx-auto px-4 sm:px-0 relative" style={{ isolation: 'isolate' }}>
       {/* Card Stack */}
-      <div className="relative h-[410px] md:h-[520px] max-w-xs md:max-w-md mx-auto mb-8 isolate">
+      <div className="relative h-[410px] md:h-[520px] max-w-xs md:max-w-md mx-auto mb-8">
         {currentCards.map((card, index) => {
           const Icon = card.icon;
           const isTop = index === 0;
@@ -195,7 +192,8 @@ export function UseCaseCarousel() {
                 pointerEvents: isTop && !isRemoving ? 'auto' : 'none',
                 userSelect: 'none',
                 WebkitUserSelect: 'none',
-                touchAction: isTop ? 'pan-y' : 'auto',
+                // Allow vertical panning (scrolling) but let JS handle horizontal
+                touchAction: 'pan-y pinch-zoom',
               }}
               onMouseDown={isTop ? (e) => handleDragStart(e, card.id) : undefined}
               onMouseMove={isTop && dragState.isDragging ? handleDragMove : undefined}

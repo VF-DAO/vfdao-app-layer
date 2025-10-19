@@ -86,7 +86,11 @@ export function Navigation() {
                 scrollToTop();
               }, 0);
             }}
-            className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+            className="flex items-center cursor-pointer md:hover:opacity-80 md:transition-opacity"
+            style={{ 
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation'
+            }}
           >
             <Logo width={80} height={54} className="w-20 h-14" />
           </button>

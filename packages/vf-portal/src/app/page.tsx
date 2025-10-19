@@ -2,43 +2,10 @@
 
 import { ArrowRight, Leaf, Scan, Shield, Users } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
 import { VerificationFlow } from '@/components/verification-flow';
 import { UseCaseCarousel } from '@/components/use-case-carousel';
 
 export default function Home() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return (
-      <div className="flex flex-col">
-        {/* Hero Section - Mission-Driven */}
-        <section className="pt-28 sm:pt-36 pb-16 sm:pb-24 px-4 border-t border-border">
-          <div className="max-w-6xl mx-auto">
-            {/* Subtle Dot Grid Background - Represents verification checkpoints */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(0,0,0,0.08)_1.5px,transparent_1.5px)] dark:bg-[radial-gradient(circle,rgba(255,255,255,0.08)_1.5px,transparent_1.5px)] bg-[size:40px_40px]" />
-            <div className="text-center space-y-6 sm:space-y-8 md:space-y-12 max-w-5xl mx-auto relative z-10">
-            <div className="space-y-4 sm:space-y-6">
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-foreground tracking-tighter sm:tracking-tight leading-tight">
-                Don't trust.
-                <br />
-                It's already <span className="text-verified">verified.</span>
-              </h1>
-              <p className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-                Permissionless access. Record. Scan. Verify. Vegan ingredients, fully transparent.
-              </p>
-            </div>
-          </div>
-          </div>
-        </section>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col">
       {/* Hero Section - Mission-Driven */}
@@ -57,7 +24,7 @@ export default function Home() {
             </h1>
 
             <p className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Permissionless access. Record. Scan. Verify. Vegan ingredients, fully transparent.
+              Permissionless access to record, scan, and verify. Vegan ingredients, fully transparent from farm to shelf.
             </p>
           </div>
 
@@ -72,7 +39,6 @@ export default function Home() {
           </div>
 
           {/* CTAs */}
-                    {/* CTAs */}
           <div className="flex flex-row gap-4 justify-center w-full flex-wrap">
             <Link
               href="#learn-more"
@@ -86,7 +52,7 @@ export default function Home() {
               href="#community"
               className="inline-flex items-center justify-center gap-2 border border-verified hover:border-verified/80 text-primary hover:text-primary px-3 sm:px-6 md:px-8 py-2 sm:py-3 md:py-4 rounded-full font-semibold transition-all hover:shadow-md hover:shadow-verified/10 group text-sm md:text-base whitespace-nowrap"
             >
-              Join the Movement
+              Let's Connect
               <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 group-hover:translate-x-1 transition-transform flex-shrink-0" />
             </Link>
           </div>
@@ -102,7 +68,7 @@ export default function Home() {
               Who This Is For
             </h2>
             <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
-              Consumers seeking truth, producers committed to ethics, and certifiers upholding standards — together we're creating a future where trust is earned, not assumed.
+              For consumers seeking truth, producers committed to ethics, and certifiers upholding standards. Together we're building a future where trust is earned through proof, not assumed through promises.
             </p>
           </div>
 
@@ -162,8 +128,7 @@ export default function Home() {
               Real-world scenarios
             </h2>
             <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
-              From coffee shops to farms, from retailers to certifiers — see how VeganFriends
-              transforms daily decisions into verified truth.
+              From coffee shops to farms, retailers to certifiers — discover how VeganFriends turns everyday choices into verified truth.
             </p>
           </div>
 
@@ -182,7 +147,7 @@ export default function Home() {
               The Journey Ahead
             </h2>
             <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
-              Join us from the beginning.
+              Be part of the journey from day one.
             </p>
           </div>
 
@@ -251,19 +216,19 @@ export default function Home() {
         <div className="max-w-4xl mx-auto text-center space-y-6 sm:space-y-8">
           <div className="space-y-3 sm:space-y-4">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground">
-              Build Transparency Together
+              Join the Conversation
             </h2>
 
             <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
-              Every verified product and shared story matters. Join our community of builders, believers, and changemakers.
+              Every verified product and shared story makes a difference. Connect with fellow changemakers who value transparency.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-4 sm:gap-6 pt-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 pt-8">
             <div className="p-4 sm:p-6 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all hover:shadow-lg">
               <h3 className="text-base sm:text-lg font-bold text-foreground mb-2">Early Adopter</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Be first to try the platform when we launch
+              <p className="text-sm text-muted-foreground mb-6">
+                Be first to try the platform when we launch.
               </p>
               <Link
                 href="https://t.me/veganfriendsdao"
@@ -278,10 +243,28 @@ export default function Home() {
 
             <div className="p-4 sm:p-6 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all hover:shadow-lg">
               <h3 className="text-base sm:text-lg font-bold text-foreground mb-2">
-                Community Member
+                DAO
               </h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                You love being part of a vegan community.
+              <p className="text-sm text-muted-foreground mb-6">
+                Learn how our community makes decisions together.
+              </p>
+              <Link
+                href="https://app.vfdao.org/vfdao.near/widget/DAO.Page?daoId=vegan-friends.sputnik-dao.near&tab=proposals"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm text-primary font-semibold hover:gap-3 transition-all"
+              >
+                Visit DAO
+                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-verified flex-shrink-0" />
+              </Link>
+            </div>
+
+            <div className="p-4 sm:p-6 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all hover:shadow-lg">
+              <h3 className="text-base sm:text-lg font-bold text-foreground mb-2">
+                Connect
+              </h3>
+              <p className="text-sm text-muted-foreground mb-6">
+                Chat with fellow vegans and transparency leaders.
               </p>
               <Link
                 href="https://t.me/veganfriendsdao"
@@ -296,8 +279,8 @@ export default function Home() {
 
             <div className="p-4 sm:p-6 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all hover:shadow-lg">
               <h3 className="text-base sm:text-lg font-bold text-foreground mb-2">Partner</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Bring your brand or certification body onboard
+              <p className="text-sm text-muted-foreground mb-6">
+                Bring your brand or certification body on board.
               </p>
               <Link
                 href="#partners"

@@ -48,9 +48,9 @@ pnpm install
 
 # Start development server
 pnpm dev
-```
 
 Visit [http://localhost:3000](http://localhost:3000)
+```
 
 ## 📦 Packages
 
@@ -124,4 +124,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-Built with 💚 love by VFDAO Builders
+Built with 💚 by VFDAO Builders

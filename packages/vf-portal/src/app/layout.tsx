@@ -25,6 +25,22 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                const storageKey = 'vf-theme';
+                const theme = localStorage.getItem(storageKey);
+                const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                const effectiveTheme = theme === 'system' || !theme ? systemTheme : theme;
+                document.documentElement.classList.add(effectiveTheme);
+                document.documentElement.style.colorScheme = effectiveTheme;
+              } catch (e) {}
+            `,
+          }}
+        />
+      </head>
       <body className={inter.className}>
         <ThemeProvider
           attribute="class"

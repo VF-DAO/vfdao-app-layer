@@ -98,9 +98,18 @@
   * {
     @apply border-border;
   }
+  
+  html {
+    /* Prevent horizontal scrolling globally */
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+  }
+  
   body {
     @apply bg-background text-foreground;
     line-height: 1.5;
+    /* Prevent horizontal scrolling on body */
+    overflow-x: hidden;
   }
 
   /* Ensure consistent line heights across themes */
@@ -118,11 +127,6 @@
   h6 {
     line-height: 1.2;
   }
-}
-
-/* Remove smooth scroll if not needed */
-html {
-  scroll-behavior: smooth;
 }
 
 /* Custom Scrollbar Styling */

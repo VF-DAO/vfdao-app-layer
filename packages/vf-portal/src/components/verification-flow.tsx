@@ -12,7 +12,7 @@ export function VerificationFlow() {
   }, []);
 
   useEffect(() => {
-    const duration = 20000; // 20 second loop (slower)
+    const duration = 8000; // 8 second loop (fast and dynamic)
     let animationFrameId: number;
 
     const animate = (currentTime: number) => {
