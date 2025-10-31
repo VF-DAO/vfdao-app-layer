@@ -1,12 +1,10 @@
 'use client';
 
 import { type ReactNode } from 'react';
-import { useTheme } from 'next-themes';
 import { BarChart3, LogOut, Sparkles, Wallet } from 'lucide-react';
 import Link from 'next/link';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  const { theme, setTheme } = useTheme();
 
   return (
     <div className="flex h-screen bg-background">

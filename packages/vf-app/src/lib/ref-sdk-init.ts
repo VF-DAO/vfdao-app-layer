@@ -36,11 +36,11 @@ if (typeof window !== 'undefined') {
             try {
               console.warn('[Ref SDK] Testing pool fetch...');
               const { fetchAllPools } = await import('@ref-finance/ref-sdk');
-              const pools = await fetchAllPools(5);
+              const pools = await fetchAllPools(5) as { simplePools: unknown; ratedPools: unknown; unRatedPools: unknown; };
               console.warn('[Ref SDK] Test pools fetch result:', {
-                simplePools: pools.simplePools?.length ?? 0,
-                ratedPools: pools.ratedPools?.length ?? 0,
-                unRatedPools: pools.unRatedPools?.length ?? 0,
+                simplePools: Array.isArray(pools.simplePools) ? pools.simplePools.length : 0,
+                ratedPools: Array.isArray(pools.ratedPools) ? pools.ratedPools.length : 0,
+                unRatedPools: Array.isArray(pools.unRatedPools) ? pools.unRatedPools.length : 0,
               });
             } catch (error) {
               console.error('[Ref SDK] Test pools fetch failed:', error);

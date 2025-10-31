@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Award, Leaf, MoveHorizontal, Store, User } from 'lucide-react';
 
 interface DragState {

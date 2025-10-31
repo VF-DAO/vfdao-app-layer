@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
+import type { WalletModuleFactory } from '@near-wallet-selector/core';
 import type { WalletSelector } from '@near-wallet-selector/core';
 import { setupWalletSelector } from '@near-wallet-selector/core';
 import type { WalletSelectorModal } from '@near-wallet-selector/modal-ui';
@@ -130,7 +131,7 @@ export function WalletProvider({
 
             // Injected Wallets
             setupBitgetWallet(),
-            setupBitteWallet() as any,
+            setupBitteWallet(),
             setupCoin98Wallet(),
             setupMathWallet(),
             setupNarwallets(),
@@ -141,7 +142,7 @@ export function WalletProvider({
             setupArepaWallet(),
 
             // Ethereum Wallets (MetaMask, etc.)
-            // Note: setupEthereumWallets requires wagmiConfig - uncomment when configured
+            // Note: setupEthereumWallets requires wagmiConfig - disabled to avoid duplicate script issues
             // setupEthereumWallets({
             // 	wagmiConfig,
             // 	web3Modal,
@@ -150,7 +151,7 @@ export function WalletProvider({
             // Hardware & Snap
             setupLedger(),
             setupNearSnap(),
-          ],
+          ] as WalletModuleFactory[],
         });
 
         const _modal = setupModal(_selector, {
@@ -158,7 +159,7 @@ export function WalletProvider({
           description: 'Connect your NEAR wallet to VF DAO',
         });
 
-        const state = _selector.store.getState();
+        const state = _selector.store.getState() as unknown as { accounts: { accountId: string }[] };
         setAccounts(state.accounts);
         setAccountId(state.accounts[0]?.accountId || null);
 
@@ -179,8 +180,9 @@ export function WalletProvider({
     if (!selector) return;
 
     const subscription = selector.store.observable.subscribe((state) => {
-      setAccounts(state.accounts);
-      setAccountId(state.accounts[0]?.accountId || null);
+      const typedState = state as unknown as { accounts: { accountId: string }[] };
+      setAccounts(typedState.accounts);
+      setAccountId(typedState.accounts[0]?.accountId || null);
     });
 
     return () => subscription.unsubscribe();

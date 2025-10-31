@@ -8,7 +8,10 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { WalletButton } from '@/components/wallet-button';
 import Logo from '@/components/ui/logo';
 
-const navItems = [{ label: 'Home', href: '#' }];
+const navItems = [
+  { label: 'Home', href: '#' },
+  { label: 'Swap', href: '#tokens' }
+];
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
@@ -60,7 +63,7 @@ export function Navigation() {
             }}
             className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
           >
-            <Logo width={96} height={60} className="w-24 h-15" />
+            <Logo width={80} height={54} className="w-20 h-14" />
           </button>
 
           {/* Desktop Navigation */}

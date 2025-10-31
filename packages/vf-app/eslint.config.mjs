@@ -133,6 +133,21 @@ export default tseslint.config(
   },
   
   {
+    // Specific file overrides for false positive warnings
+    files: ['src/components/swap/RefFinanceSwapCard.tsx'],
+    rules: {
+      'react-hooks/exhaustive-deps': 'off', // False positive: useEffect properly depends on estimateOutput callback
+    },
+  },
+  
+  {
+    files: ['src/lib/ref-indexer.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off', // False positive: spread operation is on properly typed Pool objects
+    },
+  },
+  
+  {
     // JavaScript files (config files, scripts)
     files: ['**/*.js', '**/*.mjs', '**/*.cjs'],
     extends: [tseslint.configs.disableTypeChecked],

@@ -1,124 +1,253 @@
-import { utils } from 'near-api-js';
-import type { WalletSelector } from '@near-wallet-selector/core';
+import { providers } from 'near-api-js';
+import Big from 'big.js';
 
 /**
- * Storage deposit configuration
+ * Near RPC query response interface
  */
-const STORAGE_DEPOSIT_AMOUNT = '0.00125'; // 0.00125 NEAR for FT storage
-const STORAGE_CHECK_GAS = 30000000000000; // 30 TGas
+interface NearRpcQueryResponse {
+  result: Uint8Array;
+}
 
 /**
- * Check if an account has storage deposit for a token
+ * Storage balance bounds interface
+ */
+interface StorageBalanceBounds {
+  min: string;
+  max?: string;
+}
+
+/**
+ * Token metadata interface (NEP-141 standard)
+ */
+export interface TokenMetadata {
+  id: string;
+  name: string;
+  symbol: string;
+  decimals: number;
+  icon?: string;
+  reference?: string;
+  reference_hash?: string;
+  spec?: string;
+}
+
+/**
+ * Storage deposit configuration - Ref Finance pattern
+ */
+const STORAGE_CHECK_GAS = '30000000000000'; // 30 TGas
+
+/**
+ * Get minimum storage balance for a token contract - Ref Finance pattern
+ */
+export async function getMinStorageBalance(tokenId: string, rpcUrl: string): Promise<string> {
+  try {
+    const provider = new providers.JsonRpcProvider({ url: rpcUrl });
+    const result = await provider.query({
+      request_type: 'call_function',
+      account_id: tokenId,
+      method_name: 'storage_balance_bounds',
+      args_base64: '',
+      finality: 'optimistic',
+    }) as unknown as NearRpcQueryResponse;
+    const bounds = JSON.parse(Buffer.from(result.result).toString()) as StorageBalanceBounds;
+    if (!bounds?.min) return '12500000000000000000000'; // 0.0125 NEAR as fallback
+    return bounds.min;
+  } catch (error) {
+    console.warn('[Storage] Failed to get min storage balance:', error);
+    return '12500000000000000000000'; // 0.0125 NEAR fallback
+  }
+}
+
+/**
+ * Check if token is registered via ftGetStorageBalance - Ref Finance Pattern
+ * Returns: FTStorageBalance { total: string, available: string } | null
+ * Returns null if not registered OR if method doesn't exist (assume registered)
+ */
+export async function ftGetStorageBalance(
+  tokenId: string,
+  accountId: string,
+  rpcUrl: string
+): Promise<{ total: string; available: string } | null> {
+  try {
+    const provider = new providers.JsonRpcProvider({ url: rpcUrl });
+
+    // Standard FT tokens - check storage_balance_of
+    const result = await provider.query({
+      request_type: 'call_function',
+      account_id: tokenId,
+      method_name: 'storage_balance_of',
+      args_base64: Buffer.from(JSON.stringify({ account_id: accountId })).toString('base64'),
+      finality: 'optimistic',
+    }) as unknown as NearRpcQueryResponse;
+
+    const balance = JSON.parse(Buffer.from(result.result).toString()) as { total: string; available: string } | null;
+    console.warn('[Storage] Balance check result:', { tokenId, balance });
+    
+    // If balance is null/undefined, user is not registered
+    // If balance has total/available, user is registered
+    return balance;
+  } catch (error) {
+    console.warn('[Storage] Balance check failed:', { tokenId, error });
+    
+    // If method doesn't exist, assume the contract doesn't require registration
+    // or the user is already registered by default
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('MethodNotFound') || errorMessage.includes('does not exist')) {
+      console.warn('[Storage] Method not found, assuming no registration required for:', tokenId);
+      return { total: '0', available: '0' }; // Fake balance to indicate "registered"
+    }
+    
+    // For other errors, assume not registered
+    return null;
+  }
+}
+
+/**
+ * Check storage deposit for token - matches Ref Finance checkStorageDeposit
  */
 export async function checkStorageDeposit(
   tokenId: string,
   accountId: string,
-  selector: WalletSelector
+  rpcUrl: string
 ): Promise<boolean> {
   try {
-    const wallet = await selector.wallet();
-    const provider = wallet as any;
-
-    // Call storage_balance_of on the token contract
-    const result = await provider.account().viewFunction({
-      contractId: tokenId,
-      methodName: 'storage_balance_of',
-      args: { account_id: accountId },
-    });
-
-    return result !== null;
+    const balance = await ftGetStorageBalance(tokenId, accountId, rpcUrl);
+    const isRegistered = balance !== null;
+    console.warn('[Storage] Check result:', { tokenId, isRegistered });
+    return isRegistered;
   } catch (error) {
-    console.error('[Storage] Check failed:', error);
+    console.warn('[Storage] Storage check failed:', error);
     return false;
   }
 }
 
 /**
- * Register storage deposit for a token
- * Note: This is a simplified version. For production, use proper NEAR API
+ * Register storage deposit for a token - Ref Finance Pattern
+ * Builds transaction to call storage_deposit on token contract
  */
-export async function registerStorageDeposit(
+export async function buildStorageDepositTransaction(
   tokenId: string,
   accountId: string,
-  selector: WalletSelector
-): Promise<void> {
-  try {
-    const wallet = await selector.wallet();
+  rpcUrl: string
+): Promise<{
+  receiverId: string;
+  actions: {
+    type: 'FunctionCall';
+    params: {
+      methodName: string;
+      args: string;
+      gas: string;
+      deposit: string;
+    };
+  }[];
+}> {
+  // Get the minimum storage balance dynamically like Ref Finance does
+  const minDeposit = await getMinStorageBalance(tokenId, rpcUrl);
 
-    // Use the wallet's signAndSendTransaction method
-    await (wallet as any).signAndSendTransaction({
-      receiverId: tokenId,
-      actions: [
-        {
+  return {
+    receiverId: tokenId,
+    actions: [
+      {
+        type: 'FunctionCall',
+        params: {
           methodName: 'storage_deposit',
-          args: {
-            account_id: accountId,
+          args: JSON.stringify({
             registration_only: true,
-          },
+            account_id: accountId,
+          }),
           gas: STORAGE_CHECK_GAS,
-          deposit: utils.format.parseNearAmount(STORAGE_DEPOSIT_AMOUNT) ?? '0',
+          deposit: minDeposit,
         },
-      ],
-    });
-
-    console.warn('[Storage] Registered for token:', tokenId);
-  } catch (error) {
-    console.error('[Storage] Registration failed:', error);
-    throw new Error(`Failed to register storage for ${tokenId}`);
-  }
+      },
+    ],
+  };
 }
 
 /**
- * Ensure storage deposit exists, register if needed
+ * Check if token needs registration (inverse of check - for modal prompts)
  */
-export async function ensureStorageDeposit(
+export async function needsTokenRegistration(
   tokenId: string,
   accountId: string,
-  selector: WalletSelector
-): Promise<void> {
-  const hasStorage = await checkStorageDeposit(tokenId, accountId, selector);
-
-  if (!hasStorage) {
-    console.warn('[Storage] Registering storage for:', tokenId);
-    await registerStorageDeposit(tokenId, accountId, selector);
-  } else {
-    console.warn('[Storage] Already registered for:', tokenId);
-  }
+  rpcUrl: string
+): Promise<boolean> {
+  const isRegistered = await checkStorageDeposit(tokenId, accountId, rpcUrl);
+  return !isRegistered;
 }
 
 /**
- * Default token list for mainnet
+ * Default token list for mainnet (static definitions)
+ * Only includes tokens that should be directly selectable (NEAR auto-wraps)
  */
-export const MAINNET_TOKENS = [
-  {
-    id: 'wrap.near',
-    symbol: 'wNEAR',
-    name: 'Wrapped NEAR',
-    decimals: 24,
-    icon: 'https://assets.ref.finance/images/wrap.near.png',
-  },
-  {
-    id: 'usdt.tether-token.near',
-    symbol: 'USDT',
-    name: 'Tether USD',
-    decimals: 6,
-    icon: 'https://assets.ref.finance/images/usdt.tether-token.near.png',
-  },
-  {
-    id: '17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1',
-    symbol: 'USDC',
-    name: 'USD Coin (Circle)',
-    decimals: 6,
-    icon: 'https://assets.ref.finance/images/17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1.png',
-  },
+const STATIC_MAINNET_TOKENS = [
   {
     id: 'veganfriends.tkn.near',
     symbol: 'VEGANFRIENDS',
     name: 'Vegan Friends Token',
     decimals: 18,
-    icon: undefined, // Will use default icon
+    icon: undefined, // Will be fetched from contract
   },
 ];
+
+/**
+ * NEAR metadata (native NEAR token)
+ */
+const NEAR_METADATA = {
+  id: 'NEAR',
+  name: 'NEAR',
+  symbol: 'NEAR',
+  decimals: 24,
+  icon: `data:image/svg+xml;base64,${Buffer.from(`<svg width="32" height="32" viewBox="2 2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="32" height="32" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M2.84211 3.21939V12.483L7.57895 8.94375L8.05263 9.35915L4.08047 14.954C2.6046 16.308 0 15.3919 0 13.5188V2.08119C0 0.143856 2.75709 -0.738591 4.18005 0.743292L15.1579 12.1757V3.29212L10.8947 6.4513L10.4211 6.03589L13.7996 0.813295C15.2097 -0.696027 18 0.178427 18 2.12967V13.3139C18 15.2512 15.2429 16.1336 13.8199 14.6518L2.84211 3.21939Z" fill="black" transform="translate(8,8) scale(0.9, 1)"/></svg>`).toString('base64')}`,
+};
+
+/**
+ * wNEAR metadata
+ */
+const WNEAR_METADATA = {
+  id: 'wrap.near',
+  name: 'Wrapped NEAR',
+  symbol: 'wNEAR',
+  decimals: 24,
+  icon: 'https://assets.ref.finance/images/wrap.near.png',
+};
+
+/**
+ * Unwrapped NEAR token - Ref Finance's approach
+ * Uses wNEAR contract but displays as NEAR
+ */
+export const unwrapedNear: TokenMetadata = {
+  ...WNEAR_METADATA,
+  id: 'near', // Use 'near' as ID to distinguish from wNEAR
+  symbol: 'NEAR',
+  name: 'Near',
+  icon: NEAR_METADATA.icon,
+};
+
+/**
+ * Get mainnet tokens with metadata fetched from contracts
+ */
+export async function getMainnetTokens(): Promise<TokenMetadata[]> {
+  const tokens: TokenMetadata[] = [];
+
+  // Add unwrapped NEAR first (Ref Finance's approach) - this handles automatic wrapping
+  tokens.push(unwrapedNear);
+
+  // Only add VEGANFRIENDS token, not wNEAR since we want only NEAR
+  for (const staticToken of STATIC_MAINNET_TOKENS) {
+    // Skip wNEAR since we only want NEAR (which auto-wraps)
+    if (staticToken.id === 'wrap.near') continue;
+
+    const metadata = await getTokenMetadata(staticToken.id);
+    tokens.push(metadata);
+  }
+
+  return tokens;
+}
+
+/**
+ * Legacy export for backward compatibility (static tokens)
+ * @deprecated Use getMainnetTokens() for dynamic metadata
+ */
+export const MAINNET_TOKENS = STATIC_MAINNET_TOKENS;
 
 /**
  * Slippage presets
@@ -134,26 +263,85 @@ export const SLIPPAGE_PRESETS = [
  * Format token amount for display
  */
 export function formatTokenAmount(amount: string, decimals: number, maxDecimals = 6): string {
-  const value = parseFloat(amount) / Math.pow(10, decimals);
+  try {
+    // Use Big to avoid floating point precision issues
+    const value = new Big(amount).div(new Big(10).pow(decimals));
 
-  if (value === 0) return '0';
-  if (value < 0.000001) return '< 0.000001';
+    if (value.eq(0)) return '0';
+    if (value.lt(0.000001)) return '< 0.000001';
 
-  return value.toLocaleString('en-US', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: maxDecimals,
-  });
+    // Handle very large numbers with abbreviated notation
+    if (value.gte(1000000000)) { // 1 billion
+      const billions = value.div(1000000000);
+      return `${billions.toFixed(2, Big.roundDown)}B`;
+    } else if (value.gte(1000000)) { // 1 million
+      const millions = value.div(1000000);
+      return `${millions.toFixed(2, Big.roundDown)}M`;
+    } else if (value.gte(1000)) { // 1 thousand
+      const thousands = value.div(1000);
+      return `${thousands.toFixed(2, Big.roundDown)}K`;
+    }
+
+    // For normal numbers, truncate to maxDecimals
+    const truncated = value.toFixed(maxDecimals, Big.roundDown);
+
+    // Remove trailing zeros
+    return truncated.replace(/\.?0+$/, '');
+  } catch (e) {
+    console.warn('[formatTokenAmount] failed to format amount:', amount, e);
+    return '0';
+  }
+}
+
+/**
+ * Format token amount for display without abbreviations (for main output field)
+ */
+export function formatTokenAmountNoAbbrev(amount: string, decimals: number, maxDecimals = 6): string {
+  try {
+    // Use Big to avoid floating point precision issues
+    const value = new Big(amount).div(new Big(10).pow(decimals));
+
+    if (value.eq(0)) return '0';
+
+    // Determine decimal places based on magnitude
+    let decimalPlaces = maxDecimals;
+
+    if (value.lt(0.01)) {
+      decimalPlaces = Math.max(8, maxDecimals); // Show at least 8 decimals for small amounts
+    }
+
+    if (value.lt(0.000001)) {
+      decimalPlaces = 12; // Show 12 decimals for very small amounts
+    }
+
+    // For extremely small amounts that would show as 0, show scientific notation
+    const result = value.toFixed(decimalPlaces, Big.roundDown);
+    if (result === '0.' + '0'.repeat(decimalPlaces)) {
+      // This means the number is so small it rounds to 0, show in scientific notation
+      return value.toExponential(4);
+    }
+
+    // Remove trailing zeros
+    return result.replace(/\.?0+$/, '');
+  } catch (e) {
+    console.warn('[formatTokenAmountNoAbbrev] failed to format amount:', amount, e);
+    return '0';
+  }
 }
 
 /**
  * Parse token amount from user input to contract format
  */
 export function parseTokenAmount(amount: string, decimals: number): string {
-  const value = parseFloat(amount);
-  if (isNaN(value)) return '0';
-
-  const multiplier = Math.pow(10, decimals);
-  return Math.floor(value * multiplier).toString();
+  try {
+    // Use Big to avoid scientific notation for large integers (e.g. 1e+24)
+    const result = new Big(amount).times(new Big(10).pow(decimals));
+    // toFixed(0) produces an integer string without exponent
+    return result.toFixed(0);
+  } catch (e) {
+    console.warn('[parseTokenAmount] failed to parse amount:', amount, e);
+    return '0';
+  }
 }
 
 /**
@@ -166,10 +354,69 @@ export function calculateMinAmountOut(amount: string, slippagePercent: number): 
 }
 
 /**
- * Get token by ID from default list
+ * Fetch token metadata from contract (like Ref Finance does)
  */
-export function getTokenById(tokenId: string) {
-  return MAINNET_TOKENS.find((token) => token.id === tokenId);
+export async function fetchTokenMetadata(tokenId: string): Promise<TokenMetadata | null> {
+  try {
+    const provider = new providers.JsonRpcProvider({
+      url: process.env.NEXT_PUBLIC_NEAR_RPC_MAINNET ?? 'https://rpc.mainnet.near.org'
+    });
+
+    const result = await provider.query({
+      request_type: 'call_function',
+      account_id: tokenId,
+      method_name: 'ft_metadata',
+      args_base64: Buffer.from(JSON.stringify({})).toString('base64'),
+      finality: 'final'
+    }) as unknown as NearRpcQueryResponse;
+
+    const metadata = JSON.parse(Buffer.from(result.result).toString()) as TokenMetadata;
+    return metadata;
+  } catch (error) {
+    console.warn(`Failed to fetch metadata for ${tokenId}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Get token metadata with fallback to static data
+ */
+export async function getTokenMetadata(tokenId: string): Promise<TokenMetadata> {
+  console.warn('[getTokenMetadata] Fetching metadata for:', tokenId);
+  // First try to fetch from contract
+  const contractMetadata = await fetchTokenMetadata(tokenId);
+  console.warn('[getTokenMetadata] Contract metadata:', contractMetadata);
+
+  if (contractMetadata) {
+    const result = {
+      id: tokenId,
+      name: contractMetadata.name,
+      symbol: contractMetadata.symbol,
+      decimals: contractMetadata.decimals,
+      icon: contractMetadata.icon,
+    };
+    console.warn('[getTokenMetadata] Using contract metadata:', result);
+    return result;
+  }
+
+  // Fallback to static data
+  const staticToken = MAINNET_TOKENS.find(t => t.id === tokenId);
+  console.warn('[getTokenMetadata] Static token found:', staticToken);
+  if (staticToken) {
+    console.warn('[getTokenMetadata] Using static metadata:', staticToken);
+    return staticToken;
+  }
+
+  // Ultimate fallback
+  const fallback = {
+    id: tokenId,
+    name: tokenId,
+    symbol: tokenId.split('.')[0].slice(0, 8),
+    decimals: 6,
+    icon: undefined,
+  };
+  console.warn('[getTokenMetadata] Using fallback:', fallback);
+  return fallback;
 }
 
 /**

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { ChevronDown, Search, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import Image from 'next/image';
 import { MAINNET_TOKENS } from '@/lib/swap-utils';
 
@@ -18,6 +18,7 @@ interface TokenSelectProps {
   onSelectToken: (token: Token) => void;
   otherToken?: Token;
   label?: string;
+  tokens?: Token[];
 }
 
 export function TokenSelect({
@@ -25,23 +26,24 @@ export function TokenSelect({
   onSelectToken,
   otherToken,
   label = 'Select Token',
+  tokens = MAINNET_TOKENS,
 }: TokenSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Filter tokens based on search and exclude other token
   const filteredTokens = useMemo(() => {
-    let tokens = MAINNET_TOKENS;
+    let tokenList = tokens;
 
     // Exclude the other token from selection
     if (otherToken) {
-      tokens = tokens.filter((t) => t.id !== otherToken.id);
+      tokenList = tokenList.filter((t) => t.id !== otherToken.id);
     }
 
     // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      tokens = tokens.filter(
+      tokenList = tokenList.filter(
         (t) =>
           t.symbol.toLowerCase().includes(query) ||
           t.name.toLowerCase().includes(query) ||
@@ -49,8 +51,8 @@ export function TokenSelect({
       );
     }
 
-    return tokens;
-  }, [searchQuery, otherToken]);
+    return tokenList;
+  }, [searchQuery, otherToken, tokens]);
 
   const handleSelect = (token: Token) => {
     onSelectToken(token);
@@ -63,7 +65,7 @@ export function TokenSelect({
       {/* Trigger Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-4 py-2 bg-muted hover:bg-muted/80 rounded-lg transition-colors min-w-[140px]"
+        className="flex items-center gap-2 px-4 py-2 bg-transparent rounded-full transition-all hover:shadow-md hover:shadow-verified/10 min-w-[140px]"
       >
         {selectedToken ? (
           <>
@@ -79,9 +81,8 @@ export function TokenSelect({
             <span className="font-semibold text-foreground">{selectedToken.symbol}</span>
           </>
         ) : (
-          <span className="text-muted-foreground">{label}</span>
+          <span className="text-primary font-semibold opacity-60">{label}</span>
         )}
-        <ChevronDown className="w-4 h-4 ml-auto" />
       </button>
 
       {/* Dropdown Modal */}
@@ -97,7 +98,7 @@ export function TokenSelect({
           />
 
           {/* Modal */}
-          <div className="absolute top-full mt-2 left-0 w-[340px] bg-card border border-border rounded-lg shadow-xl z-50 overflow-hidden">
+          <div className="absolute top-full mt-2 left-0 w-[340px] bg-card border border-border rounded-2xl shadow-xl z-50 overflow-hidden">
             {/* Header */}
             <div className="p-4 border-b border-border">
               <div className="flex items-center justify-between mb-3">
@@ -107,7 +108,7 @@ export function TokenSelect({
                     setIsOpen(false);
                     setSearchQuery('');
                   }}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="p-2 bg-card hover:bg-muted rounded-full text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -121,7 +122,7 @@ export function TokenSelect({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search by name or symbol"
-                  className="w-full pl-10 pr-4 py-2 bg-muted border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full pl-10 pr-4 py-2 bg-transparent border border-border rounded-full text-sm focus:outline-none focus:border-primary/50 focus:shadow-lg transition-all placeholder:text-primary placeholder:font-medium placeholder:opacity-60"
                 />
               </div>
             </div>
@@ -134,8 +135,8 @@ export function TokenSelect({
                     <button
                       key={token.id}
                       onClick={() => handleSelect(token)}
-                      className={`w-full flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors ${
-                        selectedToken?.id === token.id ? 'bg-muted' : ''
+                      className={`w-full flex items-center gap-3 p-3 rounded-full transition-colors ${
+                        selectedToken?.id === token.id ? 'bg-muted/50' : ''
                       }`}
                     >
                       {token.icon ? (
@@ -176,18 +177,18 @@ export function TokenSelect({
 
             {/* Popular Tokens Footer */}
             {!searchQuery && (
-              <div className="p-3 border-t border-border bg-muted/30">
+              <div className="p-3 border-t border-border">
                 <p className="text-xs text-muted-foreground mb-2">Popular tokens</p>
                 <div className="flex gap-2 flex-wrap">
-                  {['wNEAR', 'REF', 'USDT', 'USDC'].map((symbol) => {
-                    const token = MAINNET_TOKENS.find((t) => t.symbol === symbol);
+                  {['NEAR', 'VEGANFRIENDS'].map((symbol) => {
+                    const token = tokens.find((t) => t.symbol === symbol);
                     if (!token || token.id === otherToken?.id) return null;
 
                     return (
                       <button
                         key={token.id}
                         onClick={() => handleSelect(token)}
-                        className="px-3 py-1 bg-card hover:bg-muted border border-border rounded-full text-xs font-medium transition-colors"
+                        className="px-3 py-1 hover:bg-muted border border-border rounded-full text-xs font-medium text-foreground transition-colors"
                       >
                         {symbol}
                       </button>
