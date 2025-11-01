@@ -502,8 +502,17 @@ export const RefFinanceSwapCard: React.FC = () => {
           });
           outcomes.push(outcome);
         } catch (txError: unknown) {
-          console.error('[SwapWidget] Transaction failed:', txError);
-          throw txError; // Re-throw to be caught by outer try-catch
+          // Check if this is a user cancellation (null error)
+          const isNullError = txError === null || txError === undefined;
+          const isEmptyObject = txError && typeof txError === 'object' && !Array.isArray(txError) && Object.keys(txError).length === 0;
+          
+          if (isNullError || isEmptyObject) {
+            console.log('[SwapWidget] Transaction cancelled by user');
+            throw txError; // Re-throw to be caught by outer error handling
+          } else {
+            console.error('[SwapWidget] Transaction failed:', txError);
+            throw txError; // Re-throw to be caught by outer try-catch
+          }
         }
       }
 
@@ -566,8 +575,14 @@ export const RefFinanceSwapCard: React.FC = () => {
       } catch (err: unknown) {
         // Handle user rejection (closing wallet) differently from actual errors
         const errorMessage = err instanceof Error ? err.message : String(err);
-        const isUserRejection = ['User rejected', 'User closed the window', 'Request was cancelled', 'User denied', 'cancelled'].some(msg => errorMessage.includes(msg)) ||
-                               (err && typeof err === 'object' && Object.keys(err).length === 0); // Empty error object
+        const isNullError = err === null || err === undefined;
+        const isEmptyObject = err && typeof err === 'object' && !Array.isArray(err) && Object.keys(err).length === 0;
+        
+        // Enhanced user rejection detection
+        const isUserRejection = isNullError || isEmptyObject ||
+                               ['User rejected', 'User closed the window', 'Request was cancelled', 'User denied', 'cancelled', 'Transaction was cancelled', 'User cancelled'].some(msg => 
+                                 errorMessage.toLowerCase().includes(msg.toLowerCase())
+                               );
         
         // Handle wallet popup issues
         const isWalletPopupError = ['Couldn\'t open popup', 'popup window', 'MeteorActionError', 'wallet action'].some(msg => 
@@ -581,6 +596,7 @@ export const RefFinanceSwapCard: React.FC = () => {
         }
 
         if (isUserRejection) {
+          console.log('[SwapWidget] Transaction cancelled by user');
           setError('Transaction cancelled');
           setSwapState('cancelled');
         } else {
@@ -590,7 +606,7 @@ export const RefFinanceSwapCard: React.FC = () => {
           console.error('[SwapWidget] Swap error:', errorDetails);
           console.error('[SwapWidget] Error stack:', err instanceof Error ? err.stack : 'No stack trace available');
 
-          setError(errorMessage);
+          setError(errorMessage || 'Transaction failed');
           setSwapState('fail');
         }
       } finally {
@@ -728,13 +744,13 @@ export const RefFinanceSwapCard: React.FC = () => {
         {showSettings && (
           <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 shadow-lg space-y-3">
             <div>
-              <p className="text-sm sm:text-base font-medium text-foreground mb-2">Slippage Tolerance</p>
+              <p className="text-xs sm:text-sm font-medium text-foreground mb-2">Slippage Tolerance</p>
               <div className="flex gap-2 mb-2">
                 {SLIPPAGE_PRESETS.map((preset) => (
                   <button
                     key={preset.value}
                     onClick={() => handleSlippageChange(preset.value)}
-                    className={`flex-1 px-3 py-2 rounded-full text-sm font-medium transition-colors ${
+                    className={`flex-1 px-3 py-2 rounded-full text-xs font-medium transition-colors ${
                       slippage === preset.value && !customSlippage
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-card hover:bg-muted-foreground/10'
@@ -749,15 +765,15 @@ export const RefFinanceSwapCard: React.FC = () => {
                   value={customSlippage}
                   onChange={handleCustomSlippage}
                   placeholder="Custom"
-                  className="flex-1 px-3 py-2 bg-transparent border border-border rounded-full text-sm focus:outline-none focus:border-primary/50 focus:shadow-lg transition-all placeholder:text-primary placeholder:font-medium placeholder:opacity-60"
+                  className="flex-1 px-3 py-2 bg-transparent border border-border rounded-full text-xs focus:outline-none focus:border-primary/50 focus:shadow-lg transition-all placeholder:text-primary placeholder:font-medium placeholder:opacity-60"
                   decimalLimit={2}
                 />
-                <span className="text-sm text-muted-foreground">%</span>
+                <span className="text-xs text-muted-foreground">%</span>
               </div>
             </div>
             <div className="flex items-start gap-2 p-2 bg-primary/10 rounded-full">
               <Info className="w-4 h-4 text-primary mt-0.5" />
-              <p className="text-xs sm:text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Your transaction will revert if the price changes unfavorably by more than this
                 percentage.
               </p>
@@ -1036,12 +1052,12 @@ export const RefFinanceSwapCard: React.FC = () => {
                 
               </div>
               <div className="flex-1">
-                <p className={`text-sm sm:text-base font-medium ${
+                <p className={`text-xs font-medium ${
                   isCritical ? 'text-verified' : 'text-blue-500'
                 }`}>
                   {isCritical ? 'Almost ready to swap!' : 'Keep your wallet topped up'}
                 </p>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   {isCritical 
                     ? 'Add just 0.25 NEAR to cover fees and start swapping your tokens!'
                     : 'A little more NEAR ensures smooth transactions and covers all fees.'
@@ -1127,7 +1143,7 @@ export const RefFinanceSwapCard: React.FC = () => {
                   <div className="w-12 h-12 sm:w-16 sm:h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto">
                     <CheckCircle2 className="w-6 h-6 sm:w-8 sm:h-8 text-green-500" />
                   </div>
-                  <h3 className="text-lg sm:text-xl font-bold">Swap Successful!</h3>
+                  <h3 className="text-base sm:text-lg font-bold">Swap Successful!</h3>
                   <div className="space-y-2 text-xs sm:text-sm">
                     {amountIn && tokenIn && (
                       <div className="flex justify-between items-center py-2 px-3 border border-border rounded-full">
@@ -1205,7 +1221,7 @@ export const RefFinanceSwapCard: React.FC = () => {
                   <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto">
                     <Info className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500" />
                   </div>
-                  <h3 className="text-lg sm:text-xl font-bold">Transaction Cancelled</h3>
+                  <h3 className="text-base sm:text-lg font-bold">Transaction Cancelled</h3>
                   <p className="text-xs sm:text-sm text-muted-foreground">
                     You cancelled the transaction. No changes were made.
                   </p>
@@ -1215,7 +1231,7 @@ export const RefFinanceSwapCard: React.FC = () => {
                   <div className="w-12 h-12 sm:w-16 sm:h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto">
                     <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 text-red-500" />
                   </div>
-                  <h3 className="text-lg sm:text-xl font-bold">Swap Failed</h3>
+                  <h3 className="text-base sm:text-lg font-bold">Swap Failed</h3>
                   <p className="text-xs sm:text-sm text-muted-foreground">
                     {error}
                   </p>
