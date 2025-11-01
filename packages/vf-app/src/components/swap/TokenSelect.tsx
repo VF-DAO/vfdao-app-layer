@@ -78,7 +78,7 @@ export function TokenSelect({
                 className="rounded-full"
               />
             )}
-            <span className="font-semibold text-foreground">{selectedToken.symbol}</span>
+            <span className="font-semibold text-foreground text-sm">{selectedToken.symbol}</span>
           </>
         ) : (
           <span className="text-primary font-semibold opacity-60">{label}</span>
@@ -157,7 +157,7 @@ export function TokenSelect({
                         </div>
                       )}
                       <div className="flex-1 text-left">
-                        <div className="font-semibold text-foreground">{token.symbol}</div>
+                        <div className="font-semibold text-foreground text-sm">{token.symbol}</div>
                         <div className="text-xs text-muted-foreground truncate max-w-[200px]">
                           {token.name}
                         </div>

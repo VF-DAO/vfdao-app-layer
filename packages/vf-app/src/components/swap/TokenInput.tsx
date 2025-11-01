@@ -106,7 +106,7 @@ export const TokenInput: React.FC<TokenInputProps> = ({
       placeholder={placeholder}
       disabled={disabled}
       max={max}
-      className={`w-full bg-transparent text-2xl font-semibold outline-none text-right leading-none h-auto py-0 ${className}`}
+      className={`w-full bg-transparent text-xl font-semibold outline-none text-right leading-none h-auto py-0 ${className}`}
       style={{
         textAlign: 'right',
       }}

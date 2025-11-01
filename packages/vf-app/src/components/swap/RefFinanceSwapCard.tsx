@@ -888,7 +888,7 @@ export const RefFinanceSwapCard: React.FC = () => {
                   type="text"
                   value={estimatedOutDisplay || '0.0'}
                   readOnly
-                  className={`w-full text-2xl font-semibold text-right bg-transparent border-none outline-none ${!estimatedOutDisplay || estimatedOutDisplay === '0.0' ? 'text-primary opacity-60' : 'text-foreground'}`}
+                  className={`w-full text-xl font-semibold text-right bg-transparent border-none outline-none ${!estimatedOutDisplay || estimatedOutDisplay === '0.0' ? 'text-primary opacity-60' : 'text-foreground'}`}
                   placeholder={
                     tokenOut && tokenPrices[tokenOut.id]?.price
                       ? `≈ ${formatDollarAmount(parseFloat(String(tokenPrices[tokenOut.id].price)) * 1000)} for 1000 ${tokenOut.symbol}`
@@ -930,9 +930,9 @@ export const RefFinanceSwapCard: React.FC = () => {
 
         {/* Swap Info */}
         {estimatedOutDisplay && !error && (
-          <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 shadow-lg space-y-3 text-xs sm:text-sm">
+          <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 shadow-lg space-y-3 text-xs">
             <div className="flex justify-between">
-              <span className="text-muted-foreground text-xs sm:text-sm">Rate</span>
+              <span className="text-muted-foreground text-xs">Rate</span>
               <button
                 onClick={() => setIsRateReversed(!isRateReversed)}
                 className={`text-right cursor-pointer transition-colors ${
@@ -963,9 +963,9 @@ export const RefFinanceSwapCard: React.FC = () => {
               const estimate = currentEstimate;
               return (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground text-xs sm:text-sm">Price Impact</span>
+                  <span className="text-muted-foreground text-xs">Price Impact</span>
                   <span
-                    className={`font-medium text-xs sm:text-sm ${
+                    className={`font-medium text-xs ${
                       !estimate?.priceImpact
                         ? 'text-primary opacity-60'
                         : estimate.priceImpact > 5
@@ -985,12 +985,12 @@ export const RefFinanceSwapCard: React.FC = () => {
               );
             })()}
             <div className="flex justify-between">
-              <span className="text-muted-foreground text-xs sm:text-sm">Slippage Tolerance</span>
-              <span className="font-medium text-xs sm:text-sm">{slippage}%</span>
+              <span className="text-muted-foreground text-xs">Slippage Tolerance</span>
+              <span className="font-medium text-xs">{slippage}%</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground text-xs sm:text-sm">Minimum Received</span>
-              <span className={`font-medium text-xs sm:text-sm ${
+              <span className="text-muted-foreground text-xs">Minimum Received</span>
+              <span className={`font-medium text-xs ${
                 !currentEstimate?.minReceived ? 'text-primary opacity-60' : ''
               }`}>
                 {(!currentEstimate?.minReceived
@@ -1010,8 +1010,8 @@ export const RefFinanceSwapCard: React.FC = () => {
             <div className="flex items-start gap-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl shadow-md">
               <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5" />
               <div className="flex-1">
-                <p className="text-sm sm:text-base font-medium text-yellow-500">High Price Impact</p>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                <p className="text-xs font-medium text-yellow-500">High Price Impact</p>
+                <p className="text-xs text-muted-foreground mt-1">
                   This swap will significantly affect the token price. Consider splitting into
                   smaller trades.
                 </p>
@@ -1062,7 +1062,7 @@ export const RefFinanceSwapCard: React.FC = () => {
                 console.error('Wallet modal not available');
               }
             }}
-            className="w-full py-3 sm:py-4 border border-verified bg-verified/10 text-primary shadow-md shadow-verified/20 font-bold rounded-full transition-all hover:bg-verified/20 hover:shadow-lg hover:shadow-verified/30 flex items-center justify-center gap-2 text-sm sm:text-base"
+            className="w-full py-3 sm:py-4 border border-verified bg-verified/10 text-primary shadow-md shadow-verified/20 font-bold rounded-full transition-all hover:bg-verified/20 hover:shadow-lg hover:shadow-verified/30 flex items-center justify-center gap-2 text-sm"
           >
             Connect Wallet
           </button>
@@ -1070,7 +1070,7 @@ export const RefFinanceSwapCard: React.FC = () => {
           <button
             onClick={() => void handleSwap()}
             disabled={!canSwap || isSwapping || isEstimating || !!(amountIn && tokenIn && new Big(amountIn).times(new Big(10).pow(tokenIn.decimals)).gt(new Big(rawBalances[tokenIn.id] ?? '0'))) || !!(rawBalances.near && new Big(rawBalances.near).lt(new Big('250000000000000000000000')))}
-            className="w-full py-3 sm:py-4 border border-verified bg-verified/10 disabled:bg-transparent disabled:text-muted-foreground disabled:cursor-not-allowed disabled:border-verified/30 disabled:shadow-none text-primary shadow-md shadow-verified/20 font-bold rounded-full transition-colors transition-shadow duration-200 hover:bg-verified/20 hover:shadow-lg hover:shadow-verified/30 disabled:hover:bg-transparent flex items-center justify-center text-sm sm:text-base"
+            className="w-full py-3 sm:py-4 border border-verified bg-verified/10 disabled:bg-transparent disabled:text-muted-foreground disabled:cursor-not-allowed disabled:border-verified/30 disabled:shadow-none text-primary shadow-md shadow-verified/20 font-bold rounded-full transition-colors transition-shadow duration-200 hover:bg-verified/20 hover:shadow-lg hover:shadow-verified/30 disabled:hover:bg-transparent flex items-center justify-center text-sm"
           >
             {(isSwapping || isEstimating) && (
               <span 
@@ -1103,7 +1103,7 @@ export const RefFinanceSwapCard: React.FC = () => {
 
         {/* Powered by Rhea Finance */}
         <div className="text-center">
-          <p className="text-xs sm:text-sm text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Powered by{' '}
             <a
               href="https://app.rhea.finance/swap"
@@ -1231,7 +1231,7 @@ export const RefFinanceSwapCard: React.FC = () => {
                   setEstimatedOutDisplay('');
                   void fetchBalances();
                 }}
-                className="w-full py-2 sm:py-3 border border-verified bg-verified/10 text-primary shadow-md shadow-verified/20 font-bold rounded-full transition-colors transition-shadow duration-200 hover:bg-verified/20 hover:shadow-lg hover:shadow-verified/30 flex items-center justify-center text-sm sm:text-base"
+                className="w-full py-2 sm:py-3 border border-verified bg-verified/10 text-primary shadow-md shadow-verified/20 font-bold rounded-full transition-colors transition-shadow duration-200 hover:bg-verified/20 hover:shadow-lg hover:shadow-verified/30 flex items-center justify-center text-sm"
               >
                 Close
               </button>
