@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Wallet } from 'lucide-react';
 import { useWallet } from '@/contexts/wallet-context';
 import { providers } from 'near-api-js';
@@ -15,9 +15,39 @@ export function TokenBalance() {
   const [balance, setBalance] = useState<string>('0');
   const [usdValue, setUsdValue] = useState<string>('0.00');
   const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   console.log('[TokenBalance] Render - isConnected:', isConnected, 'accountId:', accountId);
+
+  // Format dollar amounts with special handling for small values
+  const formatDollarAmount = useCallback((amount: number) => {
+    try {
+      if (amount === 0) {
+        return '$0.00';
+      }
+      if (amount >= 0.01) {
+        return `$${amount.toFixed(2)}`;
+      } else {
+        // Format small numbers: $0.0 followed by green zeros count and significant digits
+        const fixedStr = amount.toFixed(20);
+        const decimalPart = fixedStr.split('.')[1] || '';
+        const firstNonZeroIndex = decimalPart.search(/[1-9]/);
+        if (firstNonZeroIndex === -1) {
+          return '$0.00';
+        }
+        const zerosCount = firstNonZeroIndex;
+        const significantDigits = decimalPart.slice(firstNonZeroIndex, firstNonZeroIndex + 4);
+        return (
+          <span>
+            $0.0<span className="text-primary text-[10px]">{zerosCount}</span>{significantDigits}
+          </span>
+        );
+      }
+    } catch {
+      return '$0.00';
+    }
+  }, []);
 
   // Function to manually refresh balance
   const refreshBalance = () => {
@@ -45,7 +75,12 @@ export function TokenBalance() {
     }
 
     const fetchBalance = async () => {
-      setIsLoading(true);
+      // Use isRefreshing for subsequent fetches, isLoading only for initial load
+      if (balance === '0' && usdValue === '0.00') {
+        setIsLoading(true);
+      } else {
+        setIsRefreshing(true);
+      }
       try {
         console.log('[TokenBalance] Fetching balance for:', accountId, 'from contract:', VF_TOKEN_CONTRACT);
         
@@ -155,8 +190,8 @@ export function TokenBalance() {
         
         // Calculate USD value
         const numericBalance = new Big(rawBalance || '0').div(new Big(10).pow(tokenDecimals));
-        const usdVal = numericBalance.times(tokenPrice).toFixed(2, Big.roundDown);
-        setUsdValue(usdVal);
+        const usdVal = numericBalance.times(tokenPrice).toNumber();
+        setUsdValue(String(usdVal));
         
         console.log('[TokenBalance] Successfully set balance:', balanceInTokens, 'VF (decimals:', tokenDecimals, ') USD:', usdVal, 'price:', tokenPrice);
       } catch (error) {
@@ -165,6 +200,7 @@ export function TokenBalance() {
         setUsdValue('0.00');
       } finally {
         setIsLoading(false);
+        setIsRefreshing(false);
       }
     };
 
@@ -195,14 +231,14 @@ export function TokenBalance() {
     <div className="inline-flex items-center gap-3 border border-verified hover:border-verified/80 bg-card/50 backdrop-blur-sm px-4 sm:px-6 md:px-8 py-3 sm:py-4 rounded-full transition-all hover:shadow-md hover:shadow-verified/10">
       <div className="flex items-center gap-2">
         <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-verified bg-verified/10 flex items-center justify-center">
-          <Wallet className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+          <Wallet className={`w-4 h-4 sm:w-5 sm:h-5 text-primary transition-transform ${isRefreshing ? 'animate-pulse' : ''}`} />
         </div>
         <div className="text-left">
           <div className="text-xs text-muted-foreground">VF Balance</div>
           {isLoading ? (
             <div className="h-5 w-20 bg-muted animate-pulse rounded"></div>
           ) : (
-            <div className="font-semibold text-sm sm:text-base">
+            <div className={`font-semibold text-sm sm:text-base transition-opacity ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
               {balance} VF
             </div>
           )}
@@ -214,8 +250,8 @@ export function TokenBalance() {
         {isLoading ? (
           <div className="h-5 w-16 bg-muted animate-pulse rounded"></div>
         ) : (
-          <div className="font-semibold text-sm sm:text-base text-verified">
-            ${parseFloat(usdValue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          <div className={`font-semibold text-sm sm:text-base text-verified transition-opacity ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
+            {formatDollarAmount(parseFloat(usdValue))}
           </div>
         )}
       </div>

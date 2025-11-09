@@ -69,7 +69,12 @@ export function WalletProvider({
           setAccountId(connectedAccounts[0]?.accountId || null);
         }
       } catch (error) {
-        console.error('[WalletContext] Failed to connect wallet:', error);
+        // Handle user rejection gracefully - don't treat as error
+        if (error instanceof Error && error.message === 'User rejected') {
+          console.log('[WalletContext] User cancelled wallet connection');
+        } else {
+          console.error('[WalletContext] Failed to connect wallet:', error);
+        }
       }
     } else {
       console.error('[WalletContext] Connector not initialized');

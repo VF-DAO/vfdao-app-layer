@@ -31,7 +31,12 @@ export function WalletButton() {
         await connector.connect();
         setShowMenu(false);
       } catch (error) {
-        console.error('Failed to switch wallet:', error);
+        // Handle user rejection gracefully - don't treat as error
+        if (error instanceof Error && error.message === 'User rejected') {
+          console.log('User cancelled wallet switch');
+        } else {
+          console.error('Failed to switch wallet:', error);
+        }
       }
     }
   };

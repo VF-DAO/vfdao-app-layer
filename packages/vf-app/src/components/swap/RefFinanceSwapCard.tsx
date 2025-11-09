@@ -536,9 +536,7 @@ export const RefFinanceSwapCard: React.FC = () => {
         
         console.log('[SwapWidget] All transactions successful:', outcomes);
       } catch (txError: unknown) {
-        console.error('[SwapWidget] Transaction error:', txError);
-        
-        // Check if this is a user cancellation
+        // Check if this is a user cancellation first
         const isNullError = txError === null || txError === undefined;
         const isEmptyObject = txError && typeof txError === 'object' && !Array.isArray(txError) && Object.keys(txError).length === 0;
         
@@ -546,7 +544,7 @@ export const RefFinanceSwapCard: React.FC = () => {
           console.log('[SwapWidget] Transaction cancelled by user');
           throw txError;
         } else {
-          console.error('[SwapWidget] Transaction failed:', txError);
+          console.error('[SwapWidget] Transaction error:', txError);
           throw txError;
         }
       }
@@ -972,7 +970,7 @@ export const RefFinanceSwapCard: React.FC = () => {
             </div>
           </div>
         </div>        {/* Error Display */}
-        {error && (
+        {error && accountId && (
           <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-full shadow-md">
             <AlertCircle className="w-4 h-4 text-red-500" />
             <p className="text-sm sm:text-base text-red-500">{error}</p>
@@ -980,7 +978,7 @@ export const RefFinanceSwapCard: React.FC = () => {
         )}
 
         {/* Swap Info */}
-        {estimatedOutDisplay && !error && (
+        {estimatedOutDisplay && !error && accountId && (
           <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 shadow-lg space-y-3 text-xs">
             <div className="flex justify-between">
               <span className="text-muted-foreground text-xs">Rate</span>
@@ -1056,7 +1054,7 @@ export const RefFinanceSwapCard: React.FC = () => {
         {/* High Price Impact Warning */}
         {(() => {
           const estimate = currentEstimate;
-          if (!estimate?.priceImpact || estimate.priceImpact <= 5) return null;
+          if (!estimate?.priceImpact || estimate.priceImpact <= 5 || !accountId) return null;
           return (
             <div className="flex items-start gap-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl shadow-md">
               <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5" />
@@ -1074,28 +1072,48 @@ export const RefFinanceSwapCard: React.FC = () => {
         {/* Low NEAR Balance Warning */}
         {(() => {
           const nearBalance = rawBalances.near;
-          if (!nearBalance || new Big(nearBalance).gte(new Big('500000000000000000000000'))) return null; // Hide if >= 0.5 NEAR
-          const isCritical = new Big(nearBalance).lt(new Big('250000000000000000000000')); // < 0.25 NEAR
+          // Show warning when swapping TO NEAR (regardless of balance) or when balance is low
+          // But exclude when swapping FROM veganfriends.tkn.near TO near
+          const isSwappingFromVeganFriendsToNear = tokenIn?.id === 'veganfriends.tkn.near' && tokenOut?.id === 'near';
+          const shouldShowWarning = accountId && !isSwappingFromVeganFriendsToNear && (tokenOut?.id === 'near' || (nearBalance && new Big(nearBalance).lt(new Big('500000000000000000000000'))));
+          if (!shouldShowWarning) return null;
+          
+          const isCritical = nearBalance && new Big(nearBalance).lt(new Big('250000000000000000000000')); // < 0.25 NEAR
+          const isSwappingToNear = tokenOut?.id === 'near';
+          
+          // If swapping to NEAR, always show "Keep your wallet topped up" instead of critical message
+          const showKeepToppedUp = isSwappingToNear || !isCritical;
           
           return (
             <div className={`flex items-start gap-2 p-3 rounded-2xl shadow-md ${
-              isCritical 
-                ? 'bg-verified/10 border border-verified/20' 
+              isCritical && !isSwappingToNear
+                ? 'bg-yellow-500/10 border border-yellow-500/20' 
                 : 'bg-blue-500/10 border border-blue-500/20'
             }`}>
-              <div className={`w-4 h-4 mt-0.5 ${isCritical ? 'text-verified' : 'text-blue-500'} text-lg`}>
-                
-              </div>
+              <AlertCircle className={`w-4 h-4 mt-0.5 ${isCritical && !isSwappingToNear ? 'text-yellow-500' : 'text-blue-500'}`} />
               <div className="flex-1">
                 <p className={`text-xs font-medium ${
-                  isCritical ? 'text-verified' : 'text-blue-500'
+                  isCritical && !isSwappingToNear ? 'text-yellow-500' : 'text-blue-500'
                 }`}>
-                  {isCritical ? 'Almost ready to swap!' : 'Keep your wallet topped up'}
+                  {showKeepToppedUp ? 'Keep your wallet topped up' : 'Almost ready to swap'}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {isCritical 
-                    ? 'Add just 0.25 NEAR to cover fees and start swapping your tokens!'
-                    : 'A little more NEAR ensures smooth transactions and covers all fees.'
+                  {showKeepToppedUp
+                    ? isSwappingToNear
+                      ? 'Keep some NEAR in your wallet for gas fees on future transactions.'
+                      : 'A little more NEAR ensures smooth transactions and covers all fees.'
+                    : (() => {
+                        // Calculate how much more NEAR is needed to reach at least 0.25 NEAR
+                        const currentNearBalance = nearBalance ? new Big(nearBalance).div(new Big('1000000000000000000000000')) : new Big('0');
+                        const neededNear = new Big('0.25');
+                        const additionalNeeded = neededNear.minus(currentNearBalance);
+                        
+                        // Round up to 4 decimal places to ensure we reach the threshold
+                        const additionalNeededStr = additionalNeeded.gt(new Big('0')) 
+                          ? additionalNeeded.toFixed(4, Big.roundUp)
+                          : '0.2500';
+                        return `Add just ${additionalNeededStr} NEAR to cover fees and start swapping your tokens`;
+                      })()
                   }
                 </p>
               </div>
@@ -1114,7 +1132,11 @@ export const RefFinanceSwapCard: React.FC = () => {
         ) : (
           <button
             onClick={() => void handleSwap()}
-            disabled={!canSwap || isSwapping || isEstimating || !!(amountIn && tokenIn && new Big(amountIn).times(new Big(10).pow(tokenIn.decimals)).gt(new Big(rawBalances[tokenIn.id] ?? '0'))) || !!(rawBalances.near && new Big(rawBalances.near).lt(new Big('250000000000000000000000')))}
+            disabled={!canSwap || isSwapping || isEstimating || !!(amountIn && tokenIn && new Big(amountIn).times(new Big(10).pow(tokenIn.decimals)).gt(new Big(rawBalances[tokenIn.id] ?? '0'))) || !!(
+              tokenIn?.id === 'near' && 
+              rawBalances.near && 
+              new Big(rawBalances.near).lt(new Big('250000000000000000000000'))
+            )}
             className="w-full py-3 sm:py-4 border border-verified bg-verified/10 disabled:bg-transparent disabled:text-muted-foreground disabled:cursor-not-allowed disabled:border-verified/30 disabled:shadow-none text-primary shadow-md shadow-verified/20 font-bold rounded-full transition-colors transition-shadow duration-200 hover:bg-verified/20 hover:shadow-lg hover:shadow-verified/30 disabled:hover:bg-transparent flex items-center justify-center text-sm"
           >
             {(isSwapping || isEstimating) && (
@@ -1132,12 +1154,12 @@ export const RefFinanceSwapCard: React.FC = () => {
             <span className={
               amountIn && tokenIn && new Big(amountIn).times(new Big(10).pow(tokenIn.decimals)).gt(new Big(rawBalances[tokenIn.id] ?? '0'))
                 ? 'text-destructive'
-                : rawBalances.near && new Big(rawBalances.near).lt(new Big('250000000000000000000000'))
+                : tokenIn?.id === 'near' && rawBalances.near && new Big(rawBalances.near).lt(new Big('250000000000000000000000'))
                 ? 'text-verified'
                 : ''
             }>
               {isSwapping ? 'Swapping...' : isEstimating ? 'Finding best route...' : 
-               (rawBalances.near && new Big(rawBalances.near).lt(new Big('250000000000000000000000')))
+               (tokenIn?.id === 'near' && rawBalances.near && new Big(rawBalances.near).lt(new Big('250000000000000000000000')))
                  ? 'Need 0.25 NEAR minimum to swap' :
                (!amountIn || !tokenIn || !tokenOut) ? 'Enter Amount' :
                (amountIn && tokenIn && new Big(amountIn).times(new Big(10).pow(tokenIn.decimals)).gt(new Big(rawBalances[tokenIn.id] ?? '0'))) 
@@ -1163,7 +1185,7 @@ export const RefFinanceSwapCard: React.FC = () => {
       </div>
 
       {/* Success/Fail/Cancelled Modal */}
-      {swapState && swapState !== 'waitingForConfirmation' && (
+      {swapState && swapState !== 'waitingForConfirmation' && accountId && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 max-w-md w-full shadow-xl">
             <div className="text-center space-y-4">
