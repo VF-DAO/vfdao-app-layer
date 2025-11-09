@@ -9,7 +9,7 @@ export default function Home() {
   return (
     <div className="flex flex-col">
       {/* Hero Section - Mission-Driven */}
-      <section className="relative pt-28 sm:pt-36 pb-16 sm:pb-24 px-4 border-t border-border overflow-hidden">
+      <section className="relative pt-24 sm:pt-28 pb-16 sm:pb-24 px-4 border-t border-border overflow-hidden">
         {/* Subtle Dot Grid Background - Represents verification checkpoints */}
         <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(0,0,0,0.08)_1.5px,transparent_1.5px)] dark:bg-[radial-gradient(circle,rgba(255,255,255,0.08)_1.5px,transparent_1.5px)] bg-[size:40px_40px] pointer-events-none" />
         
@@ -48,14 +48,14 @@ export default function Home() {
       </section>
 
       {/* Who This Is For */}
-      <section id="learn-more" className="py-16 sm:py-24 px-4 border-t border-border bg-muted/30">
+      <section id="learn-more" className="py-8 sm:py-12 px-4 border-t border-border bg-muted/30">
         <div className="max-w-6xl mx-auto">
           <div className="text-center space-y-3 sm:space-y-4 mb-10 sm:mb-16">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground">
               Who This Is For
             </h2>
             <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
-              For consumers seeking truth, producers committed to ethics, and certifiers upholding standards. Together we're building a future where trust is earned through proof, not assumed through promises.
+              Trust through proof, not promises.
             </p>
           </div>
 
@@ -108,7 +108,8 @@ export default function Home() {
       </section>
 
       {/* Use Cases - Real World Impact */}
-      <section id="use-cases" className="py-16 sm:py-24 px-4 border-t border-border bg-muted/30">
+            {/* Real-world scenarios */}
+      <section id="use-cases" className="py-8 sm:py-12 px-4 border-t border-border bg-muted/30">
         <div className="max-w-6xl mx-auto">
           <div className="text-center space-y-3 sm:space-y-4 mb-10 sm:mb-16">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground">
@@ -126,7 +127,7 @@ export default function Home() {
       {/* Timeline - The Journey Ahead */}
       <section
         id="timeline"
-        className="py-16 sm:py-24 px-4 border-t border-border bg-gradient-to-b from-background to-muted/30 dark:from-background dark:to-card/30"
+        className="py-8 sm:py-12 px-4 border-t border-border bg-gradient-to-b from-background to-muted/30 dark:from-background dark:to-card/30"
       >
         <div className="max-w-4xl mx-auto">
           <div className="text-center space-y-3 sm:space-y-4 mb-10 sm:mb-16">
@@ -199,7 +200,7 @@ export default function Home() {
       </section>
 
       {/* Community - Build Transparency Together */}
-      <section id="community" className="py-16 sm:py-24 px-4 border-t border-border bg-muted/30">
+      <section id="community" className="py-8 sm:py-12 px-4 border-t border-border bg-muted/30">
         <div className="max-w-4xl mx-auto text-center space-y-6 sm:space-y-8">
           <div className="space-y-3 sm:space-y-4">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground">

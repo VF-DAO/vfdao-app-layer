@@ -64,14 +64,14 @@ export function VerificationFlow() {
       distance = 100 - distance;
     }
 
-    // Tighter timing - fully fade out before next label appears
-    if (distance < 5) {
+    // Match icon active state - visible when icon is active
+    if (distance < 10) {
       return 1; // Fully visible when icon is active
-    } else if (distance < 8) {
-      const fade = (8 - distance) / 3;
-      return fade; // Quick fade out
+    } else if (distance < 13) {
+      const fade = (13 - distance) / 3;
+      return fade; // Quick fade out after icon becomes inactive
     } else {
-      return 0; // Fully hidden - larger gap before next label
+      return 0; // Fully hidden
     }
   };
 
@@ -131,12 +131,13 @@ export function VerificationFlow() {
             return (
               <span
                 key={stage.id}
-                className="absolute font-semibold text-lg text-primary"
+                className="absolute font-semibold text-lg"
                 style={{
                   opacity: opacity,
-                  transform: `scale(${scale})`,
-                  transition: 'opacity 600ms ease-out, transform 600ms ease-out',
-                  willChange: 'opacity, transform',
+                  color: opacity > 0.8 ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
+                  transform: `scale(${scale}) translateY(${20 - opacity * 20}px)`,
+                  transition: 'opacity 400ms ease-out, transform 400ms ease-out, color 400ms ease-out',
+                  willChange: 'opacity, transform, color',
                   pointerEvents: 'none',
                 }}
               >
