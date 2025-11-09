@@ -9,12 +9,12 @@ export default function Home() {
   return (
     <div className="flex flex-col">
       {/* Hero Section - Mission-Driven */}
-      <section className="pt-28 sm:pt-36 pb-16 sm:pb-24 px-4 border-t border-border">
-        <div className="max-w-6xl mx-auto">
-          {/* Subtle Dot Grid Background - Represents verification checkpoints */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(0,0,0,0.08)_1.5px,transparent_1.5px)] dark:bg-[radial-gradient(circle,rgba(255,255,255,0.08)_1.5px,transparent_1.5px)] bg-[size:40px_40px]" />
-
-          <div className="text-center max-w-5xl mx-auto relative z-10">
+      <section className="relative pt-28 sm:pt-36 pb-16 sm:pb-24 px-4 border-t border-border overflow-hidden">
+        {/* Subtle Dot Grid Background - Represents verification checkpoints */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(0,0,0,0.08)_1.5px,transparent_1.5px)] dark:bg-[radial-gradient(circle,rgba(255,255,255,0.08)_1.5px,transparent_1.5px)] bg-[size:40px_40px] pointer-events-none" />
+        
+        <div className="max-w-6xl mx-auto relative z-10">
+          <div className="text-center max-w-5xl mx-auto">
           {/* Main Headline */}
           <div className="space-y-4 sm:space-y-6">
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-foreground tracking-tighter sm:tracking-tight leading-tight">
@@ -24,13 +24,8 @@ export default function Home() {
             </h1>
 
             <p className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Permissionless access to record, scan, and verify. Vegan ingredients, fully transparent from farm to shelf.
+              Permissionless access to record, scan, and verify. Vegan ingredients, fully transparent from source to shelf.
             </p>
-          </div>
-
-          {/* Simple Explanation */}
-          <div className="inline-flex items-center px-3 py-2 rounded-full border border-primary/20 bg-primary/5 text-primary text-sm font-medium mt-8 sm:mt-12">
-            Launching Q1 2026
           </div>
 
           {/* Verification Flow Animation */}
@@ -38,21 +33,13 @@ export default function Home() {
             <VerificationFlow />
           </div>
 
-          {/* CTAs */}
-          <div className="flex flex-row gap-4 justify-center w-full flex-wrap">
+          {/* CTA */}
+          <div className="flex justify-center">
             <Link
-              href="#learn-more"
-              className="inline-flex items-center justify-center gap-2 border border-primary bg-primary hover:bg-primary/90 text-primary-foreground px-3 sm:px-6 md:px-8 py-2 sm:py-3 md:py-4 rounded-full font-semibold transition-all hover:shadow-md hover:shadow-primary/10 group text-sm md:text-base whitespace-nowrap"
+              href="http://localhost:3001"
+              className="inline-flex items-center justify-center gap-2 border border-verified bg-verified/10 text-primary hover:text-primary px-3 sm:px-6 md:px-8 py-2 sm:py-3 md:py-4 rounded-full font-semibold transition-all hover:shadow-md hover:shadow-verified/20 group text-sm md:text-base whitespace-nowrap"
             >
-              Learn More
-              <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 group-hover:translate-x-1 transition-transform flex-shrink-0" />
-            </Link>
-
-            <Link
-              href="#community"
-              className="inline-flex items-center justify-center gap-2 border border-verified hover:border-verified/80 text-primary hover:text-primary px-3 sm:px-6 md:px-8 py-2 sm:py-3 md:py-4 rounded-full font-semibold transition-all hover:shadow-md hover:shadow-verified/10 group text-sm md:text-base whitespace-nowrap"
-            >
-              Let's Connect
+              Launch App
               <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 group-hover:translate-x-1 transition-transform flex-shrink-0" />
             </Link>
           </div>
@@ -225,70 +212,67 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 pt-8">
-            <div className="p-4 sm:p-6 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all hover:shadow-lg">
+            <div 
+              className="p-4 sm:p-6 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all hover:shadow-lg cursor-pointer group"
+              onClick={() => window.open('https://t.me/veganfriendsdao', '_blank')}
+            >
               <h3 className="text-base sm:text-lg font-bold text-foreground mb-2">Early Adopter</h3>
               <p className="text-sm text-muted-foreground mb-6">
                 Be first to try the platform when we launch.
               </p>
-              <Link
-                href="https://t.me/veganfriendsdao"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm text-primary font-semibold hover:gap-3 transition-all"
-              >
+              <div className="inline-flex items-center gap-2 text-sm text-primary font-semibold transition-all">
                 Get Early Access
-                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-verified flex-shrink-0" />
-              </Link>
+                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-verified flex-shrink-0 group-hover:translate-x-1 transition-transform" />
+              </div>
             </div>
 
-            <div className="p-4 sm:p-6 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all hover:shadow-lg">
+            <div 
+              className="p-4 sm:p-6 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all hover:shadow-lg cursor-pointer group"
+              onClick={() => window.open('https://app.vfdao.org/vfdao.near/widget/DAO.Page?daoId=vegan-friends.sputnik-dao.near&tab=proposals', '_blank')}
+            >
               <h3 className="text-base sm:text-lg font-bold text-foreground mb-2">
                 DAO
               </h3>
               <p className="text-sm text-muted-foreground mb-6">
                 Learn how our community makes decisions together.
               </p>
-              <Link
-                href="https://app.vfdao.org/vfdao.near/widget/DAO.Page?daoId=vegan-friends.sputnik-dao.near&tab=proposals"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm text-primary font-semibold hover:gap-3 transition-all"
-              >
+              <div className="inline-flex items-center gap-2 text-sm text-primary font-semibold transition-all">
                 Visit DAO
-                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-verified flex-shrink-0" />
-              </Link>
+                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-verified flex-shrink-0 group-hover:translate-x-1 transition-transform" />
+              </div>
             </div>
 
-            <div className="p-4 sm:p-6 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all hover:shadow-lg">
+            <div 
+              className="p-4 sm:p-6 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all hover:shadow-lg cursor-pointer group"
+              onClick={() => window.open('https://t.me/veganfriendsdao', '_blank')}
+            >
               <h3 className="text-base sm:text-lg font-bold text-foreground mb-2">
                 Connect
               </h3>
               <p className="text-sm text-muted-foreground mb-6">
                 Chat with fellow vegans and transparency leaders.
               </p>
-              <Link
-                href="https://t.me/veganfriendsdao"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm text-primary font-semibold hover:gap-3 transition-all"
-              >
+              <div className="inline-flex items-center gap-2 text-sm text-primary font-semibold transition-all">
                 Join Telegram
-                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-verified flex-shrink-0" />
-              </Link>
+                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-verified flex-shrink-0 group-hover:translate-x-1 transition-transform" />
+              </div>
             </div>
 
-            <div className="p-4 sm:p-6 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all hover:shadow-lg">
+            <div 
+              className="p-4 sm:p-6 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all hover:shadow-lg cursor-pointer group"
+              onClick={() => {
+                const element = document.querySelector('#partners');
+                element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+            >
               <h3 className="text-base sm:text-lg font-bold text-foreground mb-2">Partner</h3>
               <p className="text-sm text-muted-foreground mb-6">
                 Bring your brand or certification body on board.
               </p>
-              <Link
-                href="#partners"
-                className="inline-flex items-center gap-2 text-sm text-primary font-semibold hover:gap-3 transition-all"
-              >
+              <div className="inline-flex items-center gap-2 text-sm text-primary font-semibold transition-all">
                 Get in Touch
-                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-verified flex-shrink-0" />
-              </Link>
+                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-verified flex-shrink-0 group-hover:translate-x-1 transition-transform" />
+              </div>
             </div>
           </div>
         </div>
@@ -315,8 +299,20 @@ function StakeholderCard({
   cta: string;
   ctaHref: string;
 }) {
+  const handleClick = () => {
+    if (ctaHref.startsWith('#')) {
+      const element = document.querySelector(ctaHref);
+      element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      window.location.href = ctaHref;
+    }
+  };
+
   return (
-    <div className="relative p-4 sm:p-6 md:p-8 rounded-2xl border border-border bg-card hover:border-primary/50 transition-all hover:shadow-lg group flex flex-col h-full">
+    <div 
+      className="relative p-4 sm:p-6 md:p-8 rounded-2xl border border-border bg-card hover:border-primary/50 transition-all hover:shadow-lg group flex flex-col h-full cursor-pointer"
+      onClick={handleClick}
+    >
       <div className="space-y-3 sm:space-y-4 flex-1">
         {/* Icon */}
         <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-verified bg-verified/10 text-primary shadow-md shadow-verified/20 mb-2 sm:mb-4">
@@ -340,13 +336,10 @@ function StakeholderCard({
 
       {/* CTA */}
       <div className="mt-4 sm:mt-6">
-        <Link
-          href={ctaHref}
-          className="inline-flex items-center gap-2 text-sm text-primary font-semibold hover:gap-3 transition-all group"
-        >
+        <div className="inline-flex items-center gap-2 text-sm text-primary font-semibold transition-all">
           {cta}
-          <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-verified flex-shrink-0" />
-        </Link>
+          <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-verified flex-shrink-0 group-hover:translate-x-1 transition-transform" />
+        </div>
       </div>
     </div>
   );

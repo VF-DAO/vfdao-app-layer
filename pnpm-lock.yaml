@@ -32,6 +32,9 @@ importers:
 
   packages/vf-app:
     dependencies:
+      '@hot-labs/near-connect':
+        specifier: ^0.6.8
+        version: 0.6.8(@walletconnect/sign-client@2.21.2(@react-native-async-storage/async-storage@1.24.0(react-native@0.81.4(@babel/core@7.28.4)(@types/react@19.1.17)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.1.12))
       '@monaco-editor/react':
         specifier: ^4.7.0
         version: 4.7.0(monaco-editor@0.54.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -596,6 +599,11 @@ packages:
     peerDependencies:
       bn.js: 5.2.1
       borsh: 0.7.0
+
+  '@hot-labs/near-connect@0.6.8':
+    resolution: {integrity: sha512-hlxp5NeD/3VGWJFMG+UFy4xnaiaS4NILEgXwlogzP00deRwr+RPh1A1U9FVBYcu6CNDgUbdEvS5hQPOw4trP5w==}
+    peerDependencies:
+      '@walletconnect/sign-client': ^2.21.8
 
   '@hot-wallet/sdk@1.0.8':
     resolution: {integrity: sha512-HPS/y8NNhT9mUw1xLYQUlENn1F8NULqNYAiy25idGGreGJUbSEiHmCPVed7MSJbxEAli+b4GnhbNmirfhA12og==}
@@ -5966,6 +5974,10 @@ snapshots:
       uuid4: 2.0.3
     transitivePeerDependencies:
       - encoding
+
+  '@hot-labs/near-connect@0.6.8(@walletconnect/sign-client@2.21.2(@react-native-async-storage/async-storage@1.24.0(react-native@0.81.4(@babel/core@7.28.4)(@types/react@19.1.17)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.1.12))':
+    dependencies:
+      '@walletconnect/sign-client': 2.21.2(@react-native-async-storage/async-storage@1.24.0(react-native@0.81.4(@babel/core@7.28.4)(@types/react@19.1.17)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.1.12)
 
   '@hot-wallet/sdk@1.0.8(bufferutil@4.0.9)(near-api-js@6.3.0(bed29aa9b1c35f824dd3357ef3bf7b90))(typescript@5.9.3)(utf-8-validate@5.0.10)':
     dependencies:

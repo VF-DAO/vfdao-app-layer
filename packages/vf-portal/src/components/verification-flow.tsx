@@ -1,47 +1,39 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CheckCircle, FlaskConical, Leaf, Link2, Package, Shield, Store } from 'lucide-react';
+import { Check, CheckCircle, FlaskConical, Leaf, Link2, Package, Shield, Store } from 'lucide-react';
 
 export function VerificationFlow() {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    const duration = 8000; // 8 second loop (fast and dynamic)
-    let animationFrameId: number;
+    const duration = 15000; // 15 second loop (slower, more deliberate)
+    const startTime = performance.now();
 
     const animate = (currentTime: number) => {
-      const elapsed = currentTime % duration;
+      const elapsed = (currentTime - startTime) % duration;
       const newProgress = (elapsed / duration) * 100;
 
-      // Force update by using functional setState
-      setProgress((prev) => {
-        const diff = Math.abs(prev - newProgress);
-        // Only update if there's meaningful change
-        return diff > 0.1 ? newProgress : prev;
-      });
+      setProgress(newProgress);
 
-      animationFrameId = requestAnimationFrame(animate);
+      requestAnimationFrame(animate);
     };
 
-    // Start animation with a timestamp
-    animationFrameId = requestAnimationFrame(animate);
+    const animationFrameId = requestAnimationFrame(animate);
 
     return () => {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-      }
+      cancelAnimationFrame(animationFrameId);
     };
   }, []);
 
   const stages = [
-    { id: 'ingredients', label: 'Ingredients', icon: Leaf, position: 0 },
-    { id: 'lab', label: 'Lab Test', icon: FlaskConical, position: 16.67 },
-    { id: 'cert', label: 'Certify', icon: Shield, position: 33.33 },
-    { id: 'blockchain', label: 'Blockchain', icon: Link2, position: 50 },
-    { id: 'supply', label: 'Supply Chain', icon: Package, position: 66.67 },
-    { id: 'retail', label: 'Retail', icon: Store, position: 83.33 },
-    { id: 'verified', label: 'Verified', icon: CheckCircle, position: 100 },
+    { id: 'source', label: 'Source', icon: Leaf, position: 0 },
+    { id: 'test', label: 'Test', icon: FlaskConical, position: 14.28 },
+    { id: 'certify', label: 'Certify', icon: Shield, position: 28.57 },
+    { id: 'record', label: 'Record', icon: Link2, position: 42.86 },
+    { id: 'track', label: 'Track', icon: Package, position: 57.14 },
+    { id: 'scan', label: 'Scan', icon: Store, position: 71.43 },
+    { id: 'verified', label: 'Verified', icon: CheckCircle, position: 85.71 },
   ];
 
   const getStageOpacity = (stagePosition: number) => {
@@ -51,17 +43,35 @@ export function VerificationFlow() {
       distance = 100 - distance;
     }
 
-    // Smooth gradient curve for opacity
-    if (distance < 10) {
+    // Icons stay visible with gradient opacity
+    if (distance < 7) {
       return 1;
-    } else if (distance < 25) {
-      const fade = (25 - distance) / 15;
-      return 0.5 + fade * 0.5; // Smooth fade from 1 to 0.5
-    } else if (distance < 45) {
-      const fade = (45 - distance) / 20;
-      return 0.3 + fade * 0.2; // Smooth fade from 0.5 to 0.3
+    } else if (distance < 20) {
+      const fade = (20 - distance) / 13;
+      return 0.5 + fade * 0.5; // Fade from 1 to 0.5
+    } else if (distance < 40) {
+      const fade = (40 - distance) / 20;
+      return 0.3 + fade * 0.2; // Fade from 0.5 to 0.3
     } else {
-      return 0.3;
+      return 0.3; // Always slightly visible
+    }
+  };
+
+  const getLabelOpacity = (stagePosition: number) => {
+    let distance = Math.abs(progress - stagePosition);
+    // Handle wrap-around at the loop point (100 -> 0)
+    if (distance > 50) {
+      distance = 100 - distance;
+    }
+
+    // Tighter timing - fully fade out before next label appears
+    if (distance < 5) {
+      return 1; // Fully visible when icon is active
+    } else if (distance < 8) {
+      const fade = (8 - distance) / 3;
+      return fade; // Quick fade out
+    } else {
+      return 0; // Fully hidden - larger gap before next label
     }
   };
 
@@ -72,17 +82,71 @@ export function VerificationFlow() {
       distance = 100 - distance;
     }
 
-    // Smooth gradient curve for scale - using fixed value since we removed isMobile
-    if (distance < 10) {
-      const scaleFactor = (10 - distance) / 10;
-      return 1 + scaleFactor * 0.12; // Middle ground between mobile and desktop
+    // Match the tighter opacity curve
+    if (distance < 7) {
+      const scaleFactor = (7 - distance) / 7;
+      return 1 + scaleFactor * 0.12;
     } else {
       return 1;
     }
   };
 
+  // Get the currently active stage label with opacity
+  const getActiveLabel = () => {
+    // Find the stage with highest opacity (most active)
+    let maxOpacity = 0;
+    let activeStage = stages[0];
+    
+    for (const stage of stages) {
+      const opacity = getStageOpacity(stage.position);
+      if (opacity > maxOpacity) {
+        maxOpacity = opacity;
+        activeStage = stage;
+      }
+    }
+    
+    return { label: activeStage.label, opacity: maxOpacity };
+  };
+
+  const activeLabel = getActiveLabel();
+
   return (
     <div className="w-full max-w-4xl mx-auto py-12 px-1 sm:px-4">
+      {/* Subtitle with animated label synchronized with icon animation - ABOVE icons */}
+      <div className="text-center mb-8 h-8 flex items-center justify-center relative">
+        {/* Render all labels with individual opacity - only the active one is visible */}
+        <div className="relative min-w-[120px] h-8 flex items-center justify-center">
+          {stages.map((stage) => {
+            let distance = Math.abs(progress - stage.position);
+            if (distance > 50) {
+              distance = 100 - distance;
+            }
+            
+            // Active if within 8% distance
+            const isActive = distance < 8;
+            
+            const opacity = isActive ? getLabelOpacity(stage.position) : 0;
+            const scale = getStageScale(stage.position);
+            
+            return (
+              <span
+                key={stage.id}
+                className="absolute font-semibold text-lg text-primary"
+                style={{
+                  opacity: opacity,
+                  transform: `scale(${scale})`,
+                  transition: 'opacity 600ms ease-out, transform 600ms ease-out',
+                  willChange: 'opacity, transform',
+                  pointerEvents: 'none',
+                }}
+              >
+                {stage.label}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Stage Markers */}
       <div className="relative">
         <div className="grid grid-cols-7 gap-3 sm:gap-5">
@@ -94,11 +158,8 @@ export function VerificationFlow() {
             if (distance > 50) {
               distance = 100 - distance;
             }
-            // Prevent both first and last from being active simultaneously
-            const isActive =
-              distance < 10 &&
-              !(stage.position === 0 && progress > 90) &&
-              !(stage.position === 100 && progress < 10);
+            // Active if within 10% distance
+            const isActive = distance < 10;
 
             return (
               <div
@@ -147,11 +208,11 @@ export function VerificationFlow() {
         </div>
       </div>
 
-      {/* Subtitle */}
-      <div className="text-center mt-8">
-        <p className="text-sm text-primary font-medium inline-flex items-center gap-2 justify-center">
-          <CheckCircle className="w-4 h-4 flex-shrink-0" />
-          <span>Blockchain-verified supply chain integrity.</span>
+      {/* Tagline with checkmark */}
+      <div className="flex items-center justify-center gap-2 mt-8">
+        <CheckCircle className="w-5 h-5 text-primary flex-shrink-0" />
+        <p className="text-sm sm:text-base text-muted-foreground font-medium">
+          Blockchain-verified supply chain integrity.
         </p>
       </div>
     </div>

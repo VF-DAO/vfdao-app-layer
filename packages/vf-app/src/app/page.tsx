@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ArrowRight, ArrowRightLeft, BarChart3, Sprout } from 'lucide-react';
 import { RheaSwapWidget } from '@/components/swap/SwapWidget';
+import { TokenBalance } from '@/components/token-balance';
 
 export default function Home() {
   return (
@@ -12,22 +13,14 @@ export default function Home() {
         <div className="text-center max-w-5xl mb-12 w-full">
           {/* Main Hero Content */}
           <div className="text-center mb-8">
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6">
-              Welcome to <span className="text-verified">VeganFriends</span>
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6">
+              <span className="text-primary">Vegan</span><span className="text-verified">Friends</span>
             </h1>
             <p className="text-muted-foreground text-lg sm:text-xl md:text-2xl max-w-3xl mx-auto mb-8">
               Decentralized infrastructure for the vegan community. Swap tokens, stake for governance, and build trust in ethical supply chains.
             </p>
             <div className="flex flex-row gap-4 justify-center w-full flex-wrap">
-              <Link
-                href="https://vf-portal.vercel.app"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 border border-verified hover:border-verified/80 text-primary hover:text-primary px-3 sm:px-6 md:px-8 py-2 sm:py-3 md:py-4 rounded-full font-semibold transition-all hover:shadow-md hover:shadow-verified/10 group text-sm md:text-base whitespace-nowrap"
-              >
-                Learn More
-                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 group-hover:translate-x-1 transition-transform flex-shrink-0" />
-              </Link>
+              <TokenBalance />
             </div>
           </div>
 

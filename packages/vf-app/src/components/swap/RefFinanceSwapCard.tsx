@@ -219,6 +219,10 @@ export const RefFinanceSwapCard: React.FC = () => {
         void (async () => {
           try {
             await fetchBalances();
+            // Also refresh the TokenBalance component if it exists
+            if (typeof window !== 'undefined' && (window as any).refreshTokenBalance) {
+              (window as any).refreshTokenBalance();
+            }
           } catch (error) {
             console.warn('[SwapWidget] Failed to fetch balances after swap success:', error);
           }

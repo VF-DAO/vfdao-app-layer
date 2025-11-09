@@ -26,6 +26,7 @@
     --primary-foreground: 0 0% 100%;
     --ring: 146 70% 11%;
     --verified: 45 91% 59%;
+    --orange: 25 99% 64%; /* #FE8E4B - F logo color */
     --radius: 0.5rem;
 
     /* Scrollbar colors for light mode */
@@ -53,6 +54,7 @@
     --primary-foreground: 0 0% 0%;
     --ring: 108 34% 68%;
     --verified: 45 91% 65%;
+    --orange: 25 99% 64%; /* #FE8E4B - F logo color */
 
     /* Scrollbar colors for dark mode */
     --scrollbar-thumb: 210 20% 25%;

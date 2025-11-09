@@ -12,7 +12,7 @@ const navItems = [
   { label: 'Who This Is For', href: '#learn-more' },
   { label: 'Real-world scenarios', href: '#use-cases' },
   { label: 'The Journey Ahead', href: '#timeline' },
-  { label: 'Community', href: '#community' },
+  { label: "Let's Connect", href: '#community' },
 ];
 
 export function Navigation() {
@@ -126,28 +126,7 @@ export function Navigation() {
 
           {/* Right Side */}
           <div className="flex items-center space-x-4">
-            <div className="hidden md:block">
-              <ThemeToggle />
-            </div>
-            <div className="relative">
-              <button
-                onClick={handleLaunchClick}
-                className="hidden md:inline-flex items-center justify-center gap-2 border border-verified bg-verified/10 text-primary hover:text-primary px-4 py-2 rounded-full font-semibold transition-all hover:shadow-md hover:shadow-verified/20 group text-sm whitespace-nowrap"
-              >
-                Launch App
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform flex-shrink-0" />
-              </button>
-              {showComingSoon && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="hidden md:block absolute top-full mt-2 left-1/2 transform -translate-x-1/2 bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground shadow-lg whitespace-nowrap z-50"
-                >
-                  Coming Soon! 🌱
-                </motion.div>
-              )}
-            </div>
+            <ThemeToggle />
 
             {/* Mobile Menu Button */}
             <button
@@ -203,28 +182,6 @@ export function Navigation() {
                     </Link>
                   );
                 })}
-                <div className="px-4 pt-4 border-t flex items-center justify-between gap-2">
-                  <div className="relative">
-                    <button
-                      onClick={handleLaunchClick}
-                      className="inline-flex items-center justify-center gap-1 border border-verified bg-verified/10 text-primary px-3 py-1.5 rounded-full font-medium transition-all text-sm whitespace-nowrap"
-                    >
-                      Launch App
-                      <ArrowRight className="w-3 h-3 flex-shrink-0" />
-                    </button>
-                    {showComingSoon && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground shadow-lg whitespace-nowrap z-[60]"
-                      >
-                        Coming Soon! 🌱
-                      </motion.div>
-                    )}
-                  </div>
-                  <ThemeToggle />
-                </div>
               </div>
             </motion.div>
           )}
