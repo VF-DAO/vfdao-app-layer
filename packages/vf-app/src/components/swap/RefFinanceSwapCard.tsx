@@ -11,7 +11,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { providers, transactions } from 'near-api-js';
+import { providers } from 'near-api-js';
 import Big from 'big.js';
 import { toInternationalCurrencySystemLongString } from '@ref-finance/ref-sdk';
 
@@ -50,7 +50,7 @@ interface Token {
 }
 
 export const RefFinanceSwapCard: React.FC = () => {
-  const { accountId, selector, modal } = useWallet();
+  const { accountId, wallet, connector, signIn } = useWallet();
   const {
     loading,
     error: swapError,
@@ -136,7 +136,7 @@ export const RefFinanceSwapCard: React.FC = () => {
 
   // Fetch token balances
   const fetchBalances = useCallback(async () => {
-    if (!accountId || !selector) {
+    if (!accountId || !wallet) {
       return;
     }
 
@@ -198,7 +198,7 @@ export const RefFinanceSwapCard: React.FC = () => {
     } finally {
       setIsLoadingBalances(false);
     }
-  }, [accountId, selector, tokenIn, tokenOut]);
+  }, [accountId, wallet, tokenIn, tokenOut]);
 
   // Fetch balances when account changes
   useEffect(() => {
@@ -350,8 +350,30 @@ export const RefFinanceSwapCard: React.FC = () => {
 
   // Execute swap - automatic registration is handled in executeSwap
   const handleSwap = async () => {
-    if (!accountId || !selector || !tokenIn || !tokenOut || !amountIn) {
+    if (!accountId || !tokenIn || !tokenOut || !amountIn) {
       setError('Please connect wallet and enter amount');
+      console.error('[SwapWidget] Missing required fields:', { accountId, wallet: !!wallet, tokenIn: !!tokenIn, tokenOut: !!tokenOut, amountIn });
+      return;
+    }
+    
+    // Get wallet instance directly from connector if not in state
+    let walletInstance = wallet;
+    if (!walletInstance && connector) {
+      console.log('[SwapWidget] Wallet not in state, fetching from connector...');
+      try {
+        const { wallet: connectedWallet } = await connector.getConnectedWallet();
+        walletInstance = connectedWallet;
+        console.log('[SwapWidget] Fetched wallet from connector:', !!walletInstance);
+      } catch (err) {
+        console.error('[SwapWidget] Failed to get wallet from connector:', err);
+        setError('Please reconnect your wallet');
+        return;
+      }
+    }
+    
+    if (!walletInstance) {
+      setError('Please connect wallet');
+      console.error('[SwapWidget] No wallet available');
       return;
     }
 
@@ -409,7 +431,7 @@ export const RefFinanceSwapCard: React.FC = () => {
       };
 
       // Convert to wallet selector format using Ref SDK's formatting functions
-      const wallet = await selector.wallet();
+      // HOT Connect wallet API is compatible with wallet selector
       const accountIdValue = accountId;
       
       const wsTransactions = swapTransactions.map((tx, txIdx) => {
@@ -443,12 +465,17 @@ export const RefFinanceSwapCard: React.FC = () => {
           const gasBigInt = baseGas + gasBuffer;
           
           try {
-            const action = transactions.functionCall(
-              fc.methodName,
-              fc.args ?? {},
-              gasBigInt,
-              toBigInt(fc.amount)
-            );
+            // HOT Connect expects plain action objects, not near-api-js Action objects
+            // Format: { type: "FunctionCall", params: { methodName, args, gas, deposit } }
+            const action = {
+              type: "FunctionCall" as const,
+              params: {
+                methodName: fc.methodName,
+                args: fc.args ?? {},
+                gas: gasBigInt.toString(),
+                deposit: (fc.amount || '0').toString(),
+              }
+            };
             
             return action;
           } catch (actionError: unknown) {
@@ -476,43 +503,47 @@ export const RefFinanceSwapCard: React.FC = () => {
         }
       }
       
-      // Send transactions sequentially instead of in batch to avoid wallet issues
-      const outcomes = [];
+      // Batch all transactions for single wallet confirmation
+      console.warn('[SwapWidget] Batching transactions:', {
+        count: wsTransactions.length,
+        transactions: wsTransactions.map((tx, idx) => ({
+          index: idx,
+          receiverId: tx.receiverId,
+          actionsCount: tx.actions.length
+        }))
+      });
       
-      for (const transaction of wsTransactions) {
-        console.warn('[SwapWidget] Sending transaction to:', transaction.receiverId);
-        console.warn('[SwapWidget] Transaction details:', {
-          signerId: transaction.signerId,
-          receiverId: transaction.receiverId,
-          actionsCount: transaction.actions.length,
-          actions: transaction.actions.map((action, idx) => ({
-            index: idx,
-            methodName: action.functionCall?.methodName,
-            args: action.functionCall?.args,
-            gas: action.functionCall?.gas?.toString(),
-            deposit: action.functionCall?.deposit?.toString()
-          }))
+      if (!walletInstance) {
+        throw new Error('Wallet is not initialized. Please reconnect your wallet.');
+      }
+      
+      if (typeof walletInstance.signAndSendTransactions !== 'function') {
+        throw new Error('Wallet does not support batch transactions');
+      }
+      
+      let outcomes;
+      try {
+        console.log('[SwapWidget] Sending batched transactions to wallet');
+        
+        // Send all transactions in one wallet confirmation
+        outcomes = await walletInstance.signAndSendTransactions({
+          transactions: wsTransactions as any,
         });
         
-        try {
-          const outcome = await wallet.signAndSendTransaction({
-            signerId: transaction.signerId,
-            receiverId: transaction.receiverId,
-            actions: transaction.actions,
-          });
-          outcomes.push(outcome);
-        } catch (txError: unknown) {
-          // Check if this is a user cancellation (null error)
-          const isNullError = txError === null || txError === undefined;
-          const isEmptyObject = txError && typeof txError === 'object' && !Array.isArray(txError) && Object.keys(txError).length === 0;
-          
-          if (isNullError || isEmptyObject) {
-            console.log('[SwapWidget] Transaction cancelled by user');
-            throw txError; // Re-throw to be caught by outer error handling
-          } else {
-            console.error('[SwapWidget] Transaction failed:', txError);
-            throw txError; // Re-throw to be caught by outer try-catch
-          }
+        console.log('[SwapWidget] All transactions successful:', outcomes);
+      } catch (txError: unknown) {
+        console.error('[SwapWidget] Transaction error:', txError);
+        
+        // Check if this is a user cancellation
+        const isNullError = txError === null || txError === undefined;
+        const isEmptyObject = txError && typeof txError === 'object' && !Array.isArray(txError) && Object.keys(txError).length === 0;
+        
+        if (isNullError || isEmptyObject) {
+          console.log('[SwapWidget] Transaction cancelled by user');
+          throw txError;
+        } else {
+          console.error('[SwapWidget] Transaction failed:', txError);
+          throw txError;
         }
       }
 
@@ -1071,13 +1102,7 @@ export const RefFinanceSwapCard: React.FC = () => {
         {/* Swap Button */}
         {!accountId ? (
           <button
-            onClick={() => {
-              if (modal) {
-                void modal.show();
-              } else {
-                console.error('Wallet modal not available');
-              }
-            }}
+            onClick={signIn}
             className="w-full py-3 sm:py-4 border border-verified bg-verified/10 text-primary shadow-md shadow-verified/20 font-bold rounded-full transition-all hover:bg-verified/20 hover:shadow-lg hover:shadow-verified/30 flex items-center justify-center gap-2 text-sm"
           >
             Connect Wallet
@@ -1207,7 +1232,7 @@ export const RefFinanceSwapCard: React.FC = () => {
                   </div>
                   {tx && accountId && (
                     <a
-                      href={`${selector?.options?.network?.explorerUrl}/txns/${tx}`}
+                      href={`https://nearblocks.io/txns/${tx}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 text-primary hover:underline text-xs sm:text-sm mt-4"

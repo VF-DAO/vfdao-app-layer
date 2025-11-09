@@ -5,7 +5,7 @@ import { ChevronDown, ExternalLink, LogOut, RefreshCw, User, Wallet } from 'luci
 import { useWallet } from '@/contexts/wallet-context';
 
 export function WalletButton() {
-  const { modal, accountId, isConnected, selector } = useWallet();
+  const { connector, accountId, isConnected, signIn, signOut } = useWallet();
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -21,23 +21,26 @@ export function WalletButton() {
   }, []);
 
   const handleDisconnect = async () => {
-    if (selector) {
-      const wallet = await selector.wallet();
-      await wallet.signOut();
-      setShowMenu(false);
-    }
+    await signOut();
+    setShowMenu(false);
   };
 
-  const handleSwitchWallet = () => {
-    modal?.show();
-    setShowMenu(false);
+  const handleSwitchWallet = async () => {
+    if (connector) {
+      try {
+        await connector.connect();
+        setShowMenu(false);
+      } catch (error) {
+        console.error('Failed to switch wallet:', error);
+      }
+    }
   };
 
   if (!isConnected) {
     return (
       <button
-        onClick={() => modal?.show()}
-        disabled={!modal}
+        onClick={signIn}
+        disabled={!connector}
         className="flex items-center gap-2 bg-primary hover:bg-primary/90 border border-primary text-primary-foreground px-4 py-2 rounded-full font-medium transition-all duration-150 text-sm group focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm hover:shadow-md hover:shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <Wallet className="w-3.5 h-3.5 transition-all duration-150" />

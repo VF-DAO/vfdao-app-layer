@@ -2,54 +2,31 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { WalletModuleFactory } from '@near-wallet-selector/core';
-import type { WalletSelector } from '@near-wallet-selector/core';
-import { setupWalletSelector } from '@near-wallet-selector/core';
-import type { WalletSelectorModal } from '@near-wallet-selector/modal-ui';
-import { setupModal } from '@near-wallet-selector/modal-ui';
-import { setupHotWallet } from '@near-wallet-selector/hot-wallet';
-import { setupHereWallet } from '@near-wallet-selector/here-wallet';
-import { setupMyNearWallet } from '@near-wallet-selector/my-near-wallet';
-import { setupMeteorWallet } from '@near-wallet-selector/meteor-wallet';
-import { setupSender } from '@near-wallet-selector/sender';
-import { setupNightly } from '@near-wallet-selector/nightly';
-import { setupBitgetWallet } from '@near-wallet-selector/bitget-wallet';
-import { setupBitteWallet } from '@near-wallet-selector/bitte-wallet';
-import { setupCoin98Wallet } from '@near-wallet-selector/coin98-wallet';
-import { setupLedger } from '@near-wallet-selector/ledger';
-import { setupWalletConnect } from '@near-wallet-selector/wallet-connect';
-import { setupNearSnap } from '@near-wallet-selector/near-snap';
-import { setupMathWallet } from '@near-wallet-selector/math-wallet';
-import { setupNarwallets } from '@near-wallet-selector/narwallets';
-import { setupWelldoneWallet } from '@near-wallet-selector/welldone-wallet';
-import { setupRamperWallet } from '@near-wallet-selector/ramper-wallet';
-import { setupNearMobileWallet } from '@near-wallet-selector/near-mobile-wallet';
-import { setupArepaWallet } from '@near-wallet-selector/arepa-wallet';
-// Note: setupEthereumWallets requires wagmiConfig - enable when configured
-// import { setupEthereumWallets } from '@near-wallet-selector/ethereum-wallets';
-import { setupIntearWallet } from '@near-wallet-selector/intear-wallet';
-import { setupMeteorWalletApp } from '@near-wallet-selector/meteor-wallet-app';
-import { setupOKXWallet } from '@near-wallet-selector/okx-wallet';
-import { setupUnityWallet } from '@near-wallet-selector/unity-wallet';
-import { setupXDEFI } from '@near-wallet-selector/xdefi';
-import { getPrimaryEndpoint } from '@/lib/rpc-config';
+
+// Type-only imports to avoid SSR issues
+type NearConnector = any;
+type NearWalletBase = any;
 
 interface WalletContextType {
-  selector: WalletSelector | null;
-  modal: WalletSelectorModal | null;
+  connector: NearConnector | null;
+  wallet: NearWalletBase | null;
   accounts: { accountId: string }[];
   accountId: string | null;
   isConnected: boolean;
   isLoading: boolean;
+  signIn: () => void;
+  signOut: () => void;
 }
 
 const WalletContext = createContext<WalletContextType>({
-  selector: null,
-  modal: null,
+  connector: null,
+  wallet: null,
   accounts: [],
   accountId: null,
   isConnected: false,
   isLoading: true,
+  signIn: () => {},
+  signOut: () => {},
 });
 
 export function useWallet() {
@@ -67,134 +44,126 @@ export function WalletProvider({
   contractId = 'vfdao.near',
   network = 'mainnet',
 }: WalletProviderProps) {
-  const [selector, setSelector] = useState<WalletSelector | null>(null);
-  const [modal, setModal] = useState<WalletSelectorModal | null>(null);
+  const [connector, setConnector] = useState<NearConnector | null>(null);
+  const [wallet, setWallet] = useState<NearWalletBase | null>(null);
   const [accounts, setAccounts] = useState<{ accountId: string }[]>([]);
   const [accountId, setAccountId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    async function initWalletSelector() {
+  const signIn = async () => {
+    if (connector) {
       try {
-        const _selector = await setupWalletSelector({
-          network:
-            network === 'testnet'
-              ? {
-                  networkId: 'testnet',
-                  nodeUrl: getPrimaryEndpoint('testnet'),
-                  helperUrl: 'https://helper.testnet.near.org',
-                  explorerUrl: 'https://testnet.nearblocks.io',
-                  indexerUrl: 'https://testnet-indexer.ref-finance.com',
-                }
-              : {
-                  networkId: 'mainnet',
-                  nodeUrl: getPrimaryEndpoint('mainnet'),
-                  helperUrl: 'https://helper.mainnet.near.org',
-                  explorerUrl: 'https://nearblocks.io',
-                  indexerUrl: 'https://indexer.ref.finance',
-                },
-          modules: [
-            // Hot & Mobile Wallets (Most Popular)
-            setupHotWallet(),
-            setupMyNearWallet(),
-            setupMeteorWallet(),
-            setupSender(),
-            setupHereWallet(),
-            setupNearMobileWallet(),
-            setupUnityWallet({
-              projectId: 'c4f79cc821944d9680842e34466bfbad',
-              metadata: {
-                name: 'VF DAO',
-                description:
-                  'Decentralized infrastructure for the vegan community. Built on NEAR Protocol.',
-                url:
-                  typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001',
-                icons: ['https://vfdao.org/icon.png'],
-              },
-            }),
-            setupMeteorWalletApp({ contractId }),
+        console.log('[WalletContext] Attempting to connect wallet...');
+        // Wait for manifest to load before connecting
+        await connector.whenManifestLoaded;
+        console.log('[WalletContext] Manifest loaded, showing wallet selector...');
+        const connectedWallet = await connector.connect();
+        console.log('[WalletContext] Wallet connected:', connectedWallet);
+        
+        // Manually update state after connection (event listener should also fire)
+        if (connectedWallet) {
+          const { wallet: walletInstance, accounts: connectedAccounts } = await connector.getConnectedWallet();
+          console.log('[WalletContext] Setting wallet state:', { accounts: connectedAccounts });
+          setWallet(walletInstance);
+          setAccounts(connectedAccounts.map((acc: any) => ({ accountId: acc.accountId })));
+          setAccountId(connectedAccounts[0]?.accountId || null);
+        }
+      } catch (error) {
+        console.error('[WalletContext] Failed to connect wallet:', error);
+      }
+    } else {
+      console.error('[WalletContext] Connector not initialized');
+    }
+  };
 
-            // Multi-Chain & Advanced
-            setupNightly(),
-            setupWalletConnect({
-              projectId: 'c4f79cc821944d9680842e34466bfbad',
-              metadata: {
-                name: 'VF DAO',
-                description:
-                  'Decentralized infrastructure for the vegan community. Built on NEAR Protocol.',
-                url:
-                  typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001',
-                icons: ['https://vfdao.org/icon.png'],
-              },
-            }),
-            setupXDEFI(),
+  const signOut = async () => {
+    if (wallet) {
+      await wallet.signOut();
+      setWallet(null);
+      setAccounts([]);
+      setAccountId(null);
+    }
+  };
 
-            // Injected Wallets
-            setupBitgetWallet(),
-            setupBitteWallet(),
-            setupCoin98Wallet(),
-            setupMathWallet(),
-            setupNarwallets(),
-            setupWelldoneWallet(),
-            setupRamperWallet(),
-            setupOKXWallet(),
-            setupIntearWallet(),
-            setupArepaWallet(),
+  useEffect(() => {
+    // Only initialize on client side
+    if (typeof window === 'undefined') {
+      setIsLoading(false);
+      return;
+    }
 
-            // Ethereum Wallets (MetaMask, etc.)
-            // Note: setupEthereumWallets requires wagmiConfig - disabled to avoid duplicate script issues
-            // setupEthereumWallets({
-            // 	wagmiConfig,
-            // 	web3Modal,
-            // }),
-
-            // Hardware & Snap
-            setupLedger(),
-            setupNearSnap(),
-          ] as WalletModuleFactory[],
+    async function initConnector() {
+      try {
+        // Dynamic import to avoid SSR issues
+        const { NearConnector } = await import('@hot-labs/near-connect');
+        
+        const _connector = new NearConnector({
+          network: network === 'testnet' ? 'testnet' : 'mainnet',
+          
+          // Optional: WalletConnect configuration
+          walletConnect: {
+            projectId: 'c4f79cc821944d9680842e34466bfbad',
+            metadata: {
+              name: 'VF DAO',
+              description: 'Decentralized infrastructure for the vegan community. Built on NEAR Protocol.',
+              url: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001',
+              icons: ['https://vfdao.org/icon.png'],
+            },
+          },
         });
 
-        const _modal = setupModal(_selector, {
-          contractId,
-          description: 'Connect your NEAR wallet to VF DAO',
+        // Listen for sign in events
+        _connector.on('wallet:signIn', async (event: any) => {
+          const connectedWallet = await _connector.wallet();
+          setWallet(connectedWallet);
+          setAccounts(event.accounts.map((acc: any) => ({ accountId: acc.accountId })));
+          setAccountId(event.accounts[0]?.accountId || null);
         });
 
-        const state = _selector.store.getState() as unknown as { accounts: { accountId: string }[] };
-        setAccounts(state.accounts);
-        setAccountId(state.accounts[0]?.accountId || null);
+        // Listen for sign out events
+        _connector.on('wallet:signOut', async () => {
+          setWallet(null);
+          setAccounts([]);
+          setAccountId(null);
+        });
 
-        setSelector(_selector);
-        setModal(_modal);
+        setConnector(_connector);
+        
+        // Check if wallet is already connected
+        try {
+          const { wallet: connectedWallet, accounts: connectedAccounts } = await _connector.getConnectedWallet();
+          if (connectedWallet && connectedAccounts.length > 0) {
+            console.log('[WalletContext] Found connected wallet:', connectedAccounts[0]?.accountId);
+            setWallet(connectedWallet);
+            setAccounts(connectedAccounts.map((acc: any) => ({ accountId: acc.accountId })));
+            setAccountId(connectedAccounts[0]?.accountId || null);
+          } else {
+            console.log('[WalletContext] No wallet connected on mount');
+          }
+        } catch (err) {
+          // No wallet connected yet, this is fine
+          console.log('[WalletContext] No wallet connected on mount (error):', err);
+        }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        console.error('Failed to initialize wallet selector:', errorMessage);
+        console.error('Failed to initialize HOT Connect:', errorMessage);
       } finally {
         setIsLoading(false);
       }
     }
 
-    void initWalletSelector();
-  }, [contractId, network]);
-
-  useEffect(() => {
-    if (!selector) return;
-
-    const subscription = selector.store.observable.subscribe((state) => {
-      const typedState = state as unknown as { accounts: { accountId: string }[] };
-      setAccounts(typedState.accounts);
-      setAccountId(typedState.accounts[0]?.accountId || null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [selector]);
+    void initConnector();
+  }, [network]);
 
   const value: WalletContextType = {
-    selector,
-    modal,
+    connector,
+    wallet,
     accounts,
     accountId,
     isConnected: !!accountId,
     isLoading,
+    signIn,
+    signOut,
   };
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
