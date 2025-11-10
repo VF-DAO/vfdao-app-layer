@@ -333,13 +333,29 @@ export function formatTokenAmountNoAbbrev(amount: string, decimals: number, maxD
  * Parse token amount from user input to contract format
  */
 export function parseTokenAmount(amount: string, decimals: number): string {
+  console.warn('[parseTokenAmount] Input:', { amount: `"${amount}"`, decimals, amountType: typeof amount, decimalsType: typeof decimals });
   try {
+    // Clean the input - remove commas, extra spaces, etc.
+    const cleanedAmount = amount.replace(/,/g, '').trim();
+    console.warn('[parseTokenAmount] Cleaned amount:', `"${cleanedAmount}"`);
+
+    // Check for obviously invalid inputs that would cause Big.js to fail
+    if (!cleanedAmount || cleanedAmount === '' || cleanedAmount.includes('/') || cleanedAmount.includes('\\') ||
+        cleanedAmount.includes(' ') || isNaN(Number(cleanedAmount))) {
+      console.warn('[parseTokenAmount] Invalid input detected, returning 0');
+      return '0';
+    }
+
     // Use Big to avoid scientific notation for large integers (e.g. 1e+24)
-    const result = new Big(amount).times(new Big(10).pow(decimals));
+    const bigAmount = new Big(cleanedAmount);
+    const bigDecimals = new Big(10).pow(decimals);
+    const result = bigAmount.times(bigDecimals);
+    const finalResult = result.toFixed(0);
+    console.warn('[parseTokenAmount] Success:', { bigAmount: bigAmount.toString(), bigDecimals: bigDecimals.toString(), result: result.toString(), finalResult });
     // toFixed(0) produces an integer string without exponent
-    return result.toFixed(0);
+    return finalResult;
   } catch (e) {
-    console.warn('[parseTokenAmount] failed to parse amount:', amount, e);
+    console.warn('[parseTokenAmount] Failed to parse amount:', amount, 'decimals:', decimals, 'error:', e);
     return '0';
   }
 }

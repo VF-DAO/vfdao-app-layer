@@ -250,7 +250,7 @@ export function TokenBalance() {
         {isLoading ? (
           <div className="h-5 w-16 bg-muted animate-pulse rounded"></div>
         ) : (
-          <div className={`font-semibold text-sm sm:text-base text-verified transition-opacity ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
+          <div className={`font-semibold text-sm sm:text-base text-primary transition-opacity ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
             {formatDollarAmount(parseFloat(usdValue))}
           </div>
         )}

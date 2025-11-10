@@ -25,7 +25,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         >
           <WalletProviderWrapper contractId="vfdao.near" network="mainnet">
             <Navigation />
-            <main className="min-h-screen" suppressHydrationWarning>
+            <main className="min-h-screen pt-16 md:pt-0" suppressHydrationWarning>
               {children}
             </main>
             <footer className="border-t py-12 px-4 bg-card/30">

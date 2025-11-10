@@ -1,45 +1,53 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Home, ArrowRightLeft, ChevronRight, ChevronDown, ChevronLeft, Droplets } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { WalletButton } from '@/components/wallet-button';
 import Logo from '@/components/ui/logo';
 
 const navItems = [
-  { label: 'Home', href: '#' },
-  { label: 'Swap', href: '#tokens' }
+  { label: 'Home', href: '#', icon: Home },
+  { label: 'Swap', href: '#tokens', icon: ArrowRightLeft },
+  { label: 'Liquidity', href: '#liquidity', icon: Droplets }
 ];
 
-export function Navigation() {
-  const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+  activeSection: string;
+}
+
+function Sidebar({ isOpen, onClose, activeSection }: SidebarProps) {
+  const sidebarRef = useRef<HTMLDivElement>(null);
+
+  const handleClickOutside = useCallback((event: MouseEvent) => {
+    if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node) && isOpen) {
+      onClose();
+    }
+  }, [isOpen, onClose]);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node) && isOpen) {
-        setIsOpen(false);
-      }
-    };
-
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      document.body.style.overflow = 'hidden'; // Prevent scrolling when sidebar is open
+    } else {
+      document.body.style.overflow = 'unset';
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.body.style.overflow = 'unset';
     };
-  }, [isOpen]);
+  }, [isOpen, handleClickOutside]);
 
   const scrollToTop = () => {
-    // Ensure we scroll on the window/document
     window.scrollTo({
       top: 0,
       behavior: 'smooth',
     });
-    // Fallback for documentElement
     document.documentElement.scrollTo({
       top: 0,
       behavior: 'smooth',
@@ -48,115 +56,77 @@ export function Navigation() {
 
   const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
+    onClose(); // Close sidebar first
 
     if (href === '#') {
-      scrollToTop();
+      setTimeout(() => scrollToTop(), 300); // Delay to allow sidebar close animation
       return;
     }
 
     if (href.startsWith('#')) {
-      // Use setTimeout to ensure DOM is ready and menu is closed first
       setTimeout(() => {
         const element = document.querySelector(href);
         if (element) {
           element.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-      }, 0);
+      }, 300);
     }
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b bg-background/95 backdrop-blur-sm shadow-sm dark:shadow-white/5">
-      <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
-          {/* Logo */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsOpen(false);
-              setTimeout(() => {
-                scrollToTop();
-              }, 0);
-            }}
-            className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          />
+
+          {/* Sidebar */}
+          <motion.div
+            ref={sidebarRef}
+            initial={{ x: '-100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '-100%' }}
+            transition={{ type: 'tween', duration: 0.3 }}
+            className="fixed left-0 top-0 h-full w-80 max-w-[90vw] bg-background border-r border-border shadow-xl z-50 flex flex-col"
           >
-            <Logo width={80} height={54} className="w-20 h-14" />
-          </button>
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            {navItems.map((item) => {
-              if (item.href === '#') {
-                return (
-                  <button
-                    key={item.label}
-                    onClick={() => {
-                      scrollToTop();
-                    }}
-                    className="text-sm font-medium text-foreground hover:text-primary transition-colors"
-                  >
-                    {item.label}
-                  </button>
-                );
-              }
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={(e) => handleSmoothScroll(e, item.href)}
-                  className="text-sm font-medium text-foreground hover:text-primary transition-colors"
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
-
-          {/* Right Side */}
-          <div className="flex items-center space-x-4">
-            <div className="hidden md:block">
-              <ThemeToggle />
-            </div>
-            <div className="hidden md:block">
-              <WalletButton />
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-border">
+              <Logo width={80} height={54} className="w-20 h-14" />
+              <button
+                onClick={onClose}
+                className="p-2 rounded-md transition-colors group"
+                aria-label="Close sidebar"
+              >
+                <ChevronLeft size={20} className="transition-transform group-hover:-translate-x-1" />
+              </button>
             </div>
 
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="md:hidden p-2 flex-shrink-0"
-              aria-label="Toggle menu"
-            >
-              {isOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Menu */}
-        <AnimatePresence>
-          {isOpen && (
-            <motion.div
-              ref={menuRef}
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="md:hidden border-t"
-            >
-              <div className="py-4 space-y-4">
+            {/* Navigation Items */}
+            <div className="flex-1 py-6">
+              <nav className="px-4 space-y-2">
                 {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeSection === item.href;
                   if (item.href === '#') {
                     return (
                       <button
                         key={item.label}
                         onClick={() => {
-                          setIsOpen(false);
-                          // Delay scroll to allow menu close animation to complete
-                          setTimeout(() => {
-                            scrollToTop();
-                          }, 100);
+                          onClose();
+                          setTimeout(() => scrollToTop(), 300);
                         }}
-                        className="block w-full text-left px-4 py-2 text-sm font-medium hover:bg-accent/10 rounded-md transition-colors"
+                        className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                          isActive
+                            ? 'bg-accent/10'
+                            : 'hover:bg-accent/10'
+                        }`}
                       >
+                        <Icon size={18} />
                         {item.label}
                       </button>
                     );
@@ -165,25 +135,276 @@ export function Navigation() {
                     <Link
                       key={item.href}
                       href={item.href}
-                      onClick={(e) => {
-                        setIsOpen(false);
-                        handleSmoothScroll(e, item.href);
-                      }}
-                      className="block px-4 py-2 text-sm font-medium hover:bg-accent/10 rounded-md transition-colors"
+                      onClick={(e) => handleSmoothScroll(e, item.href)}
+                      className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                        isActive
+                          ? 'bg-accent/10'
+                          : 'hover:bg-accent/10'
+                      }`}
                     >
+                      <Icon size={18} />
                       {item.label}
                     </Link>
                   );
                 })}
-                <div className="px-4 pt-2 border-t flex items-center justify-between">
-                  <WalletButton />
-                  <ThemeToggle />
-                </div>
+              </nav>
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-border space-y-4">
+              <div className="flex items-center justify-between">
+                <WalletButton />
+                <ThemeToggle />
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
+export function Navigation() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isDesktopExpanded, setIsDesktopExpanded] = useState(false);
+  const [activeSection, setActiveSection] = useState('#');
+
+  // Swipe gesture state
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  // Minimum swipe distance (in px)
+  const minSwipeDistance = 50;
+
+  // Handle touch start
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  // Handle touch move
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  // Handle touch end - Detect swipe gestures for mobile sidebar
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    // Only handle swipes on mobile
+    if (window.innerWidth >= 768) return;
+
+    // Open sidebar with left-to-right swipe from left edge
+    if (isRightSwipe && !isSidebarOpen && touchStart < 50) {
+      setIsSidebarOpen(true);
+    }
+    // Close sidebar with right-to-left swipe
+    else if (isLeftSwipe && isSidebarOpen) {
+      setIsSidebarOpen(false);
+    }
+  };
+
+  useEffect(() => {
+    const sections = navItems.map(item => item.href).filter(href => href !== '#');
+    sections.push('#'); // Add home section
+    sections.push('#liquidity'); // Add liquidity section
+
+    const observerOptions = {
+      root: null,
+      rootMargin: '-50% 0px -50% 0px',
+      threshold: 0
+    };
+
+    const observerCallback = (entries: IntersectionObserverEntry[]) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const sectionId = entry.target.id ? `#${entry.target.id}` : '#';
+          setActiveSection(sectionId);
+        }
+      });
+    };
+
+    const observer = new IntersectionObserver(observerCallback, observerOptions);
+
+    // Observe all sections
+    sections.forEach((section) => {
+      if (section === '#') {
+        // For home, observe the top of the page
+        observer.observe(document.body);
+      } else {
+        const element = document.querySelector(section);
+        if (element) {
+          observer.observe(element);
+        }
+      }
+    });
+
+    // Also listen for scroll to handle home section
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      if (scrollTop < 100) {
+        setActiveSection('#');
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
+  return (
+    <>
+      {/* Top Bar - Only visible on mobile */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border">
+        <div className="flex h-16 items-center justify-between px-4">
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="p-2"
+            aria-label="Open sidebar"
+          >
+            <Menu size={24} />
+          </button>
+
+          <div className="flex-1 flex justify-center">
+            <button
+              onClick={() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                document.documentElement.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="focus:outline-none border-none outline-none"
+            >
+              <Logo width={60} height={40} className="w-15 h-10" />
+            </button>
+          </div>
+
+          <div className="w-10" /> {/* Spacer for balance */}
+        </div>
       </div>
-    </nav>
+
+      {/* Desktop Sidebar */}
+      <div className={`hidden md:flex fixed left-0 top-0 h-full bg-background border-r border-border shadow-lg z-40 flex-col transition-all duration-300 ${
+        isDesktopExpanded ? 'w-72' : 'w-20'
+      }`}>
+        {/* Header */}
+        <div className={`flex flex-col items-center p-4 border-b border-border ${isDesktopExpanded ? '' : 'space-y-3'}`}>
+          {isDesktopExpanded ? (
+            <div className="flex items-center justify-between w-full">
+              <Logo width={80} height={54} className="w-20 h-14" />
+              <button
+                onClick={() => setIsDesktopExpanded(false)}
+                className="p-2 rounded-md transition-colors group"
+                aria-label="Collapse sidebar"
+              >
+                <ChevronLeft size={16} className="transition-transform group-hover:-translate-x-1" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsDesktopExpanded(true)}
+              className="flex flex-col items-center space-y-2 p-2 rounded-md transition-colors group"
+              aria-label="Expand sidebar"
+            >
+              <Logo width={64} height={43} className="w-16 h-11" />
+              <ChevronRight size={18} className="transition-transform group-hover:translate-x-1" />
+            </button>
+          )}
+        </div>
+
+        {/* Navigation Items */}
+        <div className="flex-1 py-6">
+          <nav className="px-2 space-y-2">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeSection === item.href;
+              if (item.href === '#') {
+                return (
+                  <button
+                    key={item.label}
+                    onClick={() => {
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                      document.documentElement.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
+                      isDesktopExpanded ? '' : 'justify-center'
+                    } ${
+                      isActive
+                        ? 'bg-accent/10'
+                        : 'hover:bg-accent/10'
+                    }`}
+                    title={isDesktopExpanded ? '' : item.label}
+                  >
+                    <Icon size={18} />
+                    {isDesktopExpanded && <span>{item.label}</span>}
+                  </button>
+                );
+              }
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const element = document.querySelector(item.href);
+                    if (element) {
+                      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  }}
+                  className={`flex items-center gap-3 px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
+                    isDesktopExpanded ? '' : 'justify-center'
+                  } ${
+                    isActive
+                      ? 'bg-accent/10'
+                      : 'hover:bg-accent/10'
+                  }`}
+                  title={isDesktopExpanded ? '' : item.label}
+                >
+                  <Icon size={18} />
+                  {isDesktopExpanded && <span>{item.label}</span>}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* Footer */}
+        <div className={`p-4 border-t border-border ${isDesktopExpanded ? 'space-y-4' : 'flex flex-col items-center space-y-3'}`}>
+          {isDesktopExpanded ? (
+            <>
+              <div className="flex items-center justify-between">
+                <WalletButton />
+                <ThemeToggle />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="w-full flex justify-center px-2">
+                <WalletButton compact className="w-full max-w-[60px]" />
+              </div>
+              <ThemeToggle />
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Mobile Sidebar Overlay */}
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} activeSection={activeSection} />
+
+      {/* Content Spacer */}
+      <div
+        className={`md:pt-0 pt-16 transition-all duration-300 ${
+          isDesktopExpanded ? 'md:ml-72' : 'md:ml-20'
+        }`}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      />
+    </>
   );
 }

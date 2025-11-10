@@ -94,6 +94,10 @@ export const RefFinanceSwapCard: React.FC = () => {
 
   // Available tokens with metadata
   const [availableTokens, setAvailableTokens] = useState<TokenMetadata[]>([]);
+  
+  // Gas reserve notification
+  const [showGasReserveInfo, setShowGasReserveInfo] = useState(false);
+  const [showGasReserveMessage, setShowGasReserveMessage] = useState(false);
 
   // Check for transaction results in URL
   useEffect(() => {
@@ -613,7 +617,7 @@ export const RefFinanceSwapCard: React.FC = () => {
         
         // Enhanced user rejection detection
         const isUserRejection = isNullError || isEmptyObject ||
-                               ['User rejected', 'User closed the window', 'Request was cancelled', 'User denied', 'cancelled', 'Transaction was cancelled', 'User cancelled'].some(msg => 
+                               ['User rejected', 'User closed the window', 'Request was cancelled', 'User denied', 'cancelled', 'Transaction was cancelled', 'User cancelled', 'Wallet closed'].some(msg => 
                                  errorMessage.toLowerCase().includes(msg.toLowerCase())
                                );
         
@@ -851,10 +855,31 @@ export const RefFinanceSwapCard: React.FC = () => {
                     onClick={() => {
                       const rawBalance = rawBalances[tokenIn.id];
                       if (rawBalance) {
-                        // Calculate percentage of raw balance
-                        const percentBalance = new Big(rawBalance).mul(percent).div(100);
+                        let availableBalance = new Big(rawBalance);
+                        let reserveApplied = false;
+                        
+                        // Check if user is trying to use more than available (need to reduce for gas reserve)
+                        if (tokenIn.id === 'wrap.near' || tokenIn.id === 'near') {
+                          const reserveAmount = new Big(0.25).mul(new Big(10).pow(24)); // 0.25 NEAR in yocto
+                          const requestedAmount = new Big(rawBalance).mul(percent).div(100); // What user wants
+                          const maxAvailable = new Big(rawBalance).minus(reserveAmount); // Max they can have
+                          
+                          // Only show message if requested amount exceeds what's available after reserve
+                          if (requestedAmount.gt(maxAvailable) && maxAvailable.gt(0)) {
+                            reserveApplied = true;
+                          }
+                          // Always use max available (balance - 0.25) for calculation
+                          availableBalance = maxAvailable.lt(0) ? new Big(0) : maxAvailable;
+                        }
+                        
+                        // Calculate percentage of available balance
+                        const percentBalance = availableBalance.mul(percent).div(100);
                         // Convert to display format
                         const displayValue = percentBalance.div(new Big(10).pow(tokenIn.decimals)).toFixed(tokenIn.decimals, Big.roundDown);
+                        
+                        // Update states BEFORE setting amount to avoid race conditions
+                        setShowGasReserveInfo(reserveApplied);
+                        setShowGasReserveMessage(reserveApplied);
                         setAmountIn(displayValue);
                       }
                     }}
@@ -868,8 +893,28 @@ export const RefFinanceSwapCard: React.FC = () => {
                     // Use the raw balance value to avoid precision issues
                     const rawBalance = rawBalances[tokenIn.id];
                     if (rawBalance) {
+                      let availableBalance = new Big(rawBalance);
+                      let reserveApplied = false;
+                      
+                      // Check if user is trying to use more than available (need to reduce for gas reserve)
+                      if (tokenIn.id === 'wrap.near' || tokenIn.id === 'near') {
+                        const reserveAmount = new Big(0.25).mul(new Big(10).pow(24)); // 0.25 NEAR in yocto
+                        const maxAvailable = new Big(rawBalance).minus(reserveAmount); // Max they can have
+                        
+                        // MAX button always reduces amount to keep 0.25 NEAR, so show message
+                        if (new Big(rawBalance).gt(reserveAmount)) {
+                          reserveApplied = true;
+                        }
+                        // Always use max available (balance - 0.25) for calculation
+                        availableBalance = maxAvailable.lt(0) ? new Big(0) : maxAvailable;
+                      }
+                      
                       // Convert raw contract balance to display format
-                      const displayValue = new Big(rawBalance).div(new Big(10).pow(tokenIn.decimals)).toFixed(tokenIn.decimals, Big.roundDown);
+                      const displayValue = availableBalance.div(new Big(10).pow(tokenIn.decimals)).toFixed(tokenIn.decimals, Big.roundDown);
+                      
+                      // Update states BEFORE setting amount to avoid race conditions
+                      setShowGasReserveInfo(false); // MAX doesn't disable button
+                      setShowGasReserveMessage(reserveApplied); // But does show message
                       setAmountIn(displayValue);
                     }
                   }}
@@ -899,7 +944,30 @@ export const RefFinanceSwapCard: React.FC = () => {
               <div className="flex-1 relative">
                 <TokenInput
                   value={amountIn}
-                  onChange={setAmountIn}
+                  onChange={(value) => {
+                    setAmountIn(value);
+                    
+                    // Clear the message when user manually types
+                    setShowGasReserveMessage(false);
+                    
+                    // Check if we need to show gas reserve warning
+                    if (tokenIn && (tokenIn.id === 'wrap.near' || tokenIn.id === 'near') && value && rawBalances[tokenIn.id]) {
+                      const rawBalance = rawBalances[tokenIn.id];
+                      const reserveAmount = new Big(0.25).mul(new Big(10).pow(24)); // 0.25 NEAR in yocto
+                      const requestedAmount = new Big(value).mul(new Big(10).pow(tokenIn.decimals)); // User input in yocto
+                      const maxAvailable = new Big(rawBalance).minus(reserveAmount); // Max they can have
+                      
+                      // Only show gas reserve message if amount is within balance but exceeds (balance - 0.25)
+                      // If amount exceeds total balance, insufficient funds message will show instead
+                      if (requestedAmount.lte(new Big(rawBalance)) && requestedAmount.gt(maxAvailable) && maxAvailable.gt(0)) {
+                        setShowGasReserveInfo(true);
+                      } else {
+                        setShowGasReserveInfo(false);
+                      }
+                    } else {
+                      setShowGasReserveInfo(false);
+                    }
+                  }}
                   placeholder='0.0'
                   disabled={!accountId}
                   decimalLimit={tokenIn?.decimals ?? 18}
@@ -974,6 +1042,16 @@ export const RefFinanceSwapCard: React.FC = () => {
           <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-full shadow-md">
             <AlertCircle className="w-4 h-4 text-red-500" />
             <p className="text-sm sm:text-base text-red-500">{error}</p>
+          </div>
+        )}
+
+        {/* Gas Reserve Info */}
+        {showGasReserveMessage && accountId && (
+          <div className="flex items-start gap-2 p-2 bg-primary/10 rounded-full">
+            <Info className="w-4 h-4 text-primary mt-0.5" />
+            <p className="text-xs text-muted-foreground">
+              Keeping 0.25 NEAR in your wallet for gas fees
+            </p>
           </div>
         )}
 
@@ -1122,51 +1200,46 @@ export const RefFinanceSwapCard: React.FC = () => {
         })()}
 
         {/* Swap Button */}
-        {!accountId ? (
-          <button
-            onClick={signIn}
-            className="w-full py-3 sm:py-4 border border-verified bg-verified/10 text-primary shadow-md shadow-verified/20 font-bold rounded-full transition-all hover:bg-verified/20 hover:shadow-lg hover:shadow-verified/30 flex items-center justify-center gap-2 text-sm"
-          >
-            Connect Wallet
-          </button>
-        ) : (
-          <button
-            onClick={() => void handleSwap()}
-            disabled={!canSwap || isSwapping || isEstimating || !!(amountIn && tokenIn && new Big(amountIn).times(new Big(10).pow(tokenIn.decimals)).gt(new Big(rawBalances[tokenIn.id] ?? '0'))) || !!(
-              tokenIn?.id === 'near' && 
-              rawBalances.near && 
-              new Big(rawBalances.near).lt(new Big('250000000000000000000000'))
-            )}
-            className="w-full py-3 sm:py-4 border border-verified bg-verified/10 disabled:bg-transparent disabled:text-muted-foreground disabled:cursor-not-allowed disabled:border-verified/30 disabled:shadow-none text-primary shadow-md shadow-verified/20 font-bold rounded-full transition-colors transition-shadow duration-200 hover:bg-verified/20 hover:shadow-lg hover:shadow-verified/30 disabled:hover:bg-transparent flex items-center justify-center text-sm"
-          >
-            {(isSwapping || isEstimating) && (
-              <span 
-                className="inline-flex items-center justify-center mr-2 relative" 
-                style={{ 
-                  transform: 'none', 
-                  willChange: 'auto',
-                  backfaceVisibility: 'visible'
-                }}
-              >
-                <Loader2 className="w-5 h-5 animate-spin" />
-              </span>
-            )}
-            <span className={
-              amountIn && tokenIn && new Big(amountIn).times(new Big(10).pow(tokenIn.decimals)).gt(new Big(rawBalances[tokenIn.id] ?? '0'))
-                ? 'text-destructive'
-                : tokenIn?.id === 'near' && rawBalances.near && new Big(rawBalances.near).lt(new Big('250000000000000000000000'))
-                ? 'text-verified'
-                : ''
-            }>
-              {isSwapping ? 'Swapping...' : isEstimating ? 'Finding best route...' : 
-               (tokenIn?.id === 'near' && rawBalances.near && new Big(rawBalances.near).lt(new Big('250000000000000000000000')))
-                 ? 'Need 0.25 NEAR minimum to swap' :
-               (!amountIn || !tokenIn || !tokenOut) ? 'Enter Amount' :
-               (amountIn && tokenIn && new Big(amountIn).times(new Big(10).pow(tokenIn.decimals)).gt(new Big(rawBalances[tokenIn.id] ?? '0'))) 
-                 ? 'Insufficient Funds' : 'Swap'}
+        <button
+          onClick={accountId ? () => void handleSwap() : undefined}
+          disabled={!accountId || !canSwap || isSwapping || isEstimating || !!(amountIn && tokenIn && new Big(amountIn).times(new Big(10).pow(tokenIn.decimals)).gt(new Big(rawBalances[tokenIn.id] ?? '0'))) || !!(
+            tokenIn?.id === 'near' && 
+            rawBalances.near && 
+            new Big(rawBalances.near).lt(new Big('250000000000000000000000'))
+          ) || showGasReserveInfo}
+          className="w-full py-3 sm:py-4 border border-verified bg-verified/10 disabled:bg-transparent disabled:text-muted-foreground disabled:cursor-not-allowed disabled:border-verified/30 disabled:shadow-none text-primary shadow-md shadow-verified/20 font-bold rounded-full transition-colors transition-shadow duration-200 hover:bg-verified/20 hover:shadow-lg hover:shadow-verified/30 disabled:hover:bg-transparent flex items-center justify-center text-sm"
+        >
+          {(isSwapping || isEstimating) && (
+            <span 
+              className="inline-flex items-center justify-center mr-2 relative" 
+              style={{ 
+                transform: 'none', 
+                willChange: 'auto',
+                backfaceVisibility: 'visible'
+              }}
+            >
+              <Loader2 className="w-5 h-5 animate-spin" />
             </span>
-          </button>
-        )}
+          )}
+          <span className={
+            amountIn && tokenIn && new Big(amountIn).times(new Big(10).pow(tokenIn.decimals)).gt(new Big(rawBalances[tokenIn.id] ?? '0'))
+              ? 'text-destructive'
+              : showGasReserveInfo
+              ? 'text-destructive'
+              : tokenIn?.id === 'near' && rawBalances.near && new Big(rawBalances.near).lt(new Big('250000000000000000000000'))
+              ? 'text-verified'
+              : ''
+          }>
+            {isSwapping ? 'Swapping...' : isEstimating ? 'Finding best route...' : 
+             showGasReserveInfo
+               ? 'Need 0.25N for gas' :
+             (tokenIn?.id === 'near' && rawBalances.near && new Big(rawBalances.near).lt(new Big('250000000000000000000000')))
+               ? 'Need 0.25 NEAR minimum to swap' :
+             (!amountIn || !tokenIn || !tokenOut) ? 'Enter Amount' :
+             (amountIn && tokenIn && new Big(amountIn).times(new Big(10).pow(tokenIn.decimals)).gt(new Big(rawBalances[tokenIn.id] ?? '0'))) 
+               ? 'Insufficient Funds' : 'Swap'}
+          </span>
+        </button>
 
         {/* Powered by Rhea Finance */}
         <div className="text-center">

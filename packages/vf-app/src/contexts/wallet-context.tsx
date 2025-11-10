@@ -70,7 +70,7 @@ export function WalletProvider({
         }
       } catch (error) {
         // Handle user rejection gracefully - don't treat as error
-        if (error instanceof Error && error.message === 'User rejected') {
+        if (error instanceof Error && (error.message === 'User rejected' || error.message === 'Wallet closed')) {
           console.log('[WalletContext] User cancelled wallet connection');
         } else {
           console.error('[WalletContext] Failed to connect wallet:', error);
