@@ -883,7 +883,7 @@ export const RefFinanceSwapCard: React.FC = () => {
                         setAmountIn(displayValue);
                       }
                     }}
-                    className="px-1 py-0.5 text-xs bg-card hover:bg-muted rounded-full border border-border text-primary font-semibold opacity-60 hover:opacity-80 transition-all whitespace-nowrap"
+                    className="px-1 py-0.5 text-xs bg-card hover:bg-muted rounded-full border border-border text-primary font-semibold opacity-70 hover:opacity-80 transition-all whitespace-nowrap"
                   >
                     {percent}%
                   </button>
@@ -918,13 +918,13 @@ export const RefFinanceSwapCard: React.FC = () => {
                       setAmountIn(displayValue);
                     }
                   }}
-                  className="px-1 py-0.5 text-xs bg-card hover:bg-muted rounded-full border border-border text-primary font-semibold opacity-60 hover:opacity-80 transition-all whitespace-nowrap"
+                  className="px-1 py-0.5 text-xs bg-card hover:bg-muted rounded-full border border-border text-primary font-semibold opacity-70 hover:opacity-80 transition-all whitespace-nowrap"
                 >
                   MAX
                 </button>
               </div>
             )}
-            <div className="flex items-center gap-2 p-4 border border-border rounded-full transition-all hover:border-primary/50 hover:shadow-lg">
+            <div className="flex items-center gap-0 p-4 border border-border rounded-full transition-all hover:border-primary/50 hover:shadow-lg">
               <div className="flex flex-col items-start w-[200px]">
                 <TokenSelect
                   selectedToken={tokenIn}
@@ -983,7 +983,7 @@ export const RefFinanceSwapCard: React.FC = () => {
 
           {/* Token Out - Positioned with medium gap from Token In */}
           <div className="w-full space-y-1 mt-2">
-            <div className="flex items-center gap-2 p-4 border border-border rounded-full transition-all">
+            <div className="flex items-center gap-0 p-4 border border-border rounded-full transition-all">
               <div className="flex flex-col items-start w-[200px]">
                 <TokenSelect
                   selectedToken={tokenOut}
@@ -1241,7 +1241,7 @@ export const RefFinanceSwapCard: React.FC = () => {
           </span>
         </button>
 
-        {/* Powered by Rhea Finance */}
+        {/* Powered by Rhea */}
         <div className="text-center">
           <p className="text-xs text-muted-foreground">
             Powered by{' '}
@@ -1251,7 +1251,7 @@ export const RefFinanceSwapCard: React.FC = () => {
               rel="noopener noreferrer"
               className="text-primary hover:underline"
             >
-              Rhea Finance
+              Rhea
             </a>
           </p>
         </div>

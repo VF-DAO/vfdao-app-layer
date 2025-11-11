@@ -1803,12 +1803,6 @@ export const LiquidityCard: React.FC = () => {
           </div>
         )}
 
-        {/* Footer */}
-        <div className="text-center">
-          <p className="text-xs text-muted-foreground">
-            Powered by Ref Finance • Earn trading fees
-          </p>
-        </div>
       </div>
 
       {/* Add Liquidity Form - Separate Card */}
@@ -1877,7 +1871,7 @@ export const LiquidityCard: React.FC = () => {
                           }
                         }
                       }}
-                      className="px-1 py-0.5 text-xs bg-card hover:bg-muted rounded-full border border-border text-primary font-semibold opacity-60 hover:opacity-80 transition-all whitespace-nowrap"
+                      className="px-1 py-0.5 text-xs bg-card hover:bg-muted rounded-full border border-border text-primary font-semibold opacity-70 hover:opacity-80 transition-all whitespace-nowrap"
                     >
                       {percent}%
                     </button>
@@ -1916,28 +1910,30 @@ export const LiquidityCard: React.FC = () => {
                         }
                       }
                     }}
-                    className="px-1 py-0.5 text-xs bg-card hover:bg-muted rounded-full border border-border text-primary font-semibold opacity-60 hover:opacity-80 transition-all whitespace-nowrap"
+                    className="px-1 py-0.5 text-xs bg-card hover:bg-muted rounded-full border border-border text-primary font-semibold opacity-70 hover:opacity-80 transition-all whitespace-nowrap"
                   >
                     MAX
                   </button>
                 </div>
               )}
-              <div className="flex items-center gap-2 p-4 border border-border rounded-full transition-all hover:border-primary/50 hover:shadow-lg">
-                {poolInfo.token1.icon ? (
-                  <img 
-                    src={poolInfo.token1.icon} 
-                    alt={poolInfo.token1.symbol}
-                    className="w-6 h-6 rounded-full"
-                  />
-                ) : (
-                  <div className="w-6 h-6 bg-gradient-to-br from-verified/20 to-verified/10 rounded-full flex items-center justify-center">
-                    <span className="text-xs font-bold text-verified">N</span>
-                  </div>
-                )}
+              <div className="flex items-center gap-0 p-4 border border-border rounded-full transition-all hover:border-primary/50 hover:shadow-lg">
                 <div className="flex flex-col items-start w-[200px]">
-                  <span className="font-semibold text-foreground text-sm">{poolInfo.token1.symbol}</span>
+                  <div className="flex items-center gap-2">
+                    {poolInfo.token1.icon ? (
+                      <img 
+                        src={poolInfo.token1.icon} 
+                        alt={poolInfo.token1.symbol}
+                        className="w-6 h-6 rounded-full"
+                      />
+                    ) : (
+                      <div className="w-6 h-6 bg-gradient-to-br from-verified/20 to-verified/10 rounded-full flex items-center justify-center">
+                        <span className="text-xs font-bold text-verified">N</span>
+                      </div>
+                    )}
+                    <span className="font-semibold text-foreground text-sm">{poolInfo.token1.symbol}</span>
+                  </div>
                   {accountId && (
-                    <div className="flex flex-col items-start mt-1 ml-3">
+                    <div className="flex flex-col items-start mt-1 ml-8">
                       <span className="text-xs text-muted-foreground">
                         Balance: {isLoadingBalances ? '...' : (() => {
                           const rawBalance = rawBalances[poolInfo.token1.id];
@@ -2001,7 +1997,7 @@ export const LiquidityCard: React.FC = () => {
                           }
                         }
                       }}
-                      className="px-1 py-0.5 text-xs bg-card hover:bg-muted rounded-full border border-border text-primary font-semibold opacity-60 hover:opacity-80 transition-all whitespace-nowrap"
+                      className="px-1 py-0.5 text-xs bg-card hover:bg-muted rounded-full border border-border text-primary font-semibold opacity-70 hover:opacity-80 transition-all whitespace-nowrap"
                     >
                       {percent}%
                     </button>
@@ -2025,28 +2021,30 @@ export const LiquidityCard: React.FC = () => {
                         }
                       }
                     }}
-                    className="px-1 py-0.5 text-xs bg-card hover:bg-muted rounded-full border border-border text-primary font-semibold opacity-60 hover:opacity-80 transition-all whitespace-nowrap"
+                    className="px-1 py-0.5 text-xs bg-card hover:bg-muted rounded-full border border-border text-primary font-semibold opacity-70 hover:opacity-80 transition-all whitespace-nowrap"
                   >
                     MAX
                   </button>
                 </div>
               )}
-              <div className="flex items-center gap-2 p-4 border border-border rounded-full transition-all hover:border-primary/50 hover:shadow-lg">
-                {poolInfo.token2.icon ? (
-                  <img 
-                    src={poolInfo.token2.icon} 
-                    alt={poolInfo.token2.symbol}
-                    className="w-6 h-6 rounded-full"
-                  />
-                ) : (
-                  <div className="w-6 h-6 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center">
-                    <span className="text-xs font-bold text-primary">V</span>
-                  </div>
-                )}
+              <div className="flex items-center gap-0 p-4 border border-border rounded-full transition-all hover:border-primary/50 hover:shadow-lg">
                 <div className="flex flex-col items-start w-[200px]">
-                  <span className="font-semibold text-foreground text-sm">{poolInfo.token2.symbol}</span>
+                  <div className="flex items-center gap-2">
+                    {poolInfo.token2.icon ? (
+                      <img 
+                        src={poolInfo.token2.icon} 
+                        alt={poolInfo.token2.symbol}
+                        className="w-6 h-6 rounded-full"
+                      />
+                    ) : (
+                      <div className="w-6 h-6 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center">
+                        <span className="text-xs font-bold text-primary">V</span>
+                      </div>
+                    )}
+                    <span className="font-semibold text-foreground text-sm">{poolInfo.token2.symbol}</span>
+                  </div>
                   {accountId && (
-                    <div className="flex flex-col items-start mt-1 ml-3">
+                    <div className="flex flex-col items-start mt-1 ml-8">
                       <span className="text-xs text-muted-foreground">
                         Balance: {isLoadingBalances ? '...' : (() => {
                           const rawBalance = rawBalances[poolInfo.token2.id];
@@ -2242,7 +2240,7 @@ export const LiquidityCard: React.FC = () => {
                   setShowGasReserveMessage(false);
                   void fetchBalances();
                 }}
-                className="flex-1 py-2 px-4 border border-border text-muted-foreground hover:bg-muted/20 hover:border-muted-foreground/30 rounded-full transition-colors text-sm font-semibold"
+                className="flex-1 py-2 px-4 border border-border text-foreground/70 hover:text-foreground hover:bg-muted/20 hover:border-muted-foreground/30 rounded-full transition-colors text-sm font-semibold"
               >
                 Cancel
               </button>
@@ -2322,7 +2320,7 @@ export const LiquidityCard: React.FC = () => {
                         const displayValue = percentShares.div(Big(10).pow(24)).toFixed(24, Big.roundDown);
                         setToken1Amount(displayValue);
                       }}
-                      className="px-1 py-0.5 text-xs bg-card hover:bg-muted rounded-full border border-border text-primary font-semibold opacity-60 hover:opacity-80 transition-all whitespace-nowrap"
+                      className="px-1 py-0.5 text-xs bg-card hover:bg-muted rounded-full border border-border text-primary font-semibold opacity-70 hover:opacity-80 transition-all whitespace-nowrap"
                     >
                       {percent}%
                     </button>
@@ -2332,16 +2330,16 @@ export const LiquidityCard: React.FC = () => {
                       const displayValue = Big(userShares).div(Big(10).pow(24)).toFixed(24, Big.roundDown);
                       setToken1Amount(displayValue);
                     }}
-                    className="px-1 py-0.5 text-xs bg-card hover:bg-muted rounded-full border border-border text-primary font-semibold opacity-60 hover:opacity-80 transition-all whitespace-nowrap"
+                    className="px-1 py-0.5 text-xs bg-card hover:bg-muted rounded-full border border-border text-primary font-semibold opacity-70 hover:opacity-80 transition-all whitespace-nowrap"
                   >
                     MAX
                   </button>
                 </div>
               )}
-              <div className="flex items-center gap-2 p-4 border border-border rounded-full transition-all hover:border-primary/50 hover:shadow-lg">
+              <div className="flex items-center gap-0 p-4 border border-border rounded-full transition-all hover:border-primary/50 hover:shadow-lg">
                 <div className="flex flex-col items-start w-[200px]">
                   <span className="font-semibold text-foreground text-sm">LP Shares</span>
-                  <div className="flex flex-col items-start mt-1 ml-3">
+                  <div className="flex flex-col items-start mt-1">
                     <span className="text-xs text-muted-foreground">
                       Balance: {formatTokenAmount(userShares, 24, 6)}
                     </span>
@@ -2442,7 +2440,7 @@ export const LiquidityCard: React.FC = () => {
                   setShowGasReserveMessage(false);
                   void fetchBalances();
                 }}
-                className="flex-1 py-2 px-4 border border-border text-muted-foreground hover:bg-muted/20 hover:border-muted-foreground/30 rounded-full transition-colors text-sm font-semibold"
+                className="flex-1 py-2 px-4 border border-border text-foreground/70 hover:text-foreground hover:bg-muted/20 hover:border-muted-foreground/30 rounded-full transition-colors text-sm font-semibold"
               >
                 Cancel
               </button>

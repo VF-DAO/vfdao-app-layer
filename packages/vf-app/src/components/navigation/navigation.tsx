@@ -169,6 +169,10 @@ export function Navigation() {
   const [isDesktopExpanded, setIsDesktopExpanded] = useState(false);
   const [activeSection, setActiveSection] = useState('#');
 
+  // Scroll hide state for mobile
+  const [isNavVisible, setIsNavVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
   // Swipe gesture state
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
@@ -208,6 +212,36 @@ export function Navigation() {
     }
   };
 
+  // Handle scroll to hide/show navigation on mobile
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const scrollDifference = currentScrollY - lastScrollY;
+
+      // Only hide/show on mobile
+      if (window.innerWidth >= 768) {
+        setIsNavVisible(true);
+        setLastScrollY(currentScrollY);
+        return;
+      }
+
+      // Hide navigation when scrolling down, show when scrolling up
+      if (scrollDifference > 10) {
+        // Scrolling down - hide nav
+        setIsNavVisible(false);
+      } else if (scrollDifference < -10) {
+        // Scrolling up - show nav
+        setIsNavVisible(true);
+      }
+
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
+
+  // Track active section based on scroll position
   useEffect(() => {
     const sections = navItems.map(item => item.href).filter(href => href !== '#');
     sections.push('#'); // Add home section
@@ -262,7 +296,9 @@ export function Navigation() {
   return (
     <>
       {/* Top Bar - Only visible on mobile */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border">
+      <div className={`md:hidden fixed top-0 left-0 right-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border transition-transform duration-300 ${
+        isNavVisible ? 'translate-y-0' : '-translate-y-full'
+      }`}>
         <div className="flex h-16 items-center justify-between px-4">
           <button
             onClick={() => setIsSidebarOpen(true)}
@@ -280,7 +316,7 @@ export function Navigation() {
               }}
               className="focus:outline-none border-none outline-none"
             >
-              <Logo width={60} height={40} className="w-15 h-10" />
+              <Logo width={70} height={48} className="w-18 h-12" />
             </button>
           </div>
 
@@ -396,15 +432,57 @@ export function Navigation() {
       {/* Mobile Sidebar Overlay */}
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} activeSection={activeSection} />
 
-      {/* Content Spacer */}
-      <div
-        className={`md:pt-0 pt-16 transition-all duration-300 ${
-          isDesktopExpanded ? 'md:ml-72' : 'md:ml-20'
-        }`}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-      />
+      {/* Mobile Bottom Navigation */}
+      <div className={`md:hidden fixed bottom-0 left-0 right-0 z-30 bg-background/95 backdrop-blur-sm border-t border-border transition-transform duration-300 ${
+        isNavVisible ? 'translate-y-0' : 'translate-y-full'
+      }`}>
+        <div className="flex items-center justify-center h-16">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeSection === item.href;
+            if (item.href === '#') {
+              return (
+                <button
+                  key={item.label}
+                  onClick={() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    document.documentElement.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className={`flex flex-col items-center justify-center flex-1 py-2 px-1 text-xs font-medium transition-colors ${
+                    isActive
+                      ? 'text-primary'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Icon size={20} className="mb-1" />
+                  {item.label}
+                </button>
+              );
+            }
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={(e) => {
+                  e.preventDefault();
+                  const element = document.querySelector(item.href);
+                  if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }}
+                className={`flex flex-col items-center justify-center flex-1 py-2 px-1 text-xs font-medium transition-colors ${
+                  isActive
+                    ? 'text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Icon size={20} className="mb-1" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+      </div>
     </>
   );
 }
