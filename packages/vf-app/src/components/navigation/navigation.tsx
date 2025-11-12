@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRightLeft, ChevronDown, ChevronLeft, ChevronRight, Droplets, Home, Menu, X } from 'lucide-react';
+import { ArrowRightLeft, ChevronLeft, ChevronRight, Droplets, Home, Menu } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { WalletButton } from '@/components/wallet-button';
 import Logo from '@/components/ui/logo';
@@ -82,6 +82,7 @@ function Sidebar({ isOpen, onClose, activeSection }: SidebarProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            onClick={onClose}
             className="fixed inset-0 bg-black/50 z-40 md:hidden"
           />
 
@@ -173,28 +174,24 @@ export function Navigation() {
   const [isNavVisible, setIsNavVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
-  // Swipe gesture state
+  // Swipe gesture state for mobile sidebar
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
-
-  // Minimum swipe distance (in px)
   const minSwipeDistance = 50;
 
-  // Handle touch start
+  // Handle touch events for swipe gestures
   const onTouchStart = (e: React.TouchEvent) => {
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
   };
 
-  // Handle touch move
   const onTouchMove = (e: React.TouchEvent) => {
     setTouchEnd(e.targetTouches[0].clientX);
   };
 
-  // Handle touch end - Detect swipe gestures for mobile sidebar
   const onTouchEnd = () => {
     if (!touchStart || !touchEnd) return;
-
+    
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
@@ -202,11 +199,11 @@ export function Navigation() {
     // Only handle swipes on mobile
     if (window.innerWidth >= 768) return;
 
-    // Open sidebar with left-to-right swipe from left edge
+    // Open sidebar with right swipe from left edge
     if (isRightSwipe && !isSidebarOpen && touchStart < 50) {
       setIsSidebarOpen(true);
     }
-    // Close sidebar with right-to-left swipe
+    // Close sidebar with left swipe
     else if (isLeftSwipe && isSidebarOpen) {
       setIsSidebarOpen(false);
     }
@@ -295,6 +292,14 @@ export function Navigation() {
 
   return (
     <>
+      {/* Swipe zone on left edge for opening sidebar on mobile */}
+      <div
+        className="md:hidden fixed left-0 top-0 bottom-0 w-8 z-20"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      />
+
       {/* Top Bar - Only visible on mobile */}
       <div className={`md:hidden fixed top-0 left-0 right-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border transition-transform duration-300 ${
         isNavVisible ? 'translate-y-0' : '-translate-y-full'

@@ -50,7 +50,7 @@ interface Token {
 }
 
 export const RefFinanceSwapCard: React.FC = () => {
-  const { accountId, wallet, connector, signIn } = useWallet();
+  const { accountId, wallet, connector } = useWallet();
   const {
     loading,
     error: swapError,
@@ -419,25 +419,6 @@ export const RefFinanceSwapCard: React.FC = () => {
         throw new Error('Invalid transaction data: no transactions returned');
       }
 
-      // Helper function to safely convert amounts to BigInt (handles scientific notation)
-      const toBigInt = (amount: string | number | undefined): bigint => {
-        if (!amount) return BigInt(0);
-        const amountStr = amount.toString();
-        
-        // Handle scientific notation
-        if (amountStr.includes('e') || amountStr.includes('E')) {
-          const num = parseFloat(amountStr);
-          return BigInt(Math.floor(num));
-        }
-        
-        // Handle decimal strings
-        if (amountStr.includes('.')) {
-          return BigInt(Math.floor(parseFloat(amountStr)));
-        }
-        
-        return BigInt(amountStr);
-      };
-
       // Convert to wallet selector format using Ref SDK's formatting functions
       // HOT Connect wallet API is compatible with wallet selector
       const accountIdValue = accountId;
@@ -613,13 +594,13 @@ export const RefFinanceSwapCard: React.FC = () => {
         // Handle user rejection (closing wallet) differently from actual errors
         const errorMessage = err instanceof Error ? err.message : String(err);
         const isNullError = err === null || err === undefined;
-        const isEmptyObject = err && typeof err === 'object' && !Array.isArray(err) && Object.keys(err).length === 0;
+        const isEmptyObject = Boolean(err && typeof err === 'object' && !Array.isArray(err) && Object.keys(err).length === 0);
         
         // Enhanced user rejection detection
-        const isUserRejection = isNullError || isEmptyObject ||
-                               ['User rejected', 'User closed the window', 'Request was cancelled', 'User denied', 'cancelled', 'Transaction was cancelled', 'User cancelled', 'Wallet closed'].some(msg => 
-                                 errorMessage.toLowerCase().includes(msg.toLowerCase())
-                               );
+        const hasRejectionKeywords = ['User rejected', 'User closed the window', 'Request was cancelled', 'User denied', 'cancelled', 'Transaction was cancelled', 'User cancelled', 'Wallet closed'].some(msg => 
+          errorMessage.toLowerCase().includes(msg.toLowerCase())
+        );
+        const isUserRejection = isNullError || isEmptyObject || hasRejectionKeywords;
         
         // Handle wallet popup issues
         const isWalletPopupError = ['Couldn\'t open popup', 'popup window', 'MeteorActionError', 'wallet action'].some(msg => 
@@ -638,7 +619,19 @@ export const RefFinanceSwapCard: React.FC = () => {
           setSwapState('cancelled');
         } else {
           // Handle different types of errors safely
-          const errorDetails = err && typeof err === 'object' ? JSON.stringify(err, null, 2) : String(err);
+          let errorDetails: string;
+          try {
+            if (err && typeof err === 'object') {
+              errorDetails = JSON.stringify(err, null, 2);
+            } else if (err !== null && err !== undefined) {
+              // Cast to string/number/boolean to avoid object stringification
+              errorDetails = String(err as string | number | boolean);
+            } else {
+              errorDetails = 'Unknown error';
+            }
+          } catch {
+            errorDetails = 'Error could not be serialized';
+          }
 
           console.error('[SwapWidget] Swap error:', errorDetails);
           console.error('[SwapWidget] Error stack:', err instanceof Error ? err.stack : 'No stack trace available');
@@ -1008,7 +1001,7 @@ export const RefFinanceSwapCard: React.FC = () => {
                   className={`w-full text-xl font-semibold text-right bg-transparent border-none outline-none ${!estimatedOutDisplay || estimatedOutDisplay === '0.0' ? 'text-primary opacity-60' : 'text-foreground'}`}
                   placeholder={
                     tokenOut && tokenPrices[tokenOut.id]?.price
-                      ? `≈ ${formatDollarAmount(parseFloat(String(tokenPrices[tokenOut.id].price)) * 1000)} for 1000 ${tokenOut.symbol}`
+                      ? `≈ $${(parseFloat(String(tokenPrices[tokenOut.id].price)) * 1000).toFixed(2)} for 1000 ${tokenOut.symbol}`
                       : '0.0'
                   }
                 />

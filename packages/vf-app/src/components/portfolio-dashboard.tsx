@@ -6,6 +6,7 @@ import { useWallet } from '@/contexts/wallet-context';
 import { providers } from 'near-api-js';
 import Big from 'big.js';
 import { formatTokenAmount } from '@/lib/swap-utils';
+import Image from 'next/image';
 
 const VF_TOKEN_CONTRACT = 'veganfriends.tkn.near';
 const VF_TOKEN_DECIMALS = 18;
@@ -13,7 +14,7 @@ const POOL_ID = 5094;
 const REF_FINANCE_CONTRACT = 'v2.ref-finance.near';
 
 export function PortfolioDashboard() {
-  const { wallet, accountId, isConnected, signIn } = useWallet();
+  const { accountId, isConnected, signIn } = useWallet();
   const [vfBalance, setVfBalance] = useState<string>('0');
   const [vfUsdValue, setVfUsdValue] = useState<number>(0);
   const [lpShares, setLpShares] = useState<string>('0');
@@ -147,7 +148,7 @@ export function PortfolioDashboard() {
           if (metadata.icon) {
             setVfIcon(metadata.icon);
           }
-        } catch (metaError) {
+        } catch {
           console.warn('[PortfolioDashboard] Could not fetch metadata, using default decimals:', VF_TOKEN_DECIMALS);
         }
         
@@ -178,7 +179,7 @@ export function PortfolioDashboard() {
           }) as unknown) as { result: number[] };
 
           userShares = JSON.parse(Buffer.from(sharesResult.result).toString()) as string;
-        } catch (getPoolSharesError) {
+        } catch {
           // Fallback to mft_balance_of
           try {
             const mftResult = (await provider.query({
@@ -257,14 +258,14 @@ export function PortfolioDashboard() {
                         vfTokenPrice = adjustedRatio.mul(nearPrice).toNumber();
                         
                         // Calculate LP USD value
-                        const token1Reserve = Big(pool.amounts[nearIndex]).div(Big(10).pow(24));
-                        const token2Reserve = Big(pool.amounts[veganIndex]).div(Big(10).pow(18));
+                        const token1Reserve = Big(String(pool.amounts[nearIndex])).div(Big(10).pow(24));
+                        const token2Reserve = Big(String(pool.amounts[veganIndex])).div(Big(10).pow(18));
                         
                         const token1TVL = token1Reserve.mul(nearPrice);
                         const token2TVL = token2Reserve.mul(vfTokenPrice);
                         const poolTVL = token1TVL.plus(token2TVL);
                         
-                        const totalShares = Big(pool.total_shares ?? pool.shares_total_supply ?? '0');
+                        const totalShares = Big(String(pool.total_shares ?? pool.shares_total_supply ?? '0'));
                         if (totalShares.gt(0)) {
                           const readableShares = Big(userShares).div(Big(10).pow(24));
                           const readableTotalShares = totalShares.div(Big(10).pow(24));
@@ -359,10 +360,12 @@ export function PortfolioDashboard() {
           {/* VF Tokens */}
           <div className="flex items-center gap-2 min-w-0">
                 {vfIcon ? (
-                  <img 
+                  <Image 
                     src={vfIcon} 
                     alt="VF"
-                    className="w-6 h-6 rounded-full flex-shrink-0"
+                    width={24}
+                    height={24}
+                    className="rounded-full flex-shrink-0"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
                       const fallback = e.currentTarget.nextElementSibling;
@@ -394,10 +397,12 @@ export function PortfolioDashboard() {
               {/* Pool Contribution */}
               <div className="flex items-center gap-2 min-w-0">
                 <div className="flex items-center justify-center flex-shrink-0">
-                  <img 
+                  <Image 
                     src={nearIcon} 
                     alt="NEAR"
-                    className="w-5 h-5 rounded-full relative z-10"
+                    width={20}
+                    height={20}
+                    className="rounded-full relative z-10"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
                       const fallback = e.currentTarget.parentElement?.querySelector('.fallback-near');
@@ -408,10 +413,12 @@ export function PortfolioDashboard() {
                     <span className="text-primary font-bold text-xs">N</span>
                   </div>
                   {vfIcon ? (
-                    <img 
+                    <Image 
                       src={vfIcon} 
                       alt="VF"
-                      className="w-5 h-5 rounded-full -ml-1"
+                      width={20}
+                      height={20}
+                      className="rounded-full -ml-1"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
                         const fallback = e.currentTarget.nextElementSibling;

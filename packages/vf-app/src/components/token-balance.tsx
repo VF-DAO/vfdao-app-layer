@@ -11,7 +11,7 @@ const VF_TOKEN_CONTRACT = 'veganfriends.tkn.near';
 const VF_TOKEN_DECIMALS = 18; // Will be fetched from metadata
 
 export function TokenBalance() {
-  const { wallet, accountId, isConnected } = useWallet();
+  const { accountId, isConnected } = useWallet();
   const [balance, setBalance] = useState<string>('0');
   const [usdValue, setUsdValue] = useState<string>('0.00');
   const [isLoading, setIsLoading] = useState(false);

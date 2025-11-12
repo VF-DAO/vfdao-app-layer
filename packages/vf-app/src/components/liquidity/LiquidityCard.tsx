@@ -8,6 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
+import Image from 'next/image';
 import { providers } from 'near-api-js';
 import Big from 'big.js';
 import { useWallet } from '@/contexts/wallet-context';
@@ -53,7 +54,7 @@ const SLIPPAGE_PRESETS = [
 ];
 
 export const LiquidityCard: React.FC = () => {
-  const { accountId, wallet, connector, signIn } = useWallet();
+  const { accountId, wallet, connector } = useWallet();
 
   // UI State
   const [liquidityState, setLiquidityState] = useState<LiquidityState>(null);
@@ -69,7 +70,6 @@ export const LiquidityCard: React.FC = () => {
   // Form State
   const [token1Amount, setToken1Amount] = useState('');
   const [token2Amount, setToken2Amount] = useState('');
-  const [isEstimating, setIsEstimating] = useState(false);
 
   // Pool Data
   const [poolInfo, setPoolInfo] = useState<PoolInfo | null>(null);
@@ -81,7 +81,6 @@ export const LiquidityCard: React.FC = () => {
   const [availableTokens, setAvailableTokens] = useState<TokenMetadata[]>([]);
 
   // Balances
-  const [balances, setBalances] = useState<Record<string, string>>({});
   const [rawBalances, setRawBalances] = useState<Record<string, string>>({});
   const [isLoadingBalances, setIsLoadingBalances] = useState(false);
 
@@ -429,7 +428,6 @@ export const LiquidityCard: React.FC = () => {
 
     setIsLoadingBalances(true);
     try {
-      const newBalances: Record<string, string> = {};
       const newRawBalances: Record<string, string> = {};
       const rpcUrl = process.env.NEXT_PUBLIC_NEAR_RPC_MAINNET ?? 'https://rpc.mainnet.near.org';
       const provider = new providers.JsonRpcProvider({ url: rpcUrl });
@@ -451,16 +449,11 @@ export const LiquidityCard: React.FC = () => {
         newRawBalances.near = rawBalance;
         newRawBalances['wrap.near'] = rawBalance;
         
-        // Store formatted balance for display
-        const nearBalanceStr = availableNearBalance.toString();
-        const nearBalanceNum = Big(nearBalanceStr).div(Big(10).pow(24));
-        const nearBalanceDisplay = nearBalanceNum.toFixed(6, 0); // Round down, 6 decimals
-        newBalances.near = nearBalanceDisplay;
-        newBalances['wrap.near'] = nearBalanceDisplay;
+        // Store raw balance for calculations
+        newRawBalances.near = availableNearBalance.toString();
+        newRawBalances['wrap.near'] = availableNearBalance.toString();
       } catch (nearError) {
         console.error('[LiquidityCard] Failed to fetch NEAR balance:', nearError);
-        newBalances.near = '0';
-        newBalances['wrap.near'] = '0';
         newRawBalances.near = '0';
         newRawBalances['wrap.near'] = '0';
       }
@@ -478,17 +471,10 @@ export const LiquidityCard: React.FC = () => {
         
         // Store raw balance for calculations
         newRawBalances['veganfriends.tkn.near'] = vfBalance;
-        
-        // Store formatted balance for display
-        const vfBalanceNum = Big(vfBalance).div(Big(10).pow(18));
-        const vfBalanceDisplay = vfBalanceNum.toFixed(6, 0); // Round down, 6 decimals
-        newBalances['veganfriends.tkn.near'] = vfBalanceDisplay;
       } catch {
-        newBalances['veganfriends.tkn.near'] = '0';
         newRawBalances['veganfriends.tkn.near'] = '0';
       }
 
-      setBalances(newBalances);
       setRawBalances(newRawBalances);
     } catch (error) {
       console.error('[LiquidityCard] Failed to fetch balances:', error);
@@ -522,7 +508,7 @@ export const LiquidityCard: React.FC = () => {
         const shares = JSON.parse(Buffer.from(sharesResult.result).toString()) as string;
         setUserShares(shares);
         return;
-      } catch (getPoolSharesError) {
+      } catch {
         // Fallback to mft_balance_of (alternative method)
         const mftResult = (await provider.query({
           request_type: 'call_function',
@@ -776,7 +762,7 @@ export const LiquidityCard: React.FC = () => {
     
     if (liquidityState === 'add') {
       if (amount && amount !== '0') {
-        const optimalAmount = calculateOptimalAmount(amount, poolInfo?.token1.id || '');
+        const optimalAmount = calculateOptimalAmount(amount, poolInfo?.token1.id ?? '');
         setToken2Amount(optimalAmount);
       } else {
         // Clear the other field when this field is empty or 0
@@ -789,7 +775,7 @@ export const LiquidityCard: React.FC = () => {
     setToken2Amount(amount);
     if (liquidityState === 'add') {
       if (amount && amount !== '0') {
-        const optimalAmount = calculateOptimalAmount(amount, poolInfo?.token2.id || '');
+        const optimalAmount = calculateOptimalAmount(amount, poolInfo?.token2.id ?? '');
         setToken1Amount(optimalAmount);
       } else {
         // Clear the other field when this field is empty or 0
@@ -974,7 +960,6 @@ export const LiquidityCard: React.FC = () => {
       // The contract uses the formula: shares = sqrt(amount1 * amount2) for new pools
       // or proportional shares for existing pools
       // We just need to send min_amounts for slippage protection instead
-      const minSharesWithSlippage = '0';
 
       // SMART DEPOSIT DETECTION: Check what's already deposited in Ref Finance
       const depositedBalances = await getRefDepositedBalances(poolData.token_account_ids);
@@ -1159,7 +1144,7 @@ export const LiquidityCard: React.FC = () => {
       // Step 5: Deposit tokens to Ref Finance contract using ft_transfer_call
       // This is CRITICAL - tokens must be deposited before add_liquidity can use them
       // SMART: Only deposit the difference (needed - already_deposited)
-      poolData.token_account_ids.forEach((tokenId: string, index: number) => {
+      poolData.token_account_ids.forEach((tokenId: string) => {
   const toDeposit = depositsNeeded[tokenId]?.toDeposit ?? '0';
         
         if (toDeposit !== '0') {
@@ -1206,22 +1191,21 @@ export const LiquidityCard: React.FC = () => {
 
       console.warn('[LiquidityCard] Sending add liquidity transactions:', transactions.length);
 
-      try {
-        const outcomes = await walletInstance.signAndSendTransactions({
-          transactions,
-        });
+      const outcomes = await walletInstance.signAndSendTransactions({
+        transactions,
+      });
 
-        // Some wallets return the transaction hash directly, others return outcomes array
-        if (outcomes) {
-          // If outcomes is a string, it's likely a transaction hash
-          if (typeof outcomes === 'string') {
-            setTx(outcomes);
-            // Wait for blockchain to finalize (add_liquidity needs more time)
-            await new Promise(resolve => setTimeout(resolve, 1500));
+      // Some wallets return the transaction hash directly, others return outcomes array
+      if (outcomes) {
+        // If outcomes is a string, it's likely a transaction hash
+        if (typeof outcomes === 'string') {
+          setTx(outcomes);
+          // Wait for blockchain to finalize (add_liquidity needs more time)
+          await new Promise(resolve => setTimeout(resolve, 1500));
             // Start fetches immediately (they will set loading states)
-            const balancePromise = fetchBalances();
-            const sharesPromise = fetchUserShares();
-            const poolPromise = fetchPoolInfo();
+            void fetchBalances();
+            void fetchUserShares();
+            void fetchPoolInfo();
             // Small delay to ensure fetch functions have set their loading states
             await new Promise(resolve => setTimeout(resolve, 100));
             setTransactionState('success');
@@ -1231,16 +1215,16 @@ export const LiquidityCard: React.FC = () => {
           // If outcomes is an array with results
           if (Array.isArray(outcomes) && outcomes.length > 0) {
             const finalOutcome = outcomes[outcomes.length - 1];
-            const txHash = finalOutcome?.transaction?.hash ?? finalOutcome?.transaction_outcome?.id;
+            const txHash = String(finalOutcome?.transaction?.hash ?? finalOutcome?.transaction_outcome?.id ?? '');
 
             if (txHash) {
               setTx(txHash);
               // Wait for blockchain to finalize (add_liquidity needs more time)
               await new Promise(resolve => setTimeout(resolve, 1500));
               // Start fetches immediately (they will set loading states)
-              const balancePromise = fetchBalances();
-              const sharesPromise = fetchUserShares();
-              const poolPromise = fetchPoolInfo();
+              void fetchBalances();
+              void fetchUserShares();
+              void fetchPoolInfo();
               // Small delay to ensure fetch functions have set their loading states
               await new Promise(resolve => setTimeout(resolve, 100));
               setTransactionState('success');
@@ -1251,10 +1235,6 @@ export const LiquidityCard: React.FC = () => {
         
         // If we didn't get a clear success, mark as waiting for confirmation
         setTransactionState('waitingForConfirmation');
-      } catch (txError: any) {
-        // Re-throw to be caught by outer catch
-        throw txError;
-      }
     } catch (err: any) {
       console.error('[LiquidityCard] Add liquidity error:', err);
       
@@ -1263,7 +1243,8 @@ export const LiquidityCard: React.FC = () => {
         setError('Transaction was cancelled');
         setTransactionState(null);
       } else {
-        setError(err?.message || String(err) || 'Failed to add liquidity');
+        const errorMessage = err?.message ? String(err.message) : String(err);
+        setError(errorMessage || 'Failed to add liquidity');
         setTransactionState('fail');
       }
     }
@@ -1466,16 +1447,16 @@ export const LiquidityCard: React.FC = () => {
 
       if (outcomes && outcomes.length > 0) {
         const finalOutcome = outcomes[outcomes.length - 1];
-        const txHash = finalOutcome?.transaction?.hash ?? finalOutcome?.transaction_outcome?.id;
+        const txHash = String(finalOutcome?.transaction?.hash ?? finalOutcome?.transaction_outcome?.id ?? '');
 
         if (txHash) {
           setTx(txHash);
           // Wait for blockchain to finalize
           await new Promise(resolve => setTimeout(resolve, 1500));
           // Start fetches immediately (they will set loading states)
-          const balancePromise = fetchBalances();
-          const sharesPromise = fetchUserShares();
-          const poolPromise = fetchPoolInfo();
+          void fetchBalances();
+          void fetchUserShares();
+          void fetchPoolInfo();
           // Small delay to ensure fetch functions have set their loading states
           await new Promise(resolve => setTimeout(resolve, 100));
           setTransactionState('success');
@@ -1493,7 +1474,8 @@ export const LiquidityCard: React.FC = () => {
         setError('Transaction was cancelled');
         setTransactionState(null);
       } else {
-        setError(err?.message || String(err) || 'Failed to remove liquidity');
+        const errorMessage = err?.message ? String(err.message) : String(err);
+        setError(errorMessage || 'Failed to remove liquidity');
         setTransactionState('fail');
       }
     }
@@ -1520,10 +1502,12 @@ export const LiquidityCard: React.FC = () => {
               <div className="flex items-center gap-2">
                 <div className="flex items-center justify-center">
                   {poolInfo?.token1.icon ? (
-                    <img
+                    <Image
                       src={poolInfo.token1.icon}
                       alt={poolInfo.token1.symbol}
-                      className="w-8 h-8 rounded-full relative z-10"
+                      width={32}
+                      height={32}
+                      className="rounded-full relative z-10"
                     />
                   ) : (
                     <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center relative z-10">
@@ -1531,10 +1515,12 @@ export const LiquidityCard: React.FC = () => {
                     </div>
                   )}
                   {poolInfo?.token2.icon ? (
-                    <img
+                    <Image
                       src={poolInfo.token2.icon}
                       alt={poolInfo.token2.symbol}
-                      className="w-8 h-8 rounded-full -ml-1"
+                      width={32}
+                      height={32}
+                      className="rounded-full -ml-1"
                     />
                   ) : (
                     <div className="w-8 h-8 rounded-full bg-verified/20 flex items-center justify-center -ml-1">
@@ -1752,10 +1738,12 @@ export const LiquidityCard: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       {poolInfo.token1.icon ? (
-                        <img
+                        <Image
                           src={poolInfo.token1.icon}
                           alt={poolInfo.token1.symbol}
-                          className="w-5 h-5 rounded-full"
+                          width={20}
+                          height={20}
+                          className="rounded-full"
                         />
                       ) : (
                         <div className="w-5 h-5 bg-gradient-to-br from-verified/20 to-verified/10 rounded-full flex items-center justify-center">
@@ -1778,10 +1766,12 @@ export const LiquidityCard: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       {poolInfo.token2.icon ? (
-                        <img
+                        <Image
                           src={poolInfo.token2.icon}
                           alt={poolInfo.token2.symbol}
-                          className="w-5 h-5 rounded-full"
+                          width={20}
+                          height={20}
+                          className="rounded-full"
                         />
                       ) : (
                         <div className="w-5 h-5 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center">
@@ -1984,10 +1974,12 @@ export const LiquidityCard: React.FC = () => {
                 <div className="flex flex-col items-start w-[200px]">
                   <div className="flex items-center gap-2">
                     {poolInfo.token1.icon ? (
-                      <img 
+                      <Image 
                         src={poolInfo.token1.icon} 
                         alt={poolInfo.token1.symbol}
-                        className="w-6 h-6 rounded-full"
+                        width={24}
+                        height={24}
+                        className="rounded-full"
                       />
                     ) : (
                       <div className="w-6 h-6 bg-gradient-to-br from-verified/20 to-verified/10 rounded-full flex items-center justify-center">
@@ -2095,10 +2087,12 @@ export const LiquidityCard: React.FC = () => {
                 <div className="flex flex-col items-start w-[200px]">
                   <div className="flex items-center gap-2">
                     {poolInfo.token2.icon ? (
-                      <img 
+                      <Image 
                         src={poolInfo.token2.icon} 
                         alt={poolInfo.token2.symbol}
-                        className="w-6 h-6 rounded-full"
+                        width={24}
+                        height={24}
+                        className="rounded-full"
                       />
                     ) : (
                       <div className="w-6 h-6 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center">
@@ -2147,10 +2141,12 @@ export const LiquidityCard: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {poolInfo.token1.icon ? (
-                      <img 
+                      <Image 
                         src={poolInfo.token1.icon} 
                         alt={poolInfo.token1.symbol}
-                        className="w-5 h-5 rounded-full"
+                        width={20}
+                        height={20}
+                        className="rounded-full"
                       />
                     ) : (
                       <div className="w-5 h-5 bg-gradient-to-br from-verified/20 to-verified/10 rounded-full flex items-center justify-center">
@@ -2178,10 +2174,12 @@ export const LiquidityCard: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {poolInfo.token2.icon ? (
-                      <img 
+                      <Image 
                         src={poolInfo.token2.icon} 
                         alt={poolInfo.token2.symbol}
-                        className="w-5 h-5 rounded-full"
+                        width={20}
+                        height={20}
+                        className="rounded-full"
                       />
                     ) : (
                       <div className="w-5 h-5 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center">
@@ -2456,10 +2454,12 @@ export const LiquidityCard: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       {poolInfo.token1.icon ? (
-                        <img 
+                        <Image 
                           src={poolInfo.token1.icon} 
                           alt={poolInfo.token1.symbol}
-                          className="w-5 h-5 rounded-full"
+                          width={20}
+                          height={20}
+                          className="rounded-full"
                         />
                       ) : (
                         <div className="w-5 h-5 bg-gradient-to-br from-verified/20 to-verified/10 rounded-full flex items-center justify-center">
@@ -2487,10 +2487,12 @@ export const LiquidityCard: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       {poolInfo.token2.icon ? (
-                        <img 
+                        <Image 
                           src={poolInfo.token2.icon} 
                           alt={poolInfo.token2.symbol}
-                          className="w-5 h-5 rounded-full"
+                          width={20}
+                          height={20}
+                          className="rounded-full"
                         />
                       ) : (
                         <div className="w-5 h-5 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center">
