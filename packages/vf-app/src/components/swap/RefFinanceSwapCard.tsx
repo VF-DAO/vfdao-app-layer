@@ -481,7 +481,7 @@ export const RefFinanceSwapCard: React.FC = () => {
                 methodName: fc.methodName,
                 args: fc.args ?? {},
                 gas: gasBigInt.toString(),
-                deposit: (fc.amount || '0').toString(),
+                deposit: (fc.amount ?? '0').toString(),
               }
             };
             
@@ -643,7 +643,7 @@ export const RefFinanceSwapCard: React.FC = () => {
           console.error('[SwapWidget] Swap error:', errorDetails);
           console.error('[SwapWidget] Error stack:', err instanceof Error ? err.stack : 'No stack trace available');
 
-          setError(errorMessage || 'Transaction failed');
+          setError(errorMessage ?? 'Transaction failed');
           setSwapState('fail');
         }
       } finally {
@@ -697,7 +697,7 @@ export const RefFinanceSwapCard: React.FC = () => {
       } else {
         // Format small numbers: .0 followed by green zeros count and significant digits
         const fixedStr = bigValue.toFixed(20); // Get full precision
-        const decimalPart = fixedStr.split('.')[1] || '';
+  const decimalPart = fixedStr.split('.')[1] ?? '';
         const firstNonZeroIndex = decimalPart.search(/[1-9]/);
         if (firstNonZeroIndex === -1) {
           return <span>0.0000</span>;

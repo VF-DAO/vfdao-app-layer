@@ -50,11 +50,11 @@ export function WalletButton({ compact = false, className }: WalletButtonProps) 
   if (!isConnected) {
     return (
       <button
-        onClick={signIn}
+        onClick={() => void signIn()}
         disabled={!connector}
         className={`flex items-center justify-center gap-2 border border-verified bg-verified/10 text-primary hover:text-primary px-4 py-2 rounded-full font-semibold transition-all hover:shadow-md hover:shadow-verified/20 text-sm disabled:opacity-50 disabled:cursor-not-allowed ${
           compact ? 'px-3 py-2 w-full min-w-[44px]' : ''
-        } ${className || ''}`}
+  } ${className ?? ''}`}
       >
         <Wallet className="w-4 h-4 flex-shrink-0" />
         {!compact && <span className="hidden sm:inline whitespace-nowrap">Connect Wallet</span>}
@@ -68,7 +68,7 @@ export function WalletButton({ compact = false, className }: WalletButtonProps) 
         onClick={() => setShowMenu(!showMenu)}
         className={`flex items-center gap-2.5 bg-card hover:bg-card/50 border border-border hover:border-primary/50 rounded-full px-3.5 py-2 transition-all duration-150 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-primary/20 ${
           compact ? 'px-3 py-2.5 w-full justify-center' : ''
-        } ${className || ''}`}
+  } ${className ?? ''}`}
       >
         <div className="flex items-center gap-2">
           <div className="relative flex items-center justify-center">
@@ -122,7 +122,7 @@ export function WalletButton({ compact = false, className }: WalletButtonProps) 
             </button>
 
             <button
-              onClick={handleSwitchWallet}
+              onClick={() => void handleSwitchWallet()}
               className="w-full px-4 py-2 flex items-center gap-3 hover:bg-accent/10 transition-all duration-150 text-left group"
             >
               <RefreshCw className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-150" />

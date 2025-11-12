@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, ArrowRightLeft, BarChart3, Sprout, Droplets } from 'lucide-react';
+import { ArrowRight, ArrowRightLeft, BarChart3, Droplets, Sprout } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { RheaSwapWidget } from '@/components/swap/SwapWidget';
 import { PortfolioDashboard } from '@/components/portfolio-dashboard';

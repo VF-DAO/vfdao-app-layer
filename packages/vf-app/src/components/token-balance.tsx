@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Wallet } from 'lucide-react';
 import { useWallet } from '@/contexts/wallet-context';
 import { providers } from 'near-api-js';
@@ -31,7 +31,7 @@ export function TokenBalance() {
       } else {
         // Format small numbers: $0.0 followed by green zeros count and significant digits
         const fixedStr = amount.toFixed(20);
-        const decimalPart = fixedStr.split('.')[1] || '';
+  const decimalPart = fixedStr.split('.')[1] ?? '';
         const firstNonZeroIndex = decimalPart.search(/[1-9]/);
         if (firstNonZeroIndex === -1) {
           return '$0.00';
@@ -155,9 +155,9 @@ export function TokenBalance() {
                 });
 
                 if (poolResponse.ok) {
-                  const poolData = await poolResponse.json() as any;
+                  const poolData = await poolResponse.json();
                   if (poolData.result?.result) {
-                    const pool = JSON.parse(Buffer.from(poolData.result.result).toString()) as any;
+                    const pool = JSON.parse(Buffer.from(poolData.result.result).toString());
                     
                     const nearIndex = pool.token_account_ids.indexOf('wrap.near');
                     const veganIndex = pool.token_account_ids.indexOf('veganfriends.tkn.near');
@@ -189,7 +189,7 @@ export function TokenBalance() {
         }
         
         // Calculate USD value
-        const numericBalance = new Big(rawBalance || '0').div(new Big(10).pow(tokenDecimals));
+  const numericBalance = new Big(rawBalance ?? '0').div(new Big(10).pow(tokenDecimals));
         const usdVal = numericBalance.times(tokenPrice).toNumber();
         setUsdValue(String(usdVal));
         
@@ -204,7 +204,7 @@ export function TokenBalance() {
       }
     };
 
-    fetchBalance();
+  void fetchBalance();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accountId, isConnected, refreshKey]);
 

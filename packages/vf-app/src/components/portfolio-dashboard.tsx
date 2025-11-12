@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { Wallet, Coins, Droplets, Sparkles } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { Sparkles, Wallet } from 'lucide-react';
 import { useWallet } from '@/contexts/wallet-context';
 import { providers } from 'near-api-js';
 import Big from 'big.js';
@@ -35,7 +35,7 @@ export function PortfolioDashboard() {
       } else {
         // Format small numbers: $0.0 followed by green zeros count and significant digits
         const fixedStr = amount.toFixed(20);
-        const decimalPart = fixedStr.split('.')[1] || '';
+  const decimalPart = fixedStr.split('.')[1] ?? '';
         const firstNonZeroIndex = decimalPart.search(/[1-9]/);
         if (firstNonZeroIndex === -1) {
           return '$0.00';
@@ -69,7 +69,7 @@ export function PortfolioDashboard() {
       }
     };
   }, []);
-
+  
   // Fetch VF icon even when disconnected (for preview)
   useEffect(() => {
     const fetchVfIcon = async () => {
@@ -99,7 +99,7 @@ export function PortfolioDashboard() {
       }
     };
 
-    fetchVfIcon();
+  void fetchVfIcon();
   }, [vfIcon]);
 
   useEffect(() => {
@@ -239,9 +239,9 @@ export function PortfolioDashboard() {
                 });
 
                 if (poolResponse.ok) {
-                  const poolData = await poolResponse.json() as any;
+                  const poolData = await poolResponse.json();
                   if (poolData.result?.result) {
-                    const pool = JSON.parse(Buffer.from(poolData.result.result).toString()) as any;
+                    const pool = JSON.parse(Buffer.from(poolData.result.result).toString());
                     
                     const nearIndex = pool.token_account_ids.indexOf('wrap.near');
                     const veganIndex = pool.token_account_ids.indexOf('veganfriends.tkn.near');
@@ -264,7 +264,7 @@ export function PortfolioDashboard() {
                         const token2TVL = token2Reserve.mul(vfTokenPrice);
                         const poolTVL = token1TVL.plus(token2TVL);
                         
-                        const totalShares = Big(pool.total_shares || pool.shares_total_supply || '0');
+                        const totalShares = Big(pool.total_shares ?? pool.shares_total_supply ?? '0');
                         if (totalShares.gt(0)) {
                           const readableShares = Big(userShares).div(Big(10).pow(24));
                           const readableTotalShares = totalShares.div(Big(10).pow(24));
@@ -286,7 +286,7 @@ export function PortfolioDashboard() {
         }
         
         // Calculate VF USD value
-        const numericVfBalance = new Big(rawVfBalance || '0').div(new Big(10).pow(tokenDecimals));
+  const numericVfBalance = new Big(rawVfBalance ?? '0').div(new Big(10).pow(tokenDecimals));
         const vfUsdVal = numericVfBalance.times(vfTokenPrice).toNumber();
         setVfUsdValue(vfUsdVal);
         
@@ -308,7 +308,7 @@ export function PortfolioDashboard() {
       }
     };
 
-    fetchPortfolioData();
+  void fetchPortfolioData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accountId, isConnected, refreshKey]);
 
@@ -331,7 +331,7 @@ export function PortfolioDashboard() {
     return (
       <div className="w-full max-w-[800px] mx-auto">
         <button
-          onClick={signIn}
+          onClick={() => void signIn()}
           className="inline-flex items-center justify-center gap-2 border border-verified bg-verified/10 text-primary hover:text-primary px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold transition-all hover:shadow-md hover:shadow-verified/20 group text-sm sm:text-base whitespace-nowrap"
         >
           <Wallet className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
@@ -365,8 +365,8 @@ export function PortfolioDashboard() {
                     className="w-6 h-6 rounded-full flex-shrink-0"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
-                      const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                      if (fallback) fallback.style.display = 'flex';
+                      const fallback = e.currentTarget.nextElementSibling;
+                      if (fallback instanceof HTMLElement) fallback.style.display = 'flex';
                     }}
                   />
                 ) : null}
@@ -400,8 +400,8 @@ export function PortfolioDashboard() {
                     className="w-5 h-5 rounded-full relative z-10"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
-                      const fallback = e.currentTarget.parentElement?.querySelector('.fallback-near') as HTMLElement;
-                      if (fallback) fallback.style.display = 'flex';
+                      const fallback = e.currentTarget.parentElement?.querySelector('.fallback-near');
+                      if (fallback instanceof HTMLElement) fallback.style.display = 'flex';
                     }}
                   />
                   <div className="fallback-near w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center relative z-10" style={{ display: 'none' }}>
@@ -414,8 +414,8 @@ export function PortfolioDashboard() {
                       className="w-5 h-5 rounded-full -ml-1"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
-                        const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                        if (fallback) fallback.style.display = 'flex';
+                        const fallback = e.currentTarget.nextElementSibling;
+                        if (fallback instanceof HTMLElement) fallback.style.display = 'flex';
                       }}
                     />
                   ) : null}

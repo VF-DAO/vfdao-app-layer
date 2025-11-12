@@ -7,17 +7,17 @@
  * It integrates with Ref Finance's liquidity pool operations.
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { providers } from 'near-api-js';
 import Big from 'big.js';
 import { useWallet } from '@/contexts/wallet-context';
 import {
+  checkStorageDeposit,
   formatTokenAmount,
   formatTokenAmountNoAbbrev,
-  parseTokenAmount,
   getMainnetTokens,
-  checkStorageDeposit,
   getMinStorageBalance,
+  parseTokenAmount,
   type TokenMetadata,
 } from '@/lib/swap-utils';
 import { toInternationalCurrencySystemLongString } from '@ref-finance/ref-sdk';
@@ -25,14 +25,14 @@ import { TokenInput } from '@/components/swap/TokenInput';
 import {
   AlertCircle,
   CheckCircle2,
+  ChevronLeft,
+  Droplets,
   ExternalLink,
   Info,
   Loader2,
-  Plus,
   Minus,
+  Plus,
   Settings,
-  ChevronLeft,
-  Droplets,
 } from 'lucide-react';
 
 type LiquidityState = 'add' | 'remove' | null;
@@ -42,7 +42,7 @@ interface PoolInfo {
   id: number;
   token1: TokenMetadata;
   token2: TokenMetadata;
-  reserves: { [key: string]: string };
+  reserves: Record<string, string>;
   shareSupply: string;  // Changed from totalShares to match Ref Finance
 }
 
@@ -98,6 +98,7 @@ export const LiquidityCard: React.FC = () => {
     fee24h: '0',
     apy: 0,
   });
+  const [isLoadingPoolStats, setIsLoadingPoolStats] = useState(false);
   
   // Gas reserve notification
   const [showGasReserveInfo, setShowGasReserveInfo] = useState(false);
@@ -125,14 +126,23 @@ export const LiquidityCard: React.FC = () => {
   useEffect(() => {
     const fetchTokenPrices = async () => {
       try {
-        const response = await fetch('https://indexer.ref.finance/list-token-price');
+        // Create AbortController with 3 second timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        
+        const response = await fetch('https://indexer.ref.finance/list-token-price', {
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
+        
         const prices = await response.json() as Record<string, { price: string }>;
         
         const priceMap: Record<string, number> = {};
         
         // Get NEAR price (wrap.near in the API)
         if (prices['wrap.near']) {
-          priceMap['near'] = parseFloat(prices['wrap.near'].price);
+          priceMap.near = parseFloat(prices['wrap.near'].price);
           priceMap['wrap.near'] = parseFloat(prices['wrap.near'].price);
           console.log('[LiquidityCard] NEAR price loaded:', priceMap['wrap.near']);
         }
@@ -170,39 +180,76 @@ export const LiquidityCard: React.FC = () => {
   }, [poolInfo]);
 
   // Fetch pool stats (Volume, Fee, APY)
-  const fetchPoolStats = useCallback(async () => {
-    console.log('[LiquidityCard] fetchPoolStats called');
+  const fetchPoolStats = useCallback(async (retryCount = 0, isRetry = false) => {
+    const maxRetries = 3;
+    console.log('[LiquidityCard] fetchPoolStats called, retry:', retryCount, 'isRetry:', isRetry);
+    
+    // Set loading state at the start (unless this is a retry)
+    if (!isRetry) {
+      setIsLoadingPoolStats(true);
+    }
+    
     try {
       let volume24h = '0';
       
       // Fetch 24h volume from our Next.js API route (avoids CORS)
       // The API route proxies the request to Ref Finance server-side
-      try {
-        console.log('[LiquidityCard] Fetching volume for pool:', POOL_ID);
-        const volumeResponse = await fetch(
-          `/api/pool-volume?pool_id=${POOL_ID}`,
-          {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+      // Only fetch on client-side to avoid SSR issues
+      if (typeof window !== 'undefined') {
+        try {
+          console.log('[LiquidityCard] Fetching volume for pool:', POOL_ID);
+          
+          // Create AbortController with 3 second timeout
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 3000);
+          
+          const volumeResponse = await fetch(
+            `/api/pool-volume?pool_id=${POOL_ID}`,
+            {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              signal: controller.signal,
+            }
+          );
+          
+          clearTimeout(timeoutId);
+        
+          console.log('[LiquidityCard] Volume response status:', volumeResponse.status);
+        
+          if (volumeResponse.ok) {
+            const data = await volumeResponse.json();
+            console.log('[LiquidityCard] Volume data received:', data);
+            volume24h = data.volume ?? '0';
+            console.log('[LiquidityCard] Parsed 24h volume:', volume24h);
+          } else {
+            const errorText = await volumeResponse.text();
+            console.warn('[LiquidityCard] API returned error:', volumeResponse.status, errorText);
           }
-        );
-        
-        console.log('[LiquidityCard] Volume response status:', volumeResponse.status);
-        
-        if (volumeResponse.ok) {
-          const data = await volumeResponse.json();
-          console.log('[LiquidityCard] Volume data received:', data);
-          volume24h = data.volume || '0';
-          console.log('[LiquidityCard] Parsed 24h volume:', volume24h);
-        } else {
-          const errorText = await volumeResponse.text();
-          console.warn('[LiquidityCard] API returned error:', volumeResponse.status, errorText);
+        } catch (volumeError) {
+          // Handle timeout (AbortError) gracefully - this is expected behavior
+          if (volumeError instanceof DOMException && volumeError.name === 'AbortError') {
+            console.warn('[LiquidityCard] Volume fetch timeout after 3s - using fallback value');
+          } else {
+            // Network error - check if we should retry
+            console.error('[LiquidityCard] Could not fetch 24h volume:', volumeError);
+          
+            // Retry on network errors (not on AbortError from timeout)
+            if (retryCount < maxRetries) {
+              console.log(`[LiquidityCard] Retrying fetchPoolStats in ${retryCount + 1} seconds...`);
+              // Reset loading state before retry to avoid stuck loading indicator
+              setIsLoadingPoolStats(false);
+              setTimeout(() => {
+                void fetchPoolStats(retryCount + 1, true); // Mark as retry
+              }, (retryCount + 1) * 1000); // Exponential backoff
+              return; // Don't continue with setting state on retry
+            }
+          }
+          // Don't rethrow - we want to continue with volume = '0'
         }
-      } catch (volumeError) {
-        // Network error - volume will remain '0'
-        console.error('[LiquidityCard] Could not fetch 24h volume:', volumeError);
+      } else {
+        console.log('[LiquidityCard] Skipping volume fetch during SSR');
       }
 
       console.log('[LiquidityCard] Volume24h value:', volume24h, 'Number:', Number(volume24h));
@@ -222,8 +269,8 @@ export const LiquidityCard: React.FC = () => {
 
         // APY calculation: ((fee24h * 365) / tvl) * 100
         // Calculate TVL from pool reserves
-        const token1Price = tokenPrices[poolInfo.token1.id] || tokenPrices['near'] || tokenPrices['wrap.near'] || 0;
-        const token2Price = tokenPrices[poolInfo.token2.id] || 0;
+  const token1Price = tokenPrices[poolInfo.token1.id] ?? tokenPrices.near ?? tokenPrices['wrap.near'] ?? 0;
+  const token2Price = tokenPrices[poolInfo.token2.id] ?? 0;
         
         console.log('[LiquidityCard] Token prices:', { token1Price, token2Price });
         
@@ -262,14 +309,31 @@ export const LiquidityCard: React.FC = () => {
         fee24h: '0',
         apy: 0,
       });
+    } finally {
+      // Always set loading to false when we're done (success or final failure)
+      console.log('[LiquidityCard] Finally block - setting isLoadingPoolStats to false');
+      setIsLoadingPoolStats(false);
     }
   }, [poolInfo, tokenPrices]);
 
   // Fetch pool stats when pool info or prices change
   useEffect(() => {
-    if (poolInfo && Object.keys(tokenPrices).length > 0) {
+    if (poolInfo && Object.keys(tokenPrices).length > 0 && !isLoadingPoolStats) {
       void fetchPoolStats();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [poolInfo, tokenPrices, fetchPoolStats]);
+
+  // Auto-refresh pool stats every 60 seconds
+  useEffect(() => {
+    if (!poolInfo || Object.keys(tokenPrices).length === 0) return;
+    
+    const interval = setInterval(() => {
+      console.log('[LiquidityCard] Auto-refreshing pool stats (TVL, Volume, Fee, APY)');
+      void fetchPoolStats();
+    }, 60000); // 60 seconds
+    
+    return () => clearInterval(interval);
   }, [poolInfo, tokenPrices, fetchPoolStats]);
 
   // Fetch pool information
@@ -296,17 +360,17 @@ export const LiquidityCard: React.FC = () => {
       };
       
       // Use shares_total_supply if total_shares is not available
-      const shareSupply = pool.total_shares || pool.shares_total_supply || '0';
+  const shareSupply = pool.total_shares ?? pool.shares_total_supply ?? '0';
 
       // Get token metadata with icons
-      const nearToken = availableTokens.find(t => t.symbol === 'NEAR') || {
+  const nearToken = availableTokens.find(t => t.symbol === 'NEAR') ?? {
         id: 'near',
         symbol: 'NEAR',
         name: 'Near',
         decimals: 24,
         icon: 'https://assets.ref.finance/images/near.svg',
       };
-      const vfToken = availableTokens.find(t => t.id === 'veganfriends.tkn.near') || {
+  const vfToken = availableTokens.find(t => t.id === 'veganfriends.tkn.near') ?? {
         id: 'veganfriends.tkn.near',
         symbol: 'VEGANFRIENDS',
         name: 'Vegan Friends Token',
@@ -316,7 +380,7 @@ export const LiquidityCard: React.FC = () => {
 
       if (nearToken && vfToken) {
         // Map reserves based on token_account_ids order from the contract
-        const reserves: { [key: string]: string } = {};
+        const reserves: Record<string, string> = {};
         pool.token_account_ids.forEach((tokenId: string, index: number) => {
           reserves[tokenId] = pool.amounts[index];
         });
@@ -348,7 +412,7 @@ export const LiquidityCard: React.FC = () => {
           token1: nearMetaForPool,
           token2: vfMetaForPool,
           reserves,
-          shareSupply: shareSupply,  // Using shareSupply to match Ref Finance
+          shareSupply,  // Using shareSupply to match Ref Finance
         });
       }
     } catch (error) {
@@ -611,7 +675,7 @@ export const LiquidityCard: React.FC = () => {
       const sharesContract = parseTokenAmount(sharesAmount, 24);
       
       // Ensure shareSupply is a string and handle potential formatting issues
-      const shareSupplyStr = String(poolInfo.shareSupply || '0');
+  const shareSupplyStr = String(poolInfo.shareSupply ?? '0');
       
       if (shareSupplyStr === '0' || shareSupplyStr === '') {
         console.error('[calculateRemoveLiquidityAmounts] Pool has zero shareSupply!');
@@ -622,8 +686,8 @@ export const LiquidityCard: React.FC = () => {
 
       // Calculate proportional share of each reserve
       // Formula: tokenAmount = (sharesAmount * tokenReserve) / totalShares
-      const token1Reserve = Big(poolInfo.reserves[poolInfo.token1.id] || '0');
-      const token2Reserve = Big(poolInfo.reserves[poolInfo.token2.id] || '0');
+  const token1Reserve = Big(poolInfo.reserves[poolInfo.token1.id] ?? '0');
+  const token2Reserve = Big(poolInfo.reserves[poolInfo.token2.id] ?? '0');
 
       const token1Contract = Big(sharesContract).mul(token1Reserve).div(totalShares);
       const token2Contract = Big(sharesContract).mul(token2Reserve).div(totalShares);
@@ -759,7 +823,7 @@ export const LiquidityCard: React.FC = () => {
       } else {
         // Format small numbers: $0.0 followed by green zeros count and significant digits
         const fixedStr = amount.toFixed(20);
-        const decimalPart = fixedStr.split('.')[1] || '';
+  const decimalPart = fixedStr.split('.')[1] ?? '';
         const firstNonZeroIndex = decimalPart.search(/[1-9]/);
         if (firstNonZeroIndex === -1) {
           return '$0.00';
@@ -919,7 +983,7 @@ export const LiquidityCard: React.FC = () => {
       const depositsNeeded: Record<string, { needed: string; alreadyDeposited: string; toDeposit: string }> = {};
       poolData.token_account_ids.forEach((tokenId: string, index: number) => {
         const needed = Big(amounts[index]);
-        const alreadyDeposited = Big(depositedBalances[tokenId] || '0');
+  const alreadyDeposited = Big(depositedBalances[tokenId] ?? '0');
         const toDeposit = needed.gt(alreadyDeposited) ? needed.minus(alreadyDeposited) : Big(0);
         
         depositsNeeded[tokenId] = {
@@ -946,10 +1010,10 @@ export const LiquidityCard: React.FC = () => {
       // Step 1: Wrap NEAR first if needed (only wrap the difference if some already deposited)
       const wNearIndex = poolData.token_account_ids.indexOf('wrap.near');
       if (wNearIndex !== -1) {
-        const wNearToDeposit = depositsNeeded['wrap.near']?.toDeposit || '0';
+  const wNearToDeposit = depositsNeeded['wrap.near']?.toDeposit ?? '0';
         
         if (wNearToDeposit !== '0') {
-          console.warn(`[LiquidityCard] Need to wrap ${formatTokenAmount(wNearToDeposit, 24, 6)} NEAR (already deposited: ${formatTokenAmount(depositsNeeded['wrap.near']?.alreadyDeposited || '0', 24, 6)})`);
+          console.warn(`[LiquidityCard] Need to wrap ${formatTokenAmount(wNearToDeposit, 24, 6)} NEAR (already deposited: ${formatTokenAmount(depositsNeeded['wrap.near']?.alreadyDeposited ?? '0', 24, 6)})`);
           
           // Check if user is registered on wrap.near FIRST
           const wrapNearRegistered = await checkStorageDeposit('wrap.near', accountId, rpcUrl);
@@ -986,7 +1050,7 @@ export const LiquidityCard: React.FC = () => {
             }],
           });
         } else {
-          console.warn(`[LiquidityCard] ✅ Skipping NEAR wrap - already have ${formatTokenAmount(depositsNeeded['wrap.near']?.alreadyDeposited || '0', 24, 6)} NEAR deposited`);
+          console.warn(`[LiquidityCard] ✅ Skipping NEAR wrap - already have ${formatTokenAmount(depositsNeeded['wrap.near']?.alreadyDeposited ?? '0', 24, 6)} NEAR deposited`);
         }
       }
 
@@ -1096,7 +1160,7 @@ export const LiquidityCard: React.FC = () => {
       // This is CRITICAL - tokens must be deposited before add_liquidity can use them
       // SMART: Only deposit the difference (needed - already_deposited)
       poolData.token_account_ids.forEach((tokenId: string, index: number) => {
-        const toDeposit = depositsNeeded[tokenId]?.toDeposit || '0';
+  const toDeposit = depositsNeeded[tokenId]?.toDeposit ?? '0';
         
         if (toDeposit !== '0') {
           console.warn(`[LiquidityCard] Will deposit ${formatTokenAmount(toDeposit, tokenId === 'wrap.near' ? 24 : 18, 6)} of ${tokenId}`);
@@ -1117,7 +1181,7 @@ export const LiquidityCard: React.FC = () => {
             }],
           });
         } else {
-          console.warn(`[LiquidityCard] ✅ Skipping deposit for ${tokenId} - already have ${formatTokenAmount(depositsNeeded[tokenId]?.alreadyDeposited || '0', tokenId === 'wrap.near' ? 24 : 18, 6)} deposited`);
+          console.warn(`[LiquidityCard] ✅ Skipping deposit for ${tokenId} - already have ${formatTokenAmount(depositsNeeded[tokenId]?.alreadyDeposited ?? '0', tokenId === 'wrap.near' ? 24 : 18, 6)} deposited`);
         }
       });
 
@@ -1497,20 +1561,20 @@ export const LiquidityCard: React.FC = () => {
                 <div className="flex items-center justify-center gap-4 text-sm pb-3 border-b border-border/30">
                   <div className="flex items-center gap-1.5">
                     <span className="text-muted-foreground">NEAR:</span>
-                    <span className="font-semibold text-primary">{formatTokenAmount(poolInfo.reserves[poolInfo.token1.id], poolInfo.token1.decimals, 2)}</span>
+                    <span className={`font-semibold text-primary transition-opacity ${isLoadingPoolStats ? 'opacity-50' : 'opacity-100'}`}>{formatTokenAmount(poolInfo.reserves[poolInfo.token1.id], poolInfo.token1.decimals, 2)}</span>
                   </div>
                   <span className="text-muted-foreground">•</span>
                   <div className="flex items-center gap-1.5">
                     <span className="text-muted-foreground">VF:</span>
-                    <span className="font-semibold text-primary">{formatTokenAmount(poolInfo.reserves[poolInfo.token2.id], poolInfo.token2.decimals, 2)}</span>
+                    <span className={`font-semibold text-primary transition-opacity ${isLoadingPoolStats ? 'opacity-50' : 'opacity-100'}`}>{formatTokenAmount(poolInfo.reserves[poolInfo.token2.id], poolInfo.token2.decimals, 2)}</span>
                   </div>
                 </div>
                 <div className="grid grid-cols-4 gap-3 text-xs">
                   <div className="text-center">
                     <p className="text-muted-foreground mb-0.5">TVL</p>
-                    <p className="font-semibold text-primary">{(() => {
-                      const token1Price = tokenPrices[poolInfo.token1.id] || tokenPrices['near'] || tokenPrices['wrap.near'] || 0;
-                      const token2Price = tokenPrices[poolInfo.token2.id] || 0;
+                    <p className={`font-semibold text-primary transition-opacity ${isLoadingPoolStats ? 'opacity-50' : 'opacity-100'}`}>{(() => {
+                const token1Price = tokenPrices[poolInfo.token1.id] ?? tokenPrices.near ?? tokenPrices['wrap.near'] ?? 0;
+                      const token2Price = tokenPrices[poolInfo.token2.id] ?? 0;
                       
                       if (token1Price > 0 || token2Price > 0) {
                         const token1Reserve = Big(poolInfo.reserves[poolInfo.token1.id]).div(Big(10).pow(poolInfo.token1.decimals));
@@ -1526,7 +1590,7 @@ export const LiquidityCard: React.FC = () => {
                   </div>
                   <div className="text-center">
                     <p className="text-muted-foreground mb-0.5">Volume</p>
-                    <p className="font-semibold text-primary">{(() => {
+                    <p className={`font-semibold text-primary transition-opacity ${isLoadingPoolStats ? 'opacity-50' : 'opacity-100'}`}>{(() => {
                       const vol = Number(poolStats.volume24h);
                       if (vol === 0) return '$0';
                       if (vol < 0.01) return '<$0.01';
@@ -1535,7 +1599,7 @@ export const LiquidityCard: React.FC = () => {
                   </div>
                   <div className="text-center">
                     <p className="text-muted-foreground mb-0.5">Fee(24h)</p>
-                    <p className="font-semibold text-primary">{(() => {
+                    <p className={`font-semibold text-primary transition-opacity ${isLoadingPoolStats ? 'opacity-50' : 'opacity-100'}`}>{(() => {
                       const fee = Number(poolStats.fee24h);
                       if (fee === 0) return '$0';
                       if (fee < 0.01) return '<$0.01';
@@ -1544,7 +1608,7 @@ export const LiquidityCard: React.FC = () => {
                   </div>
                   <div className="text-center">
                     <p className="text-muted-foreground mb-0.5">APY</p>
-                    <p className="font-semibold text-primary">{(() => {
+                    <p className={`font-semibold text-primary transition-opacity ${isLoadingPoolStats ? 'opacity-50' : 'opacity-100'}`}>{(() => {
                       if (poolStats.apy === 0) return '0%';
                       if (poolStats.apy < 0.01) return '<0.01%';
                       return `${poolStats.apy.toFixed(2)}%`;
@@ -1630,7 +1694,7 @@ export const LiquidityCard: React.FC = () => {
                   ({(() => {
                     // Calculate USD value using pool TVL method (like Ref Finance)
                     let usdDisplay = '$0.00';
-                    let token1Price = tokenPrices[poolInfo.token1.id] || tokenPrices['near'] || 0;
+                    let token1Price = tokenPrices[poolInfo.token1.id] || tokenPrices.near || 0;
                     let token2Price = tokenPrices[poolInfo.token2.id] || 0;
                     
                     // If one token price is missing, derive it from pool ratio (AMM formula)
@@ -1705,7 +1769,7 @@ export const LiquidityCard: React.FC = () => {
                         {amounts.token1Amount}
                         {tokenPrices[poolInfo.token1.id] && (
                           <span className="text-xs text-muted-foreground ml-1">
-                            ({formatDollarAmount(parseFloat(amounts.token1Amount) * (tokenPrices[poolInfo.token1.id] || tokenPrices['near'] || tokenPrices['wrap.near'] || 0))})
+                            ({formatDollarAmount(parseFloat(amounts.token1Amount) * (tokenPrices[poolInfo.token1.id] ?? tokenPrices.near ?? tokenPrices['wrap.near'] ?? 0))})
                           </span>
                         )}
                       </span>
@@ -1953,7 +2017,7 @@ export const LiquidityCard: React.FC = () => {
                     decimalLimit={poolInfo.token1.decimals}
                   />
                   {token1Amount && (() => {
-                    const price = tokenPrices[poolInfo.token1.id] || tokenPrices['near'] || tokenPrices['wrap.near'];
+                    const price = tokenPrices[poolInfo.token1.id] ?? tokenPrices.near ?? tokenPrices['wrap.near'];
                     console.log('[LiquidityCard] Token1 display - ID:', poolInfo.token1.id, 'All prices:', tokenPrices, 'Selected price:', price, 'Amount:', token1Amount);
                     if (!price) {
                       console.warn('[LiquidityCard] No price found for NEAR token!');
@@ -2105,7 +2169,7 @@ export const LiquidityCard: React.FC = () => {
                       })()}
                       {tokenPrices[poolInfo.token1.id] && (
                         <span className="text-xs text-muted-foreground ml-1">
-                          ({formatDollarAmount(parseFloat(token1Amount) * (tokenPrices[poolInfo.token1.id] || tokenPrices['near'] || tokenPrices['wrap.near'] || 0))})
+                          ({formatDollarAmount(parseFloat(token1Amount) * (tokenPrices[poolInfo.token1.id] ?? tokenPrices.near ?? tokenPrices['wrap.near'] ?? 0))})
                         </span>
                       )}
                     </span>
@@ -2177,8 +2241,8 @@ export const LiquidityCard: React.FC = () => {
                           
                           // Calculate USD value based on pool TVL
                           let usdValue = null;
-                          const token1Price = tokenPrices[poolInfo.token1.id] || tokenPrices['near'] || tokenPrices['wrap.near'] || 0;
-                          const token2Price = tokenPrices[poolInfo.token2.id] || 0;
+                          const token1Price = tokenPrices[poolInfo.token1.id] ?? tokenPrices.near ?? tokenPrices['wrap.near'] ?? 0;
+                          const token2Price = tokenPrices[poolInfo.token2.id] ?? 0;
                           
                           if (token1Price > 0 || token2Price > 0) {
                             const token1Reserve = Big(reserve1).div(Big(10).pow(poolInfo.token1.decimals));
@@ -2245,7 +2309,7 @@ export const LiquidityCard: React.FC = () => {
                 Cancel
               </button>
               <button
-                onClick={handleAddLiquidity}
+              onClick={() => void handleAddLiquidity()}
                 disabled={
                   !accountId || 
                   !token1Amount || 
@@ -2339,11 +2403,13 @@ export const LiquidityCard: React.FC = () => {
               <div className="flex items-center gap-0 p-4 border border-border rounded-full transition-all hover:border-primary/50 hover:shadow-lg">
                 <div className="flex flex-col items-start w-[200px]">
                   <span className="font-semibold text-foreground text-sm">LP Shares</span>
-                  <div className="flex flex-col items-start mt-1">
-                    <span className="text-xs text-muted-foreground">
-                      Balance: {formatTokenAmount(userShares, 24, 6)}
-                    </span>
-                  </div>
+                  {accountId && (
+                    <div className="flex flex-col items-start mt-1">
+                      <span className="text-xs text-muted-foreground">
+                        Balance: {formatTokenAmount(userShares, 24, 6)}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 relative">
                   <TokenInput
@@ -2353,6 +2419,30 @@ export const LiquidityCard: React.FC = () => {
                     disabled={!accountId}
                     decimalLimit={24}
                   />
+                  {token1Amount && poolInfo && (() => {
+                    const token1Price = tokenPrices[poolInfo.token1.id] ?? tokenPrices.near ?? tokenPrices['wrap.near'] ?? 0;
+                    const token2Price = tokenPrices[poolInfo.token2.id] ?? 0;
+                    
+                    if (token1Price > 0 || token2Price > 0) {
+                      const token1Reserve = Big(poolInfo.reserves[poolInfo.token1.id]).div(Big(10).pow(poolInfo.token1.decimals));
+                      const token2Reserve = Big(poolInfo.reserves[poolInfo.token2.id]).div(Big(10).pow(poolInfo.token2.decimals));
+                      const token1TVL = token1Reserve.mul(token1Price);
+                      const token2TVL = token2Reserve.mul(token2Price);
+                      const totalTVL = token1TVL.plus(token2TVL);
+                      
+                      // Calculate LP shares value: (lpAmount / totalShares) * TVL
+                      const lpAmountNum = Big(token1Amount).mul(Big(10).pow(24));
+                      const totalSharesNum = Big(poolInfo.shareSupply);
+                      const lpValue = totalSharesNum.gt(0) ? lpAmountNum.mul(totalTVL).div(totalSharesNum) : Big(0);
+                      
+                      return (
+                        <div className="absolute top-8 right-4 text-xs text-muted-foreground">
+                          ≈ {formatDollarAmount(lpValue.toNumber())}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
               </div>
             </div>
@@ -2388,7 +2478,7 @@ export const LiquidityCard: React.FC = () => {
                         })()}
                         {tokenPrices[poolInfo.token1.id] && (
                           <span className="text-xs text-muted-foreground ml-1">
-                            ({formatDollarAmount(parseFloat(amounts.token1Amount) * (tokenPrices[poolInfo.token1.id] || tokenPrices['near'] || tokenPrices['wrap.near'] || 0))})
+                            ({formatDollarAmount(parseFloat(amounts.token1Amount) * (tokenPrices[poolInfo.token1.id] ?? tokenPrices.near ?? tokenPrices['wrap.near'] ?? 0))})
                           </span>
                         )}
                       </span>
@@ -2445,7 +2535,7 @@ export const LiquidityCard: React.FC = () => {
                 Cancel
               </button>
               <button
-                onClick={handleRemoveLiquidity}
+                onClick={() => void handleRemoveLiquidity()}
                 disabled={
                   !accountId || 
                   !token1Amount || 
@@ -2534,7 +2624,9 @@ export const LiquidityCard: React.FC = () => {
                     </div>
                   )}
                   <div className="flex justify-between items-center py-2 px-3 border border-border rounded-full">
-                    <span className="text-muted-foreground">LP Shares</span>
+                    <span className="text-muted-foreground">
+                      {liquidityState === 'remove' ? 'Remaining LP Shares' : 'LP Shares'}
+                    </span>
                     <span className="font-semibold">
                       {isLoadingShares || isLoadingBalances ? (
                         <Loader2 className="w-4 h-4 animate-spin" />

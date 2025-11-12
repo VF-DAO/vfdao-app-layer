@@ -59,14 +59,17 @@ export const TokenInput: React.FC<TokenInputProps> = ({
       return;
     }
 
-    // Allow digits and decimal point
-    if (!/[0-9.]/.test(e.key)) {
+    // Allow digits, decimal point, and comma (comma will be converted to dot)
+    if (!/[0-9.,]/.test(e.key)) {
       e.preventDefault();
     }
   }, [decimalLimit]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     let newValue = e.target.value;
+
+    // Convert comma to dot for decimal separator
+    newValue = newValue.replace(/,/g, '.');
 
     // Handle decimal limit
     if (decimalLimit !== undefined && newValue.includes('.')) {

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Menu, X, Home, ArrowRightLeft, ChevronRight, ChevronDown, ChevronLeft, Droplets } from 'lucide-react';
+import { ArrowRightLeft, ChevronDown, ChevronLeft, ChevronRight, Droplets, Home, Menu, X } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { WalletButton } from '@/components/wallet-button';
 import Logo from '@/components/ui/logo';

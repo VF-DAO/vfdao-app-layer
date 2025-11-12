@@ -66,7 +66,7 @@ export function WalletProvider({
           console.log('[WalletContext] Setting wallet state:', { accounts: connectedAccounts });
           setWallet(walletInstance);
           setAccounts(connectedAccounts.map((acc: any) => ({ accountId: acc.accountId })));
-          setAccountId(connectedAccounts[0]?.accountId || null);
+          setAccountId(connectedAccounts[0]?.accountId ?? null);
         }
       } catch (error) {
         // Handle user rejection gracefully - don't treat as error
@@ -122,7 +122,7 @@ export function WalletProvider({
           const connectedWallet = await _connector.wallet();
           setWallet(connectedWallet);
           setAccounts(event.accounts.map((acc: any) => ({ accountId: acc.accountId })));
-          setAccountId(event.accounts[0]?.accountId || null);
+          setAccountId(event.accounts[0]?.accountId ?? null);
         });
 
         // Listen for sign out events
@@ -141,7 +141,7 @@ export function WalletProvider({
             console.log('[WalletContext] Found connected wallet:', connectedAccounts[0]?.accountId);
             setWallet(connectedWallet);
             setAccounts(connectedAccounts.map((acc: any) => ({ accountId: acc.accountId })));
-            setAccountId(connectedAccounts[0]?.accountId || null);
+            setAccountId(connectedAccounts[0]?.accountId ?? null);
           } else {
             console.log('[WalletContext] No wallet connected on mount');
           }
