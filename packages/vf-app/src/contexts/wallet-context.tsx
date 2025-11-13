@@ -3,15 +3,11 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type NearConnector = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type NearWalletBase = any;
 
 interface WalletContextType {
-  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   connector: NearConnector | null;
-  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   wallet: NearWalletBase | null;
   accounts: { accountId: string }[];
   accountId: string | null;
@@ -28,9 +24,7 @@ const WalletContext = createContext<WalletContextType>({
   accountId: null,
   isConnected: false,
   isLoading: true,
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   signIn: async () => {},
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   signOut: async () => {},
 });
 
@@ -40,13 +34,11 @@ export function useWallet() {
 
 interface WalletProviderProps {
   children: ReactNode;
-  contractId?: string;
   network?: 'testnet' | 'mainnet';
 }
 
 export function WalletProvider({
   children,
-  contractId = 'vfdao.near',
   network = 'mainnet',
 }: WalletProviderProps) {
   const [connector, setConnector] = useState<NearConnector>(null);
@@ -58,27 +50,25 @@ export function WalletProvider({
   const signIn = async () => {
     if (connector) {
       try {
-        console.log('[WalletContext] Attempting to connect wallet...');
+        console.warn('[WalletContext] Attempting to connect wallet...');
         // Wait for manifest to load before connecting
         await connector.whenManifestLoaded;
-        console.log('[WalletContext] Manifest loaded, showing wallet selector...');
+        console.warn('[WalletContext] Manifest loaded, showing wallet selector...');
         const connectedWallet = await connector.connect();
-        console.log('[WalletContext] Wallet connected:', connectedWallet);
+        console.warn('[WalletContext] Wallet connected:', connectedWallet);
         
         // Manually update state after connection (event listener should also fire)
         if (connectedWallet) {
           const { wallet: walletInstance, accounts: connectedAccounts } = await connector.getConnectedWallet();
-          console.log('[WalletContext] Setting wallet state:', { accounts: connectedAccounts });
+          console.warn('[WalletContext] Setting wallet state:', { accounts: connectedAccounts });
           setWallet(walletInstance);
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
           setAccounts(connectedAccounts.map((acc: any) => ({ accountId: acc.accountId })));
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           setAccountId(connectedAccounts[0]?.accountId ?? null);
         }
       } catch (error) {
         // Handle user rejection gracefully - don't treat as error
         if (error instanceof Error && (error.message === 'User rejected' || error.message === 'Wallet closed')) {
-          console.log('[WalletContext] User cancelled wallet connection');
+          console.warn('[WalletContext] User cancelled wallet connection');
         } else {
           console.error('[WalletContext] Failed to connect wallet:', error);
         }
@@ -125,19 +115,15 @@ export function WalletProvider({
         });
 
         // Listen for sign in events
-        // eslint-disable-next-line @typescript-eslint/no-misused-promises
         _connector.on('wallet:signIn', async (event: any) => {
           const connectedWallet = await _connector.wallet();
           setWallet(connectedWallet);
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
           setAccounts(event.accounts.map((acc: any) => ({ accountId: acc.accountId })));
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           setAccountId(event.accounts[0]?.accountId ?? null);
         });
 
         // Listen for sign out events
-        // eslint-disable-next-line @typescript-eslint/no-misused-promises
-        _connector.on('wallet:signOut', async () => {
+        _connector.on('wallet:signOut', () => {
           setWallet(null);
           setAccounts([]);
           setAccountId(null);
@@ -149,17 +135,16 @@ export function WalletProvider({
         try {
           const { wallet: connectedWallet, accounts: connectedAccounts } = await _connector.getConnectedWallet();
           if (connectedWallet && connectedAccounts.length > 0) {
-            console.log('[WalletContext] Found connected wallet:', connectedAccounts[0]?.accountId);
+            console.warn('[WalletContext] Found connected wallet:', connectedAccounts[0]?.accountId);
             setWallet(connectedWallet);
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
             setAccounts(connectedAccounts.map((acc: any) => ({ accountId: acc.accountId })));
             setAccountId(connectedAccounts[0]?.accountId ?? null);
           } else {
-            console.log('[WalletContext] No wallet connected on mount');
+            console.warn('[WalletContext] No wallet connected on mount');
           }
         } catch (err) {
           // No wallet connected yet, this is fine
-          console.log('[WalletContext] No wallet connected on mount (error):', err);
+          console.warn('[WalletContext] No wallet connected on mount (error):', err);
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';

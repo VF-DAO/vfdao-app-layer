@@ -411,17 +411,6 @@ export function useSwap(): UseSwapReturn {
           }
         };
 
-        // Helper function to get minimum storage balance
-        const getMinStorageBalanceForToken = async (tokenId: string): Promise<string> => {
-          try {
-            const { getMinStorageBalance } = await import('@/lib/swap-utils');
-            return await getMinStorageBalance(tokenId, actualRpcUrl);
-          } catch (_err) {
-            console.warn(`[useSwap] Could not get min storage for ${tokenId}`);
-            return '1250000000000000000000'; // 0.00125 NEAR as fallback
-          }
-        };
-
         // Calculate min_amount_out using slippage tolerance
         const minAmountOut = (() => {
           if (!estimate) {

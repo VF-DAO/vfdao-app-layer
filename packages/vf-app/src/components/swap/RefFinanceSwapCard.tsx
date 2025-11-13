@@ -215,6 +215,25 @@ export const RefFinanceSwapCard: React.FC = () => {
     })();
   }, [fetchBalances, tokenIn, tokenOut]);
 
+  // Reset user-specific state when wallet disconnects
+  useEffect(() => {
+    if (!accountId) {
+      setBalances({});
+      setRawBalances({});
+      setIsLoadingBalances(false);
+      setAmountIn('');
+      setEstimatedOut('');
+      setEstimatedOutDisplay('');
+      setRawEstimatedOut('');
+      setCurrentEstimate(undefined);
+      setError(null);
+      setShowGasReserveInfo(false);
+      setShowGasReserveMessage(false);
+      setSwapState(null);
+      setTx(undefined);
+    }
+  }, [accountId]);
+
   // Fetch updated balances when swap succeeds
   useEffect(() => {
     if (swapState === 'success') {
@@ -284,9 +303,16 @@ export const RefFinanceSwapCard: React.FC = () => {
     void fetchTokens();
   }, []);
 
+  // Helper function to check if a string is a valid number
+  const isValidNumber = (value: string): boolean => {
+    if (!value || value.trim() === '') return false;
+    const num = parseFloat(value);
+    return !isNaN(num) && isFinite(num) && num >= 0;
+  };
+
   // Estimate output amount
   const estimateOutput = useCallback(async () => {
-    if (!tokenIn || !tokenOut || !amountIn || parseFloat(amountIn) <= 0) {
+    if (!tokenIn || !tokenOut || !amountIn || !isValidNumber(amountIn) || parseFloat(amountIn) <= 0) {
       setEstimatedOut('');
       setEstimatedOutDisplay('');
       setRawEstimatedOut('');
@@ -340,7 +366,7 @@ export const RefFinanceSwapCard: React.FC = () => {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [estimateOutput, tokenIn, tokenOut]);
+  }, [estimateOutput, tokenIn, tokenOut, amountIn]);
 
   // Swap tokens (reverse)
   const handleSwapTokens = () => {
@@ -367,11 +393,11 @@ export const RefFinanceSwapCard: React.FC = () => {
     // Get wallet instance directly from connector if not in state
     let walletInstance = wallet;
     if (!walletInstance && connector) {
-      console.log('[SwapWidget] Wallet not in state, fetching from connector...');
+      console.warn('[SwapWidget] Wallet not in state, fetching from connector...');
       try {
         const { wallet: connectedWallet } = await connector.getConnectedWallet();
         walletInstance = connectedWallet;
-        console.log('[SwapWidget] Fetched wallet from connector:', !!walletInstance);
+        console.warn('[SwapWidget] Fetched wallet from connector:', !!walletInstance);
       } catch (err) {
         console.error('[SwapWidget] Failed to get wallet from connector:', err);
         setError('Please reconnect your wallet');
@@ -512,21 +538,21 @@ export const RefFinanceSwapCard: React.FC = () => {
       
       let outcomes;
       try {
-        console.log('[SwapWidget] Sending batched transactions to wallet');
+        console.warn('[SwapWidget] Sending batched transactions to wallet');
         
         // Send all transactions in one wallet confirmation
         outcomes = await walletInstance.signAndSendTransactions({
           transactions: wsTransactions as any,
         });
         
-        console.log('[SwapWidget] All transactions successful:', outcomes);
+        console.warn('[SwapWidget] All transactions successful:', outcomes);
       } catch (txError: unknown) {
         // Check if this is a user cancellation first
         const isNullError = txError === null || txError === undefined;
         const isEmptyObject = txError && typeof txError === 'object' && !Array.isArray(txError) && Object.keys(txError).length === 0;
         
         if (isNullError || isEmptyObject) {
-          console.log('[SwapWidget] Transaction cancelled by user');
+          console.warn('[SwapWidget] Transaction cancelled by user');
           throw txError;
         } else {
           console.error('[SwapWidget] Transaction error:', txError);
@@ -614,7 +640,7 @@ export const RefFinanceSwapCard: React.FC = () => {
         }
 
         if (isUserRejection) {
-          console.log('[SwapWidget] Transaction cancelled by user');
+          console.warn('[SwapWidget] Transaction cancelled by user');
           setError('Transaction cancelled');
           setSwapState('cancelled');
         } else {
@@ -675,7 +701,7 @@ export const RefFinanceSwapCard: React.FC = () => {
     } catch {
       return '-';
     }
-  }, [currentEstimate, amountIn, rawEstimatedOut, isRateReversed, tokenOut]);
+  }, [amountIn, rawEstimatedOut, isRateReversed, tokenOut]);
 
   // Format exchange rate for display with special handling for small numbers
   const formattedExchangeRate = useMemo(() => {
@@ -944,17 +970,22 @@ export const RefFinanceSwapCard: React.FC = () => {
                     setShowGasReserveMessage(false);
                     
                     // Check if we need to show gas reserve warning
-                    if (tokenIn && (tokenIn.id === 'wrap.near' || tokenIn.id === 'near') && value && rawBalances[tokenIn.id]) {
-                      const rawBalance = rawBalances[tokenIn.id];
-                      const reserveAmount = new Big(0.25).mul(new Big(10).pow(24)); // 0.25 NEAR in yocto
-                      const requestedAmount = new Big(value).mul(new Big(10).pow(tokenIn.decimals)); // User input in yocto
-                      const maxAvailable = new Big(rawBalance).minus(reserveAmount); // Max they can have
-                      
-                      // Only show gas reserve message if amount is within balance but exceeds (balance - 0.25)
-                      // If amount exceeds total balance, insufficient funds message will show instead
-                      if (requestedAmount.lte(new Big(rawBalance)) && requestedAmount.gt(maxAvailable) && maxAvailable.gt(0)) {
-                        setShowGasReserveInfo(true);
-                      } else {
+                    if (tokenIn && (tokenIn.id === 'wrap.near' || tokenIn.id === 'near') && value && isValidNumber(value) && rawBalances[tokenIn.id]) {
+                      try {
+                        const rawBalance = rawBalances[tokenIn.id];
+                        const reserveAmount = new Big(0.25).mul(new Big(10).pow(24)); // 0.25 NEAR in yocto
+                        const requestedAmount = new Big(value).mul(new Big(10).pow(tokenIn.decimals)); // User input in yocto
+                        const maxAvailable = new Big(rawBalance).minus(reserveAmount); // Max they can have
+                        
+                        // Only show gas reserve message if amount is within balance but exceeds (balance - 0.25)
+                        // If amount exceeds total balance, insufficient funds message will show instead
+                        if (requestedAmount.lte(new Big(rawBalance)) && requestedAmount.gt(maxAvailable) && maxAvailable.gt(0)) {
+                          setShowGasReserveInfo(true);
+                        } else {
+                          setShowGasReserveInfo(false);
+                        }
+                      } catch (_error) {
+                        // Invalid number input, reset gas reserve info
                         setShowGasReserveInfo(false);
                       }
                     } else {
@@ -1195,11 +1226,19 @@ export const RefFinanceSwapCard: React.FC = () => {
         {/* Swap Button */}
         <button
           onClick={accountId ? () => void handleSwap() : undefined}
-          disabled={!accountId || !canSwap || isSwapping || isEstimating || !!(amountIn && tokenIn && new Big(amountIn).times(new Big(10).pow(tokenIn.decimals)).gt(new Big(rawBalances[tokenIn.id] ?? '0'))) || !!(
-            tokenIn?.id === 'near' && 
-            rawBalances.near && 
-            new Big(rawBalances.near).lt(new Big('250000000000000000000000'))
-          ) || showGasReserveInfo}
+          disabled={!accountId || !canSwap || isSwapping || isEstimating || (() => {
+            try {
+              return !!(amountIn && tokenIn && isValidNumber(amountIn) && new Big(amountIn).times(new Big(10).pow(tokenIn.decimals)).gt(new Big(rawBalances[tokenIn.id] ?? '0')));
+            } catch {
+              return false;
+            }
+          })() || (() => {
+            try {
+              return !!(tokenIn?.id === 'near' && rawBalances.near && new Big(rawBalances.near).lt(new Big('250000000000000000000000')));
+            } catch {
+              return false;
+            }
+          })() || showGasReserveInfo}
           className="w-full py-3 sm:py-4 border border-verified bg-verified/10 disabled:bg-transparent disabled:text-muted-foreground disabled:cursor-not-allowed disabled:border-verified/30 disabled:shadow-none text-primary shadow-md shadow-verified/20 font-bold rounded-full transition-colors transition-shadow duration-200 hover:bg-verified/20 hover:shadow-lg hover:shadow-verified/30 disabled:hover:bg-transparent flex items-center justify-center text-sm"
         >
           {(isSwapping || isEstimating) && (
@@ -1215,22 +1254,35 @@ export const RefFinanceSwapCard: React.FC = () => {
             </span>
           )}
           <span className={
-            amountIn && tokenIn && new Big(amountIn).times(new Big(10).pow(tokenIn.decimals)).gt(new Big(rawBalances[tokenIn.id] ?? '0'))
-              ? 'text-destructive'
-              : showGasReserveInfo
-              ? 'text-destructive'
-              : tokenIn?.id === 'near' && rawBalances.near && new Big(rawBalances.near).lt(new Big('250000000000000000000000'))
-              ? 'text-verified'
-              : ''
+            (() => {
+              try {
+                return amountIn && tokenIn && isValidNumber(amountIn) && new Big(amountIn).times(new Big(10).pow(tokenIn.decimals)).gt(new Big(rawBalances[tokenIn.id] ?? '0'))
+                  ? 'text-destructive'
+                  : showGasReserveInfo
+                  ? 'text-destructive'
+                  : tokenIn?.id === 'near' && rawBalances.near && new Big(rawBalances.near).lt(new Big('250000000000000000000000'))
+                  ? 'text-verified'
+                  : '';
+              } catch {
+                return '';
+              }
+            })()
           }>
             {isSwapping ? 'Swapping...' : isEstimating ? 'Finding best route...' : 
              showGasReserveInfo
                ? 'Need 0.25N for gas' :
-             (tokenIn?.id === 'near' && rawBalances.near && new Big(rawBalances.near).lt(new Big('250000000000000000000000')))
-               ? 'Need 0.25 NEAR minimum to swap' :
-             (!amountIn || !tokenIn || !tokenOut) ? 'Enter Amount' :
-             (amountIn && tokenIn && new Big(amountIn).times(new Big(10).pow(tokenIn.decimals)).gt(new Big(rawBalances[tokenIn.id] ?? '0'))) 
-               ? 'Insufficient Funds' : 'Swap'}
+             (() => {
+               try {
+                 return (tokenIn?.id === 'near' && rawBalances.near && new Big(rawBalances.near).lt(new Big('250000000000000000000000')))
+                   ? 'Need 0.25 NEAR minimum to swap' :
+                   (!amountIn || !tokenIn || !tokenOut) ? 'Enter Amount' :
+                   (amountIn && tokenIn && isValidNumber(amountIn) && new Big(amountIn).times(new Big(10).pow(tokenIn.decimals)).gt(new Big(rawBalances[tokenIn.id] ?? '0'))) 
+                   ? 'Insufficient Funds' : 'Swap';
+               } catch {
+                 return 'Enter Amount';
+               }
+             })()
+            }
           </span>
         </button>
 

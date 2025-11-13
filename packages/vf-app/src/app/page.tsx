@@ -39,9 +39,9 @@ export default function Home() {
             </motion.h1>
             <p className="text-muted-foreground text-base sm:text-xl md:text-2xl max-w-3xl mx-auto mb-12">
               {isConnected && formattedUsername ? (
-                <>Welcome to the community! Start swapping tokens, provide liquidity, verify products, and help build trust in vegan products.</>
+                <>Welcome to the community!</>
               ) : (
-                <>Join a community building trust in vegan products. With VF tokens, you can swap tokens, support the ecosystem, use our verification tools, have a say in how we certify products, and help make the vegan world more trustworthy together.</>
+                <>VF DAO creates clear standards for verifying vegan products. Through our token ecosystem, you can participate in trading, liquidity provision, and governance to ensure certification standards remain trustworthy.</>
               )}
             </p>
             <div className="flex flex-row gap-4 justify-center w-full flex-wrap">
@@ -52,8 +52,8 @@ export default function Home() {
           </div>
 
           {/* Feature Highlights */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-12">
-            <div 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12 max-w-4xl mx-auto">
+            <div
               className="relative p-6 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all hover:shadow-lg cursor-pointer group"
               onClick={() => {
                 const element = document.querySelector('#tokens');
@@ -66,10 +66,10 @@ export default function Home() {
               <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-verified bg-verified/10 text-primary shadow-md shadow-verified/20 mb-4">
                 <ArrowRightLeft className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Get <span className="text-primary">V</span><span className="text-verified">F</span> Tokens</h3>
-              <p className="text-sm text-muted-foreground">Exchange NEAR for VF tokens and join our community</p>
+              <h3 className="text-lg font-semibold mb-2">Get VF Tokens</h3>
+              <p className="text-sm text-muted-foreground">Exchange NEAR for VF tokens to participate in our ecosystem</p>
             </div>
-            <div 
+            <div
               className="relative p-6 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all hover:shadow-lg cursor-pointer group"
               onClick={() => {
                 const element = document.querySelector('#liquidity');
@@ -82,22 +82,8 @@ export default function Home() {
               <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-verified bg-verified/10 text-primary shadow-md shadow-verified/20 mb-4">
                 <Droplets className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Support the Pool</h3>
-              <p className="text-sm text-muted-foreground">Help others trade and earn rewards for your contribution</p>
-            </div>
-            <div className="p-6 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all hover:shadow-lg opacity-75">
-              <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-verified bg-verified/10 text-primary shadow-md shadow-verified/20 mb-4">
-                <Sprout className="w-5 h-5 sm:w-6 sm:h-6" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">Participate</h3>
-              <p className="text-sm text-muted-foreground">Coming soon - Have a voice in community decisions</p>
-            </div>
-            <div className="p-6 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all hover:shadow-lg opacity-75">
-              <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-verified bg-verified/10 text-primary shadow-md shadow-verified/20 mb-4">
-                <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">Track Progress</h3>
-              <p className="text-sm text-muted-foreground">Coming soon - See your contributions and community growth</p>
+              <h3 className="text-lg font-semibold mb-2">Support Liquidity</h3>
+              <p className="text-sm text-muted-foreground">Provide liquidity to help grow the ecosystem and earn rewards</p>
             </div>
           </div>
         </div>

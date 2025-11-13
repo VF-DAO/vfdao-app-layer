@@ -146,7 +146,7 @@ export function TokenSelect({
                           width={32}
                           height={32}
                           className="rounded-full"
-                          onError={(e) => {
+                          onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
                             // Fallback to placeholder if image fails
                             e.currentTarget.src = `https://ui-avatars.com/api/?name=${token.symbol}&background=random`;
                           }}

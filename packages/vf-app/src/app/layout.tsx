@@ -6,8 +6,7 @@ import './globals.css';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { WalletProviderWrapper } from '@/components/providers/wallet-provider-wrapper';
 import { Navigation } from '@/components/navigation/navigation';
-import { BookOpen, Code, Github, Heart, Mail, Send } from 'lucide-react';
-import { FaXTwitter } from 'react-icons/fa6';
+import { BookOpen, Code, Github, Heart, Mail, Send, Twitter } from 'lucide-react';
 import Logo from '@/components/ui/logo';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -55,7 +54,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                             target="_blank"
                             rel="noopener noreferrer"
                           >
-                            <FaXTwitter className="w-5 h-5" />
+                            <Twitter className="w-5 h-5" />
                           </a>
                         </li>
                         <li>

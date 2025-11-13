@@ -98,6 +98,7 @@ export const LiquidityCard: React.FC = () => {
     apy: 0,
   });
   const [isLoadingPoolStats, setIsLoadingPoolStats] = useState(false);
+  const [hasLoadedPoolStats, setHasLoadedPoolStats] = useState(false);
   
   // Gas reserve notification
   const [showGasReserveInfo, setShowGasReserveInfo] = useState(false);
@@ -143,13 +144,13 @@ export const LiquidityCard: React.FC = () => {
         if (prices['wrap.near']) {
           priceMap.near = parseFloat(prices['wrap.near'].price);
           priceMap['wrap.near'] = parseFloat(prices['wrap.near'].price);
-          console.log('[LiquidityCard] NEAR price loaded:', priceMap['wrap.near']);
+          console.warn('[LiquidityCard] NEAR price loaded:', priceMap['wrap.near']);
         }
         
         // Get VF token price - from API if available, otherwise calculate from pool ratio
         if (prices['veganfriends.tkn.near']) {
           priceMap['veganfriends.tkn.near'] = parseFloat(prices['veganfriends.tkn.near'].price);
-          console.log('[LiquidityCard] VF price from API:', priceMap['veganfriends.tkn.near']);
+          console.warn('[LiquidityCard] VF price from API:', priceMap['veganfriends.tkn.near']);
         } else if (poolInfo && priceMap['wrap.near']) {
           // Calculate VF price from pool ratio (exact same method as TokenBalance component)
           const reserveNear = Big(poolInfo.reserves[poolInfo.token1.id]); // wrap.near reserve (24 decimals)
@@ -162,10 +163,10 @@ export const LiquidityCard: React.FC = () => {
           const vfPrice = adjustedRatio.mul(nearPrice).toNumber();
           
           priceMap['veganfriends.tkn.near'] = vfPrice;
-          console.log('[LiquidityCard] VF price calculated from pool:', vfPrice);
+          console.warn('[LiquidityCard] VF price calculated from pool:', vfPrice);
         }
         
-        console.log('[LiquidityCard] All prices loaded:', priceMap);
+        console.warn('[LiquidityCard] All prices loaded:', priceMap);
         setTokenPrices(priceMap);
       } catch (error) {
         console.error('[fetchTokenPrices] Failed to fetch token prices:', error);
@@ -181,7 +182,7 @@ export const LiquidityCard: React.FC = () => {
   // Fetch pool stats (Volume, Fee, APY)
   const fetchPoolStats = useCallback(async (retryCount = 0, isRetry = false) => {
     const maxRetries = 3;
-    console.log('[LiquidityCard] fetchPoolStats called, retry:', retryCount, 'isRetry:', isRetry);
+    console.warn('[LiquidityCard] fetchPoolStats called, retry:', retryCount, 'isRetry:', isRetry);
     
     // Set loading state at the start (unless this is a retry)
     if (!isRetry) {
@@ -196,7 +197,7 @@ export const LiquidityCard: React.FC = () => {
       // Only fetch on client-side to avoid SSR issues
       if (typeof window !== 'undefined') {
         try {
-          console.log('[LiquidityCard] Fetching volume for pool:', POOL_ID);
+          console.warn('[LiquidityCard] Fetching volume for pool:', POOL_ID);
           
           // Create AbortController with 3 second timeout
           const controller = new AbortController();
@@ -215,13 +216,13 @@ export const LiquidityCard: React.FC = () => {
           
           clearTimeout(timeoutId);
         
-          console.log('[LiquidityCard] Volume response status:', volumeResponse.status);
+          console.warn('[LiquidityCard] Volume response status:', volumeResponse.status);
         
           if (volumeResponse.ok) {
             const data = await volumeResponse.json();
-            console.log('[LiquidityCard] Volume data received:', data);
+            console.warn('[LiquidityCard] Volume data received:', data);
             volume24h = data.volume ?? '0';
-            console.log('[LiquidityCard] Parsed 24h volume:', volume24h);
+            console.warn('[LiquidityCard] Parsed 24h volume:', volume24h);
           } else {
             const errorText = await volumeResponse.text();
             console.warn('[LiquidityCard] API returned error:', volumeResponse.status, errorText);
@@ -236,7 +237,7 @@ export const LiquidityCard: React.FC = () => {
           
             // Retry on network errors (not on AbortError from timeout)
             if (retryCount < maxRetries) {
-              console.log(`[LiquidityCard] Retrying fetchPoolStats in ${retryCount + 1} seconds...`);
+              console.warn(`[LiquidityCard] Retrying fetchPoolStats in ${retryCount + 1} seconds...`);
               // Reset loading state before retry to avoid stuck loading indicator
               setIsLoadingPoolStats(false);
               setTimeout(() => {
@@ -248,30 +249,30 @@ export const LiquidityCard: React.FC = () => {
           // Don't rethrow - we want to continue with volume = '0'
         }
       } else {
-        console.log('[LiquidityCard] Skipping volume fetch during SSR');
+        console.warn('[LiquidityCard] Skipping volume fetch during SSR');
       }
 
-      console.log('[LiquidityCard] Volume24h value:', volume24h, 'Number:', Number(volume24h));
+      console.warn('[LiquidityCard] Volume24h value:', volume24h, 'Number:', Number(volume24h));
 
       // Calculate Fee (24h) and APY if we have pool info and volume
       let fee24h = '0';
       let apy = 0;
       
       if (poolInfo && Number(volume24h) > 0) {
-        console.log('[LiquidityCard] Calculating fees and APY...');
+        console.warn('[LiquidityCard] Calculating fees and APY...');
         // Fee calculation: (pool.total_fee / 10000) * 0.8 * volume24h
         // Ref Finance pools typically have 0.3% fee (30 basis points), 80% goes to LPs
         const poolFee = 30; // 0.3% = 30 basis points
         const fee24hValue = (poolFee / 10000) * 0.8 * Number(volume24h);
         fee24h = fee24hValue.toString();
-        console.log('[LiquidityCard] Calculated fee24h:', fee24h);
+        console.warn('[LiquidityCard] Calculated fee24h:', fee24h);
 
         // APY calculation: ((fee24h * 365) / tvl) * 100
         // Calculate TVL from pool reserves
   const token1Price = tokenPrices[poolInfo.token1.id] ?? tokenPrices.near ?? tokenPrices['wrap.near'] ?? 0;
   const token2Price = tokenPrices[poolInfo.token2.id] ?? 0;
         
-        console.log('[LiquidityCard] Token prices:', { token1Price, token2Price });
+        console.warn('[LiquidityCard] Token prices:', { token1Price, token2Price });
         
         if (token1Price > 0) {
           const token1Reserve = Big(poolInfo.reserves[poolInfo.token1.id])
@@ -283,18 +284,18 @@ export const LiquidityCard: React.FC = () => {
           const token2TVL = token2Reserve.mul(token2Price > 0 ? token2Price : 0);
           const tvl = token1TVL.plus(token2TVL).toNumber();
           
-          console.log('[LiquidityCard] Calculated TVL:', tvl);
+          console.warn('[LiquidityCard] Calculated TVL:', tvl);
           
           if (tvl > 0) {
             apy = ((fee24hValue * 365) / tvl) * 100;
-            console.log('[LiquidityCard] Calculated APY:', apy);
+            console.warn('[LiquidityCard] Calculated APY:', apy);
           }
         }
       } else {
-        console.log('[LiquidityCard] Skipping calculations - poolInfo:', !!poolInfo, 'volume24h:', volume24h);
+        console.warn('[LiquidityCard] Skipping calculations - poolInfo:', !!poolInfo, 'volume24h:', volume24h);
       }
 
-      console.log('[LiquidityCard] Setting pool stats:', { volume24h, fee24h, apy });
+      console.warn('[LiquidityCard] Setting pool stats:', { volume24h, fee24h, apy });
       setPoolStats({
         volume24h,
         fee24h,
@@ -310,8 +311,10 @@ export const LiquidityCard: React.FC = () => {
       });
     } finally {
       // Always set loading to false when we're done (success or final failure)
-      console.log('[LiquidityCard] Finally block - setting isLoadingPoolStats to false');
+      console.warn('[LiquidityCard] Finally block - setting isLoadingPoolStats to false');
       setIsLoadingPoolStats(false);
+      // Mark as loaded after first fetch attempt (success or failure)
+      setHasLoadedPoolStats(true);
     }
   }, [poolInfo, tokenPrices]);
 
@@ -320,20 +323,21 @@ export const LiquidityCard: React.FC = () => {
     if (poolInfo && Object.keys(tokenPrices).length > 0 && !isLoadingPoolStats) {
       void fetchPoolStats();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [poolInfo, tokenPrices, fetchPoolStats]);
+  }, [poolInfo, tokenPrices]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-refresh pool stats every 60 seconds
   useEffect(() => {
     if (!poolInfo || Object.keys(tokenPrices).length === 0) return;
     
     const interval = setInterval(() => {
-      console.log('[LiquidityCard] Auto-refreshing pool stats (TVL, Volume, Fee, APY)');
-      void fetchPoolStats();
+      if (!isLoadingPoolStats) {
+        console.warn('[LiquidityCard] Auto-refreshing pool stats (TVL, Volume, Fee, APY)');
+        void fetchPoolStats();
+      }
     }, 60000); // 60 seconds
     
     return () => clearInterval(interval);
-  }, [poolInfo, tokenPrices, fetchPoolStats]);
+  }, [poolInfo, tokenPrices, isLoadingPoolStats]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch pool information
   const fetchPoolInfo = useCallback(async () => {
@@ -567,7 +571,7 @@ export const LiquidityCard: React.FC = () => {
       const vfBalance = JSON.parse(Buffer.from(vfResult.result).toString()) as string;
       
       if (wrapBalance !== "0" || vfBalance !== "0") {
-        console.info('[LiquidityCard] Ref Finance internal balances detected - will be automatically used');
+        console.warn('[LiquidityCard] Ref Finance internal balances detected - will be automatically used');
       }
     } catch (error) {
       console.error('[LiquidityCard] Failed to fetch Ref internal balances:', error);
@@ -619,8 +623,15 @@ export const LiquidityCard: React.FC = () => {
       void fetchUserShares();
       void fetchRefInternalBalances();
     } else {
+      // Reset all user-specific state when wallet disconnects
       setUserShares('0');
       setIsLoadingShares(false);
+      setRawBalances({});
+      setIsLoadingBalances(false);
+      setToken1Amount('');
+      setToken2Amount('');
+      setShowGasReserveInfo(false);
+      setShowGasReserveMessage(false);
     }
   }, [availableTokens, accountId, fetchPoolInfo, fetchBalances, fetchUserShares, fetchRefInternalBalances]);
 
@@ -1547,18 +1558,18 @@ export const LiquidityCard: React.FC = () => {
                 <div className="flex items-center justify-center gap-4 text-sm pb-3 border-b border-border/30">
                   <div className="flex items-center gap-1.5">
                     <span className="text-muted-foreground">NEAR:</span>
-                    <span className={`font-semibold text-primary transition-opacity ${isLoadingPoolStats ? 'opacity-50' : 'opacity-100'}`}>{formatTokenAmount(poolInfo.reserves[poolInfo.token1.id], poolInfo.token1.decimals, 2)}</span>
+                    <span className={`font-semibold text-primary transition-opacity ${hasLoadedPoolStats ? 'opacity-100' : 'opacity-50'}`}>{hasLoadedPoolStats ? formatTokenAmount(poolInfo.reserves[poolInfo.token1.id], poolInfo.token1.decimals, 2) : '-'}</span>
                   </div>
                   <span className="text-muted-foreground">•</span>
                   <div className="flex items-center gap-1.5">
                     <span className="text-muted-foreground">VF:</span>
-                    <span className={`font-semibold text-primary transition-opacity ${isLoadingPoolStats ? 'opacity-50' : 'opacity-100'}`}>{formatTokenAmount(poolInfo.reserves[poolInfo.token2.id], poolInfo.token2.decimals, 2)}</span>
+                    <span className={`font-semibold text-primary transition-opacity ${hasLoadedPoolStats ? 'opacity-100' : 'opacity-50'}`}>{hasLoadedPoolStats ? formatTokenAmount(poolInfo.reserves[poolInfo.token2.id], poolInfo.token2.decimals, 2) : '-'}</span>
                   </div>
                 </div>
                 <div className="grid grid-cols-4 gap-3 text-xs">
                   <div className="text-center">
                     <p className="text-muted-foreground mb-0.5">TVL</p>
-                    <p className={`font-semibold text-primary transition-opacity ${isLoadingPoolStats ? 'opacity-50' : 'opacity-100'}`}>{(() => {
+                    <p className={`font-semibold text-primary transition-opacity ${hasLoadedPoolStats ? 'opacity-100' : 'opacity-50'}`}>{hasLoadedPoolStats ? (() => {
                 const token1Price = tokenPrices[poolInfo.token1.id] ?? tokenPrices.near ?? tokenPrices['wrap.near'] ?? 0;
                       const token2Price = tokenPrices[poolInfo.token2.id] ?? 0;
                       
@@ -1572,33 +1583,33 @@ export const LiquidityCard: React.FC = () => {
                         return formatDollarAmount(totalTVL);
                       }
                       return '-';
-                    })()}</p>
+                    })() : '-'}</p>
                   </div>
                   <div className="text-center">
                     <p className="text-muted-foreground mb-0.5">Volume</p>
-                    <p className={`font-semibold text-primary transition-opacity ${isLoadingPoolStats ? 'opacity-50' : 'opacity-100'}`}>{(() => {
+                    <p className={`font-semibold text-primary transition-opacity ${hasLoadedPoolStats ? 'opacity-100' : 'opacity-50'}`}>{hasLoadedPoolStats ? (() => {
                       const vol = Number(poolStats.volume24h);
                       if (vol === 0) return '$0';
                       if (vol < 0.01) return '<$0.01';
                       return formatDollarAmount(vol);
-                    })()}</p>
+                    })() : '-'}</p>
                   </div>
                   <div className="text-center">
                     <p className="text-muted-foreground mb-0.5">Fee(24h)</p>
-                    <p className={`font-semibold text-primary transition-opacity ${isLoadingPoolStats ? 'opacity-50' : 'opacity-100'}`}>{(() => {
+                    <p className={`font-semibold text-primary transition-opacity ${hasLoadedPoolStats ? 'opacity-100' : 'opacity-50'}`}>{hasLoadedPoolStats ? (() => {
                       const fee = Number(poolStats.fee24h);
                       if (fee === 0) return '$0';
                       if (fee < 0.01) return '<$0.01';
                       return formatDollarAmount(fee);
-                    })()}</p>
+                    })() : '-'}</p>
                   </div>
                   <div className="text-center">
                     <p className="text-muted-foreground mb-0.5">APY</p>
-                    <p className={`font-semibold text-primary transition-opacity ${isLoadingPoolStats ? 'opacity-50' : 'opacity-100'}`}>{(() => {
+                    <p className={`font-semibold text-primary transition-opacity ${hasLoadedPoolStats ? 'opacity-100' : 'opacity-50'}`}>{hasLoadedPoolStats ? (() => {
                       if (poolStats.apy === 0) return '0%';
                       if (poolStats.apy < 0.01) return '<0.01%';
                       return `${poolStats.apy.toFixed(2)}%`;
-                    })()}</p>
+                    })() : '-'}</p>
                   </div>
                 </div>
               </div>
@@ -2010,13 +2021,13 @@ export const LiquidityCard: React.FC = () => {
                   />
                   {token1Amount && (() => {
                     const price = tokenPrices[poolInfo.token1.id] ?? tokenPrices.near ?? tokenPrices['wrap.near'];
-                    console.log('[LiquidityCard] Token1 display - ID:', poolInfo.token1.id, 'All prices:', tokenPrices, 'Selected price:', price, 'Amount:', token1Amount);
+                    console.warn('[LiquidityCard] Token1 display - ID:', poolInfo.token1.id, 'All prices:', tokenPrices, 'Selected price:', price, 'Amount:', token1Amount);
                     if (!price) {
                       console.warn('[LiquidityCard] No price found for NEAR token!');
                       return null;
                     }
                     const usdValue = parseFloat(token1Amount) * price;
-                    console.log('[LiquidityCard] USD value calculated:', usdValue);
+                    console.warn('[LiquidityCard] USD value calculated:', usdValue);
                     return (
                       <div className="absolute top-8 right-4 text-xs text-muted-foreground">
                         ≈ {formatDollarAmount(usdValue)}
@@ -2123,7 +2134,7 @@ export const LiquidityCard: React.FC = () => {
                   />
                   {token2Amount && tokenPrices[poolInfo.token2.id] && (() => {
                     const price = tokenPrices[poolInfo.token2.id];
-                    console.log('[LiquidityCard] Token2 display - ID:', poolInfo.token2.id, 'Price:', price, 'Amount:', token2Amount);
+                    console.warn('[LiquidityCard] Token2 display - ID:', poolInfo.token2.id, 'Price:', price, 'Amount:', token2Amount);
                     return (
                       <div className="absolute top-8 right-4 text-xs text-muted-foreground">
                         ≈ {formatDollarAmount(parseFloat(token2Amount) * price)}

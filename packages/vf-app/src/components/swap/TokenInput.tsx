@@ -89,6 +89,22 @@ export const TokenInput: React.FC<TokenInputProps> = ({
       newValue = `0${newValue}`;
     }
 
+    // Prevent multiple decimal points
+    const dotCount = (newValue.match(/\./g) ?? []).length;
+    if (dotCount > 1) {
+      // Keep only the first decimal point
+      const firstDotIndex = newValue.indexOf('.');
+      const beforeDot = newValue.substring(0, firstDotIndex + 1);
+      const afterDot = newValue.substring(firstDotIndex + 1).replace(/\./g, '');
+      newValue = beforeDot + afterDot;
+    }
+
+    // Validate that newValue represents a valid number before emitting
+    const num = parseFloat(newValue);
+    if (isNaN(num) || !isFinite(num) || num < 0) {
+      return; // Don't emit invalid values
+    }
+
     onChange(newValue);
   }, [onChange, decimalLimit]);
 

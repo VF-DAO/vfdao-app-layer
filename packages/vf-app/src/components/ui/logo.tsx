@@ -2,15 +2,17 @@
 
 import * as React from 'react';
 
-const Logo = (props: React.SVGProps<SVGSVGElement>) => {
+const Logo = React.forwardRef<SVGSVGElement, React.SVGProps<SVGSVGElement>>((props, ref) => {
+  const { className, ...rest } = props;
   return (
     <svg
+      ref={ref}
       xmlns="http://www.w3.org/2000/svg"
       width={100}
       height={100}
       viewBox="0 0 1024 1024"
-      className="logo-svg"
-      {...props}
+      className={`logo-svg ${className ?? ''}`}
+      {...rest}
     >
       <style>{`
         .logo-svg {
@@ -66,6 +68,6 @@ const Logo = (props: React.SVGProps<SVGSVGElement>) => {
       </g>
     </svg>
   );
-};
+});
 
 export default Logo;

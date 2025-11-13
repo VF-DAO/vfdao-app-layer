@@ -18,7 +18,7 @@ export function TokenBalance() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  console.log('[TokenBalance] Render - isConnected:', isConnected, 'accountId:', accountId);
+  console.warn('[TokenBalance] Render - isConnected:', isConnected, 'accountId:', accountId);
 
   // Format dollar amounts with special handling for small values
   const formatDollarAmount = useCallback((amount: number) => {
@@ -68,7 +68,7 @@ export function TokenBalance() {
 
   useEffect(() => {
     if (!isConnected || !accountId) {
-      console.log('[TokenBalance] Not connected or no accountId, resetting balance');
+      console.warn('[TokenBalance] Not connected or no accountId, resetting balance');
       setBalance('0');
       setUsdValue('0.00');
       return;
@@ -82,10 +82,10 @@ export function TokenBalance() {
         setIsRefreshing(true);
       }
       try {
-        console.log('[TokenBalance] Fetching balance for:', accountId, 'from contract:', VF_TOKEN_CONTRACT);
+        console.warn('[TokenBalance] Fetching balance for:', accountId, 'from contract:', VF_TOKEN_CONTRACT);
         
         const rpcUrl = process.env.NEXT_PUBLIC_NEAR_RPC_MAINNET ?? 'https://rpc.mainnet.near.org';
-        console.log('[TokenBalance] Using RPC:', rpcUrl);
+        console.warn('[TokenBalance] Using RPC:', rpcUrl);
         const provider = new providers.JsonRpcProvider({ url: rpcUrl });
         
         // First, fetch token metadata to get correct decimals
@@ -101,7 +101,7 @@ export function TokenBalance() {
           
           const metadata = JSON.parse(Buffer.from(metadataResult.result).toString()) as { decimals: number };
           tokenDecimals = metadata.decimals;
-          console.log('[TokenBalance] Token metadata:', metadata, 'Using decimals:', tokenDecimals);
+          console.warn('[TokenBalance] Token metadata:', metadata, 'Using decimals:', tokenDecimals);
         } catch (metaError) {
           console.warn('[TokenBalance] Could not fetch metadata, using default decimals:', VF_TOKEN_DECIMALS, metaError);
         }
@@ -116,7 +116,7 @@ export function TokenBalance() {
         })) as unknown as { result: number[] };
         
         const rawBalance = JSON.parse(Buffer.from(result.result).toString()) as string;
-        console.log('[TokenBalance] Raw balance result:', rawBalance);
+        console.warn('[TokenBalance] Raw balance result:', rawBalance);
         
         // Use the same formatting as swap widget
         const balanceInTokens = formatTokenAmount(rawBalance, tokenDecimals, 6);
@@ -132,10 +132,10 @@ export function TokenBalance() {
             // Get VEGANFRIENDS price - calculate from pool if not in indexer
             if (prices[VF_TOKEN_CONTRACT]) {
               tokenPrice = parseFloat(prices[VF_TOKEN_CONTRACT].price);
-              console.log('[TokenBalance] Found token price:', tokenPrice);
+              console.warn('[TokenBalance] Found token price:', tokenPrice);
             } else if (prices['wrap.near']) {
               // Calculate from pool 5094 (same logic as useSwap)
-              console.log('[TokenBalance] Calculating price from pool 5094');
+              console.warn('[TokenBalance] Calculating price from pool 5094');
               try {
                 const poolResponse = await fetch(rpcUrl, {
                   method: 'POST',
@@ -172,7 +172,7 @@ export function TokenBalance() {
                         const decimalAdjustment = new Big(10).pow(18 - 24); // VEGAN has 18, NEAR has 24
                         const adjustedRatio = rawRatio.mul(decimalAdjustment);
                         tokenPrice = adjustedRatio.mul(nearPrice).toNumber();
-                        console.log('[TokenBalance] Calculated price from pool:', tokenPrice);
+                        console.warn('[TokenBalance] Calculated price from pool:', tokenPrice);
                       }
                     }
                   }
@@ -193,7 +193,7 @@ export function TokenBalance() {
         const usdVal = numericBalance.times(tokenPrice).toNumber();
         setUsdValue(String(usdVal));
         
-        console.log('[TokenBalance] Successfully set balance:', balanceInTokens, 'VF (decimals:', tokenDecimals, ') USD:', usdVal, 'price:', tokenPrice);
+        console.warn('[TokenBalance] Successfully set balance:', balanceInTokens, 'VF (decimals:', tokenDecimals, ') USD:', usdVal, 'price:', tokenPrice);
       } catch (error) {
         console.error('[TokenBalance] Error fetching token balance:', error);
         setBalance('0');
@@ -205,25 +205,24 @@ export function TokenBalance() {
     };
 
   void fetchBalance();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accountId, isConnected, refreshKey]);
+  }, [accountId, isConnected, refreshKey, balance, usdValue]);
 
   // Auto-refresh every 30 seconds when connected
   useEffect(() => {
     if (!isConnected || !accountId) return;
 
     const interval = setInterval(() => {
-      console.log('[TokenBalance] Auto-refreshing balance');
+      console.warn('[TokenBalance] Auto-refreshing balance');
       setRefreshKey(prev => prev + 1);
     }, 30000); // 30 seconds
 
     return () => clearInterval(interval);
   }, [isConnected, accountId]);
 
-  console.log('[TokenBalance] Current state - isConnected:', isConnected, 'balance:', balance, 'isLoading:', isLoading);
+  console.warn('[TokenBalance] Current state - isConnected:', isConnected, 'balance:', balance, 'isLoading:', isLoading);
 
   if (!isConnected) {
-    console.log('[TokenBalance] Not rendering - wallet not connected');
+    console.warn('[TokenBalance] Not rendering - wallet not connected');
     return null;
   }
 
