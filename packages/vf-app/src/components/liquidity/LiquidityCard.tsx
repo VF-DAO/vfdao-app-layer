@@ -330,14 +330,15 @@ export const LiquidityCard: React.FC = () => {
     if (!poolInfo || Object.keys(tokenPrices).length === 0) return;
     
     const interval = setInterval(() => {
-      if (!isLoadingPoolStats) {
+      // Only refresh if not loading, not in transaction, and no modal open
+      if (!isLoadingPoolStats && transactionState === null) {
         console.warn('[LiquidityCard] Auto-refreshing pool stats (TVL, Volume, Fee, APY)');
         void fetchPoolStats();
       }
     }, 60000); // 60 seconds
     
     return () => clearInterval(interval);
-  }, [poolInfo, tokenPrices, isLoadingPoolStats]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [poolInfo, tokenPrices, isLoadingPoolStats, transactionState]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch pool information
   const fetchPoolInfo = useCallback(async () => {

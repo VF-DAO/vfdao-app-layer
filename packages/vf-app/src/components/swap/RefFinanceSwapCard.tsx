@@ -40,6 +40,10 @@ import {
 import Logo from '@/components/ui/logo';
 
 type SwapState = 'success' | 'fail' | 'cancelled' | 'waitingForConfirmation' | null;
+type EstimateReason = 'user' | 'auto';
+
+const AUTO_REFRESH_INTERVAL_MS = 10_000;
+const AUTO_REFRESH_INTERVAL_SECONDS = AUTO_REFRESH_INTERVAL_MS / 1000;
 
 interface Token {
   id: string;
@@ -68,6 +72,8 @@ export const RefFinanceSwapCard: React.FC = () => {
   const [estimatedOut, setEstimatedOut] = useState('');
   const [estimatedOutDisplay, setEstimatedOutDisplay] = useState(''); // For main display without abbreviations
   const [rawEstimatedOut, setRawEstimatedOut] = useState('');
+  const [lastEstimateTimestamp, setLastEstimateTimestamp] = useState<number | null>(null);
+  const [lastUserInteraction, setLastUserInteraction] = useState<number>(Date.now());
 
   // Settings
   const [slippage, setSlippage] = useState(0.5);
@@ -94,6 +100,8 @@ export const RefFinanceSwapCard: React.FC = () => {
 
   // Available tokens with metadata
   const [availableTokens, setAvailableTokens] = useState<TokenMetadata[]>([]);
+  const [estimateReason, setEstimateReason] = useState<EstimateReason | null>(null);
+  const [refreshTicker, setRefreshTicker] = useState(0);
   
   // Gas reserve notification
   const [showGasReserveInfo, setShowGasReserveInfo] = useState(false);
@@ -311,15 +319,17 @@ export const RefFinanceSwapCard: React.FC = () => {
   };
 
   // Estimate output amount
-  const estimateOutput = useCallback(async () => {
+  const estimateOutput = useCallback(async (reason: EstimateReason = 'user') => {
     if (!tokenIn || !tokenOut || !amountIn || !isValidNumber(amountIn) || parseFloat(amountIn) <= 0) {
       setEstimatedOut('');
       setEstimatedOutDisplay('');
       setRawEstimatedOut('');
       setCurrentEstimate(undefined); // Clear current estimate to hide warnings
+      setEstimateReason(null);
       return;
     }
 
+    setEstimateReason(reason);
     setIsEstimating(true);
     setError(null);
 
@@ -356,17 +366,56 @@ export const RefFinanceSwapCard: React.FC = () => {
       setCurrentEstimate(undefined);
     } finally {
       setIsEstimating(false);
+      setLastEstimateTimestamp(Date.now());
+      setEstimateReason(null);
     }
   }, [tokenIn, tokenOut, amountIn, estimateSwapOutput]);
 
   // Debounced estimate
   useEffect(() => {
     const timer = setTimeout(() => {
-      void estimateOutput();
+      void estimateOutput('user');
     }, 500);
 
     return () => clearTimeout(timer);
   }, [estimateOutput, tokenIn, tokenOut, amountIn]);
+
+  // Periodically refresh estimates to keep prices up to date
+  // Only refresh if user has been active in the last 30 seconds
+  useEffect(() => {
+    if (!tokenIn || !tokenOut || !amountIn || !isValidNumber(amountIn)) {
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      const timeSinceInteraction = Date.now() - lastUserInteraction;
+      const INACTIVITY_THRESHOLD = 30_000; // 30 seconds
+
+      // Only auto-refresh if:
+      // - User has been active recently
+      // - Not currently estimating (avoid race conditions)
+      // - Not swapping
+      // - No modal open (success/fail/cancelled)
+      if (
+        timeSinceInteraction < INACTIVITY_THRESHOLD &&
+        !isEstimating &&
+        !isSwapping &&
+        !swapState
+      ) {
+        void estimateOutput('auto');
+      }
+    }, AUTO_REFRESH_INTERVAL_MS);
+
+    return () => clearInterval(intervalId);
+  }, [tokenIn, tokenOut, amountIn, estimateOutput, lastUserInteraction, isSwapping, isEstimating, swapState]);
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setRefreshTicker(prev => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, []);
 
   // Swap tokens (reverse)
   const handleSwapTokens = () => {
@@ -380,6 +429,7 @@ export const RefFinanceSwapCard: React.FC = () => {
     setCurrentEstimate(undefined); // Clear current estimate to hide warnings
     setError(null); // Clear any errors
     setIsRateReversed(false);
+    setLastUserInteraction(Date.now()); // Track user interaction
   };
 
   // Execute swap - automatic registration is handled in executeSwap
@@ -388,6 +438,40 @@ export const RefFinanceSwapCard: React.FC = () => {
       setError('Please connect wallet and enter amount');
       console.error('[SwapWidget] Missing required fields:', { accountId, wallet: !!wallet, tokenIn: !!tokenIn, tokenOut: !!tokenOut, amountIn });
       return;
+    }
+
+    // Fetch fresh quote before swapping to ensure price accuracy
+    console.warn('[SwapWidget] Fetching fresh quote before swap...');
+    setIsEstimating(true);
+    setEstimateReason('user');
+    try {
+      const amountInParsed = parseTokenAmount(amountIn, tokenIn.decimals);
+      const freshEstimate = await estimateSwapOutput(tokenIn.id, tokenOut.id, amountInParsed);
+      
+      if (freshEstimate) {
+        const formattedOut = formatTokenAmount(freshEstimate.outputAmount, tokenOut.decimals, 4);
+        const formattedOutDisplay = formatTokenAmountNoAbbrev(freshEstimate.outputAmount, tokenOut.decimals, 4);
+        setEstimatedOut(formattedOut);
+        setEstimatedOutDisplay(formattedOutDisplay);
+        setRawEstimatedOut(String(freshEstimate.outputAmount ?? '0'));
+        setCurrentEstimate(freshEstimate);
+        setLastEstimateTimestamp(Date.now());
+        console.warn('[SwapWidget] Fresh quote received:', { outputAmount: freshEstimate.outputAmount });
+      } else {
+        setError('Failed to get fresh quote. Please try again.');
+        setIsEstimating(false);
+        setEstimateReason(null);
+        return;
+      }
+    } catch (err) {
+      console.error('[SwapWidget] Failed to fetch fresh quote:', err);
+      setError('Failed to get fresh quote. Please try again.');
+      setIsEstimating(false);
+      setEstimateReason(null);
+      return;
+    } finally {
+      setIsEstimating(false);
+      setEstimateReason(null);
     }
     
     // Get wallet instance directly from connector if not in state
@@ -773,6 +857,36 @@ export const RefFinanceSwapCard: React.FC = () => {
     !isSwapping &&
     accountId;
 
+  const isAutoRefreshingEstimate = isEstimating && estimateReason === 'auto';
+  const isManualEstimating = isEstimating && estimateReason === 'user';
+
+  const secondsSinceEstimate = useMemo(() => {
+    if (!lastEstimateTimestamp) return null;
+    return Math.max(0, Math.floor((Date.now() - lastEstimateTimestamp) / 1000));
+  }, [lastEstimateTimestamp, refreshTicker]);
+
+  const secondsUntilNextRefresh = useMemo(() => {
+    if (!lastEstimateTimestamp) return null;
+    const elapsed = (Date.now() - lastEstimateTimestamp) / 1000;
+    const remaining = AUTO_REFRESH_INTERVAL_SECONDS - elapsed;
+    return Math.max(0, Math.ceil(remaining));
+  }, [lastEstimateTimestamp, refreshTicker]);
+
+  const lastUpdatedLabel = useMemo(() => {
+    if (secondsSinceEstimate === null) return null;
+    if (secondsSinceEstimate < 1) return 'just now';
+    if (secondsSinceEstimate < 60) return `${secondsSinceEstimate}s ago`;
+    const minutes = Math.floor(secondsSinceEstimate / 60);
+    return `${minutes}m ago`;
+  }, [secondsSinceEstimate]);
+
+  const nextRefreshLabel = useMemo(() => {
+    if (secondsUntilNextRefresh === null) return null;
+    if (isAutoRefreshingEstimate) return 'refreshing now';
+    if (secondsUntilNextRefresh === 0) return 'any moment';
+    return `${secondsUntilNextRefresh}s`;
+  }, [secondsUntilNextRefresh, isAutoRefreshingEstimate]);
+
   return (
     <div className="w-full max-w-[480px] mx-auto">
       {/* Main Card */}
@@ -899,6 +1013,7 @@ export const RefFinanceSwapCard: React.FC = () => {
                         // Update states BEFORE setting amount to avoid race conditions
                         setShowGasReserveInfo(reserveApplied);
                         setShowGasReserveMessage(reserveApplied);
+                        setLastUserInteraction(Date.now()); // Track user interaction
                         setAmountIn(displayValue);
                       }
                     }}
@@ -934,6 +1049,7 @@ export const RefFinanceSwapCard: React.FC = () => {
                       // Update states BEFORE setting amount to avoid race conditions
                       setShowGasReserveInfo(false); // MAX doesn't disable button
                       setShowGasReserveMessage(reserveApplied); // But does show message
+                      setLastUserInteraction(Date.now()); // Track user interaction
                       setAmountIn(displayValue);
                     }
                   }}
@@ -947,7 +1063,10 @@ export const RefFinanceSwapCard: React.FC = () => {
               <div className="flex flex-col items-start w-[200px]">
                 <TokenSelect
                   selectedToken={tokenIn}
-                  onSelectToken={setTokenIn}
+                  onSelectToken={(token) => {
+                    setTokenIn(token);
+                    setLastUserInteraction(Date.now()); // Track user interaction
+                  }}
                   otherToken={tokenOut}
                   label="Select"
                   tokens={availableTokens}
@@ -965,6 +1084,7 @@ export const RefFinanceSwapCard: React.FC = () => {
                   value={amountIn}
                   onChange={(value) => {
                     setAmountIn(value);
+                    setLastUserInteraction(Date.now()); // Track user interaction
                     
                     // Clear the message when user manually types
                     setShowGasReserveMessage(false);
@@ -1011,7 +1131,10 @@ export const RefFinanceSwapCard: React.FC = () => {
               <div className="flex flex-col items-start w-[200px]">
                 <TokenSelect
                   selectedToken={tokenOut}
-                  onSelectToken={setTokenOut}
+                  onSelectToken={(token) => {
+                    setTokenOut(token);
+                    setLastUserInteraction(Date.now()); // Track user interaction
+                  }}
                   otherToken={tokenIn}
                   label="Select"
                   tokens={availableTokens}
@@ -1153,6 +1276,12 @@ export const RefFinanceSwapCard: React.FC = () => {
           </div>
         )}
 
+        {estimatedOutDisplay && (
+          <p className="text-center text-[11px] text-muted-foreground">
+            Live quotes refresh every 10 seconds
+          </p>
+        )}
+
         {/* High Price Impact Warning */}
         {(() => {
           const estimate = currentEstimate;
@@ -1241,7 +1370,19 @@ export const RefFinanceSwapCard: React.FC = () => {
           })() || showGasReserveInfo}
           className="w-full py-3 sm:py-4 border border-verified bg-verified/10 disabled:bg-transparent disabled:text-muted-foreground disabled:cursor-not-allowed disabled:border-verified/30 disabled:shadow-none text-primary shadow-md shadow-verified/20 font-bold rounded-full transition-colors transition-shadow duration-200 hover:bg-verified/20 hover:shadow-lg hover:shadow-verified/30 disabled:hover:bg-transparent flex items-center justify-center text-sm"
         >
-          {(isSwapping || isEstimating) && (
+          {isSwapping && (
+            <span 
+              className="inline-flex items-center justify-center mr-2 relative" 
+              style={{ 
+                transform: 'none', 
+                willChange: 'auto',
+                backfaceVisibility: 'visible'
+              }}
+            >
+              <Loader2 className="w-5 h-5 animate-spin" />
+            </span>
+          )}
+          {!isSwapping && !isAutoRefreshingEstimate && isEstimating && (
             <span 
               className="inline-flex items-center justify-center mr-2 relative" 
               style={{ 
@@ -1268,7 +1409,18 @@ export const RefFinanceSwapCard: React.FC = () => {
               }
             })()
           }>
-            {isSwapping ? 'Swapping...' : isEstimating ? 'Finding best route...' : 
+            {isSwapping ? 'Swapping...' : isAutoRefreshingEstimate ? (
+              <span className="inline-flex items-center justify-center gap-1">
+                {[0, 1, 2].map((dot) => (
+                  <span
+                    key={`refresh-dot-${dot}`}
+                    className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-pulse"
+                    style={{ animationDelay: `${dot * 120}ms` }}
+                    aria-hidden="true"
+                  />
+                ))}
+              </span>
+            ) : isManualEstimating ? 'Finding best route...' : 
              showGasReserveInfo
                ? 'Need 0.25N for gas' :
              (() => {

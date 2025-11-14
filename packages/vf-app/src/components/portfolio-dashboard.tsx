@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Sparkles, Wallet } from 'lucide-react';
+import { Sparkles, Leaf } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useWallet } from '@/contexts/wallet-context';
 import { providers } from 'near-api-js';
 import Big from 'big.js';
@@ -347,7 +348,7 @@ export function PortfolioDashboard() {
           onClick={() => void signIn()}
           className="inline-flex items-center justify-center gap-2 border border-verified bg-verified/10 text-primary hover:text-primary px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold transition-all hover:shadow-md hover:shadow-verified/20 group text-sm sm:text-base whitespace-nowrap"
         >
-          <Wallet className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+          <Leaf className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
           Let's Connect
         </button>
       </div>
@@ -362,7 +363,7 @@ export function PortfolioDashboard() {
           {/* Your Holdings Icon */}
           <div className="flex items-center gap-2 flex-shrink-0">
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-verified bg-verified/10 flex items-center justify-center">
-              <Wallet className={`w-4 h-4 sm:w-5 sm:h-5 text-primary ${isRefreshing ? 'animate-pulse' : ''}`} />
+              <Leaf className={`w-4 h-4 sm:w-5 sm:h-5 text-primary ${isRefreshing ? 'animate-pulse' : ''}`} />
             </div>
           </div>
 
@@ -370,7 +371,12 @@ export function PortfolioDashboard() {
           <div className="h-8 w-px bg-border flex-shrink-0"></div>
 
           {/* VF Tokens */}
-          <div className="flex items-center gap-2 min-w-0">
+          <motion.div 
+            className="flex items-center gap-2 min-w-0"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
+          >
                 {vfIcon ? (
                   <Image 
                     src={vfIcon} 
@@ -390,24 +396,34 @@ export function PortfolioDashboard() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">VF</p>
-                  {isLoading ? (
-                    <div className="h-4 w-16 bg-muted animate-pulse rounded"></div>
-                  ) : (
-                    <div className={`transition-opacity ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
-                      <p className="text-sm sm:text-base font-bold text-foreground truncate">{vfBalance}</p>
-                      <p className="text-[10px] sm:text-xs text-primary font-semibold truncate">
-                        {formatDollarAmount(vfUsdValue)}
-                      </p>
-                    </div>
-                  )}
+                  <div className="h-[32px] flex flex-col justify-center">
+                    {isLoading ? (
+                      <div className="space-y-0.5 animate-pulse">
+                        <div className="h-[18px] w-16 bg-muted rounded"></div>
+                        <div className="h-[14px] w-12 bg-muted rounded"></div>
+                      </div>
+                    ) : (
+                      <div className={`transition-opacity ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
+                        <p className="text-sm sm:text-base font-bold text-foreground truncate">{vfBalance}</p>
+                        <p className="text-[10px] sm:text-xs text-primary font-semibold truncate">
+                          {formatDollarAmount(vfUsdValue)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+          </motion.div>
 
               {/* Divider */}
               <div className="h-8 w-px bg-border flex-shrink-0"></div>
 
               {/* Pool Contribution */}
-              <div className="flex items-center gap-2 min-w-0">
+              <motion.div 
+                className="flex items-center gap-2 min-w-0"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.3 }}
+              >
                 <div className="flex items-center justify-center flex-shrink-0">
                   <Image 
                     src={nearIcon} 
@@ -444,38 +460,50 @@ export function PortfolioDashboard() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">Pool</p>
-                  {isLoading ? (
-                    <div className="h-4 w-16 bg-muted animate-pulse rounded"></div>
-                  ) : (
-                    <div className={`transition-opacity ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
-                      <p className="text-sm sm:text-base font-bold text-foreground truncate">{lpShares}</p>
-                      <p className="text-[10px] sm:text-xs text-primary font-semibold truncate">
-                        {formatDollarAmount(lpUsdValue)}
-                      </p>
-                    </div>
-                  )}
+                  <div className="h-[32px] flex flex-col justify-center">
+                    {isLoading ? (
+                      <div className="space-y-0.5 animate-pulse">
+                        <div className="h-[18px] w-16 bg-muted rounded"></div>
+                        <div className="h-[14px] w-12 bg-muted rounded"></div>
+                      </div>
+                    ) : (
+                      <div className={`transition-opacity ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
+                        <p className="text-sm sm:text-base font-bold text-foreground truncate">{lpShares}</p>
+                        <p className="text-[10px] sm:text-xs text-primary font-semibold truncate">
+                          {formatDollarAmount(lpUsdValue)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Divider */}
               <div className="h-8 w-px bg-border flex-shrink-0"></div>
 
               {/* Total */}
-              <div className="flex items-center gap-2 min-w-0">
+              <motion.div 
+                className="flex items-center gap-2 min-w-0"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.4 }}
+              >
                 <Sparkles className="w-4 h-4 text-primary flex-shrink-0" />
                 <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">Total</p>
-                  {isLoading ? (
-                    <div className="h-4 w-20 bg-muted animate-pulse rounded"></div>
-                  ) : (
-                    <div className={`transition-opacity ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
-                      <p className="text-sm sm:text-base font-bold text-primary truncate">
-                        {formatDollarAmount(totalValue)}
-                      </p>
-                    </div>
-                  )}
+                  <div className="h-[18px] flex items-center">
+                    {isLoading ? (
+                      <div className="h-[18px] w-20 bg-muted animate-pulse rounded"></div>
+                    ) : (
+                      <div className={`transition-opacity ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
+                        <p className="text-sm sm:text-base font-bold text-primary truncate">
+                          {formatDollarAmount(totalValue)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </motion.div>
         </div>
       </div>
     </div>

@@ -100,9 +100,12 @@ export const TokenInput: React.FC<TokenInputProps> = ({
     }
 
     // Validate that newValue represents a valid number before emitting
-    const num = parseFloat(newValue);
-    if (isNaN(num) || !isFinite(num) || num < 0) {
-      return; // Don't emit invalid values
+    // Allow empty string and partial inputs like "0."
+    if (newValue !== '' && newValue !== '0.') {
+      const num = parseFloat(newValue);
+      if (isNaN(num) || !isFinite(num) || num < 0) {
+        return; // Don't emit invalid values
+      }
     }
 
     onChange(newValue);
