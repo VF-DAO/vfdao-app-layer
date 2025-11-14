@@ -1,7 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Check, CheckCircle, FlaskConical, Leaf, Link2, Package, Shield, Store } from 'lucide-react';
+import { CheckCircle, FlaskConical, Leaf, Link2, Package, Shield, Store } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+
+interface Stage {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  position: number;
+}
 
 export function VerificationFlow() {
   const [progress, setProgress] = useState(0);
@@ -26,7 +34,7 @@ export function VerificationFlow() {
     };
   }, []);
 
-  const stages = [
+  const stages: Stage[] = [
     { id: 'source', label: 'Source', icon: Leaf, position: 0 },
     { id: 'test', label: 'Test', icon: FlaskConical, position: 14.28 },
     { id: 'certify', label: 'Certify', icon: Shield, position: 28.57 },
@@ -91,25 +99,6 @@ export function VerificationFlow() {
     }
   };
 
-  // Get the currently active stage label with opacity
-  const getActiveLabel = () => {
-    // Find the stage with highest opacity (most active)
-    let maxOpacity = 0;
-    let activeStage = stages[0];
-    
-    for (const stage of stages) {
-      const opacity = getStageOpacity(stage.position);
-      if (opacity > maxOpacity) {
-        maxOpacity = opacity;
-        activeStage = stage;
-      }
-    }
-    
-    return { label: activeStage.label, opacity: maxOpacity };
-  };
-
-  const activeLabel = getActiveLabel();
-
   return (
     <div className="w-full max-w-4xl mx-auto py-12 px-1 sm:px-4">
       {/* Subtitle with animated label synchronized with icon animation - ABOVE icons */}
@@ -133,7 +122,7 @@ export function VerificationFlow() {
                 key={stage.id}
                 className="absolute font-semibold text-lg"
                 style={{
-                  opacity: opacity,
+                  opacity,
                   color: opacity > 0.8 ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
                   transform: `scale(${scale}) translateY(${20 - opacity * 20}px)`,
                   transition: 'opacity 400ms ease-out, transform 400ms ease-out, color 400ms ease-out',

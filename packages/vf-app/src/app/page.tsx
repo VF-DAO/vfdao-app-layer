@@ -1,6 +1,6 @@
 'use client';
 
-import { Droplets, Sprout } from 'lucide-react';
+import { Droplets } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { RheaSwapWidget } from '@/components/swap/SwapWidget';
 import { PortfolioDashboard } from '@/components/portfolio-dashboard';

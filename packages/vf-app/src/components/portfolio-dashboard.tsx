@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Sparkles, Leaf } from 'lucide-react';
+import { Leaf, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useWallet } from '@/contexts/wallet-context';
 import { providers } from 'near-api-js';

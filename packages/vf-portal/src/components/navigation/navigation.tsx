@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import Logo from '@/components/logo';
 
@@ -17,7 +17,6 @@ const navItems = [
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
-  const [showComingSoon, setShowComingSoon] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,11 +34,6 @@ export function Navigation() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isOpen]);
-
-  const handleLaunchClick = () => {
-    setShowComingSoon(true);
-    setTimeout(() => setShowComingSoon(false), 1000);
-  };
 
   const scrollToTop = () => {
     // Ensure we scroll on the window/document
@@ -115,7 +109,7 @@ export function Navigation() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  onClick={(e) => handleSmoothScroll(e, item.href)}
+                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) => handleSmoothScroll(e, item.href)}
                   className="text-sm font-medium text-foreground hover:text-primary transition-colors"
                 >
                   {item.label}
@@ -174,7 +168,7 @@ export function Navigation() {
                     <Link
                       key={item.href}
                       href={item.href}
-                      onClick={(e) => {
+                      onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
                         setIsOpen(false);
                         handleSmoothScroll(e, item.href);
                       }}

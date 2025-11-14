@@ -24,7 +24,7 @@ const MoonIcon = () => (
 );
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+  const themeContext = useTheme();
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
@@ -36,6 +36,8 @@ export function ThemeToggle() {
       <div className="w-8 h-8" aria-hidden="true" />
     );
   }
+
+  const { theme, setTheme } = themeContext;
 
   return (
     <button

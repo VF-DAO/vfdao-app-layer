@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Award, Leaf, MoveHorizontal, Store, User } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface DragState {
   id?: number;
@@ -13,9 +14,22 @@ interface DragState {
   removing?: boolean;
 }
 
-const useCases = [
+interface UseCase {
+  id: number;
+  icon: LucideIcon;
+  title: string;
+  role: string;
+  scenario: string;
+  result: string;
+  impact: string;
+  bgColor: string;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+const useCases: UseCase[] = [
   {
     id: 1,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     icon: User,
     title: "Sarah's Coffee Break",
     role: 'Conscious Consumer',
@@ -27,6 +41,7 @@ const useCases = [
   },
   {
     id: 2,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     icon: Leaf,
     title: 'Green Valley Farms',
     role: 'Organic Producer',
@@ -73,14 +88,8 @@ export function UseCaseCarousel() {
     // DON'T preventDefault on touchstart - wait to see user's intent first
     // This allows normal touch behavior until we confirm horizontal swipe
 
-    const startX =
-      e.type === 'mousedown'
-        ? (e as React.MouseEvent<HTMLDivElement>).clientX
-        : (e as React.TouchEvent<HTMLDivElement>).touches[0].clientX;
-    const startY =
-      e.type === 'mousedown'
-        ? (e as React.MouseEvent<HTMLDivElement>).clientY
-        : (e as React.TouchEvent<HTMLDivElement>).touches[0].clientY;
+    const startX = 'clientX' in e ? e.clientX : e.touches[0].clientX;
+    const startY = 'clientY' in e ? e.clientY : e.touches[0].clientY;
     setDragState({ id, startX, startY, currentX: 0, currentY: 0, isDragging: true });
   };
 
@@ -89,14 +98,8 @@ export function UseCaseCarousel() {
   ) => {
     if (!dragState.isDragging) return;
 
-    const clientX =
-      e.type === 'mousemove'
-        ? (e as React.MouseEvent<HTMLDivElement>).clientX
-        : (e as React.TouchEvent<HTMLDivElement>).touches[0].clientX;
-    const clientY =
-      e.type === 'mousemove'
-        ? (e as React.MouseEvent<HTMLDivElement>).clientY
-        : (e as React.TouchEvent<HTMLDivElement>).touches[0].clientY;
+    const clientX = 'clientX' in e ? e.clientX : e.touches[0].clientX;
+    const clientY = 'clientY' in e ? e.clientY : e.touches[0].clientY;
     const deltaX = clientX - (dragState.startX ?? 0);
     const deltaY = clientY - (dragState.startY ?? 0);
 
@@ -105,13 +108,13 @@ export function UseCaseCarousel() {
     const absY = Math.abs(deltaY);
 
     // For mouse events, only prevent default when clearly horizontal
-    if (e.type === 'mousemove' && absX > absY && absX > 5) {
+    if ('clientX' in e && absX > absY && absX > 5) {
       e.preventDefault();
       e.stopPropagation();
       setDragState((prev) => ({ ...prev, currentX: deltaX, currentY: 0 }));
     }
     // For touch events, only continue if horizontal movement dominates
-    else if (e.type.includes('touch')) {
+    else if ('touches' in e) {
       // Stop propagation to keep touch events contained to the carousel
       e.stopPropagation();
       

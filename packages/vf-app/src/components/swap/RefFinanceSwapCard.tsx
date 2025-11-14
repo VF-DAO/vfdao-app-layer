@@ -43,7 +43,6 @@ type SwapState = 'success' | 'fail' | 'cancelled' | 'waitingForConfirmation' | n
 type EstimateReason = 'user' | 'auto';
 
 const AUTO_REFRESH_INTERVAL_MS = 10_000;
-const AUTO_REFRESH_INTERVAL_SECONDS = AUTO_REFRESH_INTERVAL_MS / 1000;
 
 interface Token {
   id: string;
@@ -72,7 +71,6 @@ export const RefFinanceSwapCard: React.FC = () => {
   const [estimatedOut, setEstimatedOut] = useState('');
   const [estimatedOutDisplay, setEstimatedOutDisplay] = useState(''); // For main display without abbreviations
   const [rawEstimatedOut, setRawEstimatedOut] = useState('');
-  const [lastEstimateTimestamp, setLastEstimateTimestamp] = useState<number | null>(null);
   const [lastUserInteraction, setLastUserInteraction] = useState<number>(Date.now());
 
   // Settings
@@ -101,7 +99,6 @@ export const RefFinanceSwapCard: React.FC = () => {
   // Available tokens with metadata
   const [availableTokens, setAvailableTokens] = useState<TokenMetadata[]>([]);
   const [estimateReason, setEstimateReason] = useState<EstimateReason | null>(null);
-  const [refreshTicker, setRefreshTicker] = useState(0);
   
   // Gas reserve notification
   const [showGasReserveInfo, setShowGasReserveInfo] = useState(false);
@@ -366,7 +363,6 @@ export const RefFinanceSwapCard: React.FC = () => {
       setCurrentEstimate(undefined);
     } finally {
       setIsEstimating(false);
-      setLastEstimateTimestamp(Date.now());
       setEstimateReason(null);
     }
   }, [tokenIn, tokenOut, amountIn, estimateSwapOutput]);
@@ -409,14 +405,6 @@ export const RefFinanceSwapCard: React.FC = () => {
     return () => clearInterval(intervalId);
   }, [tokenIn, tokenOut, amountIn, estimateOutput, lastUserInteraction, isSwapping, isEstimating, swapState]);
 
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      setRefreshTicker(prev => prev + 1);
-    }, 1000);
-
-    return () => clearInterval(intervalId);
-  }, []);
-
   // Swap tokens (reverse)
   const handleSwapTokens = () => {
     const temp = tokenIn;
@@ -455,7 +443,6 @@ export const RefFinanceSwapCard: React.FC = () => {
         setEstimatedOutDisplay(formattedOutDisplay);
         setRawEstimatedOut(String(freshEstimate.outputAmount ?? '0'));
         setCurrentEstimate(freshEstimate);
-        setLastEstimateTimestamp(Date.now());
         console.warn('[SwapWidget] Fresh quote received:', { outputAmount: freshEstimate.outputAmount });
       } else {
         setError('Failed to get fresh quote. Please try again.');
@@ -859,33 +846,6 @@ export const RefFinanceSwapCard: React.FC = () => {
 
   const isAutoRefreshingEstimate = isEstimating && estimateReason === 'auto';
   const isManualEstimating = isEstimating && estimateReason === 'user';
-
-  const secondsSinceEstimate = useMemo(() => {
-    if (!lastEstimateTimestamp) return null;
-    return Math.max(0, Math.floor((Date.now() - lastEstimateTimestamp) / 1000));
-  }, [lastEstimateTimestamp, refreshTicker]);
-
-  const secondsUntilNextRefresh = useMemo(() => {
-    if (!lastEstimateTimestamp) return null;
-    const elapsed = (Date.now() - lastEstimateTimestamp) / 1000;
-    const remaining = AUTO_REFRESH_INTERVAL_SECONDS - elapsed;
-    return Math.max(0, Math.ceil(remaining));
-  }, [lastEstimateTimestamp, refreshTicker]);
-
-  const lastUpdatedLabel = useMemo(() => {
-    if (secondsSinceEstimate === null) return null;
-    if (secondsSinceEstimate < 1) return 'just now';
-    if (secondsSinceEstimate < 60) return `${secondsSinceEstimate}s ago`;
-    const minutes = Math.floor(secondsSinceEstimate / 60);
-    return `${minutes}m ago`;
-  }, [secondsSinceEstimate]);
-
-  const nextRefreshLabel = useMemo(() => {
-    if (secondsUntilNextRefresh === null) return null;
-    if (isAutoRefreshingEstimate) return 'refreshing now';
-    if (secondsUntilNextRefresh === 0) return 'any moment';
-    return `${secondsUntilNextRefresh}s`;
-  }, [secondsUntilNextRefresh, isAutoRefreshingEstimate]);
 
   return (
     <div className="w-full max-w-[480px] mx-auto">
