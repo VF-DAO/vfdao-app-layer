@@ -30,6 +30,9 @@
     --accent: 45 91% 59%;
     --accent-foreground: 0 0% 0%;
 
+    /* Verified: Yellow for verification badges */
+    --verified: 45 91% 50%;
+
     /* Orange #FE8E4B - Secondary CTAs & Hover States */
     --orange: 25 99% 64%;
     --orange-foreground: 0 0% 0%;
@@ -76,6 +79,9 @@
     --accent: 45 91% 65%;
     --accent-foreground: 0 0% 0%;
 
+    /* Verified: Brighter Yellow for verification badges */
+    --verified: 45 91% 65%;
+
     /* Orange #FE8E4B - Secondary CTAs & Hover States */
     --orange: 25 99% 64%;
     --orange-foreground: 0 0% 0%;
@@ -83,9 +89,9 @@
     --destructive: 0 62.8% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Borders: Subtle Gray #333333 */
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
+    /* Borders: Subtle Gray */
+    --border: 210 20% 18%;
+    --input: 210 20% 18%;
     --ring: 108 34% 68%; /* Light sage focus ring */
 
     /* Scrollbar colors for dark mode */

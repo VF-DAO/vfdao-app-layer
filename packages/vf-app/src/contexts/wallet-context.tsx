@@ -66,10 +66,14 @@ export function WalletProvider({
           setAccountId(connectedAccounts[0]?.accountId ?? null);
         }
       } catch (error) {
-        // Handle user rejection gracefully - don't treat as error
+        // Handle user cancellation gracefully - this is normal behavior, not an error
         if (error instanceof Error && (error.message === 'User rejected' || error.message === 'Wallet closed')) {
-          console.warn('[WalletContext] User cancelled wallet connection');
+          console.log('[WalletContext] User cancelled wallet connection');
+        } else if (error === null || error === undefined) {
+          // User cancelled without throwing a specific error - this is normal
+          console.log('[WalletContext] Wallet connection cancelled');
         } else {
+          // Only log actual errors (network issues, invalid config, etc.)
           console.error('[WalletContext] Failed to connect wallet:', error);
         }
       }

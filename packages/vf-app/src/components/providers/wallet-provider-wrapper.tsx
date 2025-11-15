@@ -4,7 +4,6 @@ import dynamic from 'next/dynamic';
 import { type ReactNode } from 'react';
 
 // Dynamically import WalletProvider with ssr disabled to avoid server-side issues
-// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 const WalletProviderDynamic = dynamic(
   () => import('@/contexts/wallet-context').then((mod) => mod.WalletProvider),
   {

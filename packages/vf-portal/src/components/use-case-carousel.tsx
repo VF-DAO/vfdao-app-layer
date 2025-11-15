@@ -25,11 +25,9 @@ interface UseCase {
   bgColor: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 const useCases: UseCase[] = [
   {
     id: 1,
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     icon: User,
     title: "Sarah's Coffee Break",
     role: 'Conscious Consumer',
@@ -41,7 +39,6 @@ const useCases: UseCase[] = [
   },
   {
     id: 2,
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     icon: Leaf,
     title: 'Green Valley Farms',
     role: 'Organic Producer',

@@ -1,6 +1,6 @@
 'use client';
 
-import { Droplets } from 'lucide-react';
+import { ArrowLeftRight, Droplets } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { RheaSwapWidget } from '@/components/swap/SwapWidget';
 import { PortfolioDashboard } from '@/components/portfolio-dashboard';
@@ -15,6 +15,12 @@ export default function Home() {
   const formattedUsername = username 
     ? (username.length > 15 ? username.substring(0, 15) + '...' : username.charAt(0).toUpperCase() + username.slice(1))
     : null;
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.documentElement.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       {/* Hero Section */}
@@ -50,7 +56,7 @@ export default function Home() {
             )}
 
             <motion.p 
-              className="text-muted-foreground text-base sm:text-lg md:text-xl max-w-3xl mx-auto mb-12"
+              className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-12"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
@@ -58,7 +64,7 @@ export default function Home() {
               {isConnected && formattedUsername ? (
                 <>Your space is ready to explore.</>
               ) : (
-                <>VF DAO creates clear standards for verifying vegan products. With VF tokens, you can trade, provide liquidity, verify products, and help certify details — all working together to build trust in the vegan community.</>
+                <>VF DAO creates clear standards for verifying vegan products. With VF tokens, you can trade, earn rewards, and participate in building a trusted vegan ecosystem.</>
               )}
             </motion.p>
 
@@ -84,12 +90,26 @@ export default function Home() {
             <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-3xl mx-auto">
               {isConnected 
                 ? "VeganFriends tokens enable full ecosystem participation."
-                : "Unlock ecosystem participation with VF tokens."
+                : "Your key to ecosystem participation and rewards."
               }
             </p>
           </div>
           <div className="flex justify-center">
-            <RheaSwapWidget />
+            {isConnected ? (
+              <RheaSwapWidget />
+            ) : (
+              <button
+                onClick={scrollToTop}
+                className="text-center p-8 rounded-2xl border border-border bg-card/50 max-w-md mx-auto hover:border-verified/50 hover:bg-card/70 transition-all hover:shadow-md hover:shadow-verified/10 cursor-pointer w-full"
+              >
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full border border-verified bg-verified/10 text-primary mb-6">
+                  <ArrowLeftRight className="w-8 h-8" />
+                </div>
+                <p className="text-lg text-primary font-semibold">
+                  Swap tokens easily whenever you need them.
+                </p>
+              </button>
+            )}
           </div>
         </div>
       </section>
@@ -102,7 +122,7 @@ export default function Home() {
             <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-3xl mx-auto">
               {isConnected 
                 ? "Liquidity providers strengthen the ecosystem and earn rewards."
-                : "Connect your wallet to provide liquidity and earn rewards from ecosystem growth."
+                : "Your tokens, working for you."
               }
             </p>
           </div>
@@ -110,18 +130,17 @@ export default function Home() {
             {isConnected ? (
               <LiquidityCard />
             ) : (
-              <div className="text-center p-8 rounded-2xl border border-border bg-card/50 max-w-md mx-auto">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full border border-verified bg-verified/10 text-primary mb-4">
+              <button
+                onClick={scrollToTop}
+                className="text-center p-8 rounded-2xl border border-border bg-card/50 max-w-md mx-auto hover:border-verified/50 hover:bg-card/70 transition-all hover:shadow-md hover:shadow-verified/10 cursor-pointer w-full"
+              >
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full border border-verified bg-verified/10 text-primary mb-6">
                   <Droplets className="w-8 h-8" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">Connect to Provide Liquidity</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Connect your wallet to start earning rewards by providing liquidity to the VF ecosystem.
+                <p className="text-lg text-primary font-semibold">
+                  Get rewarded each time someone makes a swap.
                 </p>
-                <div className="text-xs text-primary font-medium">
-                  Higher rewards for early participants
-                </div>
-              </div>
+              </button>
             )}
           </div>
         </div>

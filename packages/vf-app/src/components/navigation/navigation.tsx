@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRightLeft, ChevronLeft, ChevronRight, Droplets, Home, Menu } from 'lucide-react';
+import { ArrowRightLeft, ChevronLeft, ChevronRight, Droplets, Github, Home, Menu, Send, Vote } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { FaXTwitter } from 'react-icons/fa6';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { WalletButton } from '@/components/wallet-button';
 import Logo from '@/components/ui/logo';
@@ -13,15 +14,14 @@ interface NavItem {
   label: string;
   href: string;
   icon: LucideIcon;
+  comingSoon?: boolean;
 }
 
 const navItems: NavItem[] = [
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   { label: 'Home', href: '#', icon: Home },
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   { label: 'Swap', href: '#tokens', icon: ArrowRightLeft },
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  { label: 'Liquidity', href: '#liquidity', icon: Droplets }
+  { label: 'Liquidity', href: '#liquidity', icon: Droplets },
+  { label: 'DAO', href: '#dao', icon: Vote, comingSoon: true }
 ];
 
 interface SidebarProps {
@@ -121,9 +121,22 @@ function Sidebar({ isOpen, onClose, activeSection }: SidebarProps) {
             <div className="flex-1 py-6">
               <nav className="px-4 space-y-2">
                 {navItems.map((item) => {
-                  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                   const Icon = item.icon;
                   const isActive = activeSection === item.href;
+                  
+                  if (item.comingSoon) {
+                    return (
+                      <div
+                        key={item.label}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg opacity-60 cursor-not-allowed"
+                      >
+                        <Icon size={18} />
+                        <span className="flex-1">{item.label}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">Soon</span>
+                      </div>
+                    );
+                  }
+                  
                   if (item.href === '#') {
                     return (
                       <button
@@ -163,7 +176,38 @@ function Sidebar({ isOpen, onClose, activeSection }: SidebarProps) {
             </div>
 
             {/* Footer */}
-            <div className="p-6 border-t border-border space-y-4">
+            <div className="p-6 space-y-4">
+              {/* Social Icons */}
+              <div className="flex justify-center gap-4 text-muted-foreground pb-4 border-b border-border">
+                <a
+                  href="https://t.me/veganfriendsdao"
+                  className="hover:text-primary transition-colors"
+                  aria-label="Telegram"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Send className="w-5 h-5" />
+                </a>
+                <a
+                  href="https://x.com/VeganFriendsDAO"
+                  className="hover:text-primary transition-colors"
+                  aria-label="Twitter/X"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <FaXTwitter size={20} />
+                </a>
+                <a
+                  href="https://github.com/VF-DAO/vfdao-eco-engine"
+                  className="hover:text-primary transition-colors"
+                  aria-label="GitHub"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Github className="w-5 h-5" />
+                </a>
+              </div>
+              
               <div className="flex items-center justify-between">
                 <WalletButton />
                 <ThemeToggle />
@@ -373,9 +417,29 @@ export function Navigation() {
         <div className="flex-1 py-6">
           <nav className="px-2 space-y-2">
             {navItems.map((item) => {
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
               const Icon = item.icon;
               const isActive = activeSection === item.href;
+              
+              if (item.comingSoon) {
+                return (
+                  <div
+                    key={item.label}
+                    className={`flex items-center gap-3 px-3 py-3 text-sm font-medium rounded-lg opacity-60 cursor-not-allowed ${
+                      isDesktopExpanded ? '' : 'justify-center'
+                    }`}
+                    title={isDesktopExpanded ? '' : `${item.label} - Coming Soon`}
+                  >
+                    <Icon size={18} />
+                    {isDesktopExpanded && (
+                      <>
+                        <span className="flex-1">{item.label}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">Soon</span>
+                      </>
+                    )}
+                  </div>
+                );
+              }
+              
               if (item.href === '#') {
                 return (
                   <button
@@ -427,9 +491,40 @@ export function Navigation() {
         </div>
 
         {/* Footer */}
-        <div className={`p-4 border-t border-border ${isDesktopExpanded ? 'space-y-4' : 'flex flex-col items-center space-y-3'}`}>
+        <div className={`p-4 ${isDesktopExpanded ? 'space-y-4' : 'flex flex-col items-center space-y-3'}`}>
           {isDesktopExpanded ? (
             <>
+              {/* Social Icons */}
+              <div className="flex justify-center gap-4 text-muted-foreground pb-4 border-b border-border">
+                <a
+                  href="https://t.me/veganfriendsdao"
+                  className="hover:text-primary transition-colors"
+                  aria-label="Telegram"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Send className="w-5 h-5" />
+                </a>
+                <a
+                  href="https://x.com/VeganFriendsDAO"
+                  className="hover:text-primary transition-colors"
+                  aria-label="Twitter/X"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <FaXTwitter size={20} />
+                </a>
+                <a
+                  href="https://github.com/VF-DAO/vfdao-eco-engine"
+                  className="hover:text-primary transition-colors"
+                  aria-label="GitHub"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Github className="w-5 h-5" />
+                </a>
+              </div>
+              
               <div className="flex items-center justify-between">
                 <WalletButton />
                 <ThemeToggle />
@@ -455,9 +550,22 @@ export function Navigation() {
       }`}>
         <div className="flex items-center justify-center h-16">
           {navItems.map((item) => {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             const Icon = item.icon;
             const isActive = activeSection === item.href;
+            
+            if (item.comingSoon) {
+              return (
+                <div
+                  key={item.label}
+                  className="flex flex-col items-center justify-center flex-1 py-2 px-1 text-xs font-medium opacity-50 cursor-not-allowed relative"
+                >
+                  <Icon size={20} className="mb-1" />
+                  <span>{item.label}</span>
+                  <span className="absolute top-1 right-2 text-[8px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">Soon</span>
+                </div>
+              );
+            }
+            
             if (item.href === '#') {
               return (
                 <button

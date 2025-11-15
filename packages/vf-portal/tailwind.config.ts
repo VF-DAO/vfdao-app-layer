@@ -43,10 +43,7 @@ const config: Config = {
           DEFAULT: 'hsl(var(--accent))',
           foreground: 'hsl(var(--accent-foreground))',
         },
-        verified: {
-          DEFAULT: '#F6C638',
-          foreground: '#1a1a1a',
-        },
+        verified: 'hsl(var(--verified) / <alpha-value>)',
         popover: {
           DEFAULT: 'hsl(var(--popover))',
           foreground: 'hsl(var(--popover-foreground))',

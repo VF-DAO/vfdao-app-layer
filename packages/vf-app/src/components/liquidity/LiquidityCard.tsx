@@ -97,7 +97,7 @@ export const LiquidityCard: React.FC = () => {
     fee24h: '0',
     apy: 0,
   });
-  const [isLoadingPoolStats, setIsLoadingPoolStats] = useState(false);
+  const [isLoadingPoolStats, setIsLoadingPoolStats] = useState(true); // Start as true to show loading state
   const [hasLoadedPoolStats, setHasLoadedPoolStats] = useState(false);
   
   // Gas reserve notification
@@ -122,7 +122,7 @@ export const LiquidityCard: React.FC = () => {
     void fetchTokens();
   }, []);
 
-  // Fetch token prices from Ref Finance API
+  // Fetch token prices from Ref Finance API - start immediately, don't wait for poolInfo
   useEffect(() => {
     const fetchTokenPrices = async () => {
       try {
@@ -173,6 +173,7 @@ export const LiquidityCard: React.FC = () => {
       }
     };
     
+    // Start fetching prices immediately, don't wait for poolInfo
     void fetchTokenPrices();
     // Refresh prices every 60 seconds
     const interval = setInterval(() => void fetchTokenPrices(), 60000);
@@ -318,9 +319,11 @@ export const LiquidityCard: React.FC = () => {
     }
   }, [poolInfo, tokenPrices]);
 
-  // Fetch pool stats when pool info or prices change
+  // Fetch pool stats when pool info or prices change (trigger early with partial data)
   useEffect(() => {
-    if (poolInfo && Object.keys(tokenPrices).length > 0 && !isLoadingPoolStats) {
+    // Start fetching stats as soon as we have poolInfo, even if prices aren't fully loaded yet
+    // This allows volume/fee/APY to start loading while prices are still being calculated
+    if (poolInfo) {
       void fetchPoolStats();
     }
   }, [poolInfo, tokenPrices]); // eslint-disable-line react-hooks/exhaustive-deps
