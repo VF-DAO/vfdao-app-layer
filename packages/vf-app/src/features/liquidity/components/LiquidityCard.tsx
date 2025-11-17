@@ -18,13 +18,13 @@
  * - Components: PoolStatsDisplay, UserLiquidityDisplay, SlippageSettings, ActionButtons, 
  *               EmptyLiquidityState, ErrorDisplay, LoadingOverlay
  * 
- * Note: Calculation utilities (calculateOptimalAmount, formatDollarAmount, etc.) remain as
+ * Note: Calculation utilities (calculations.calculateOptimalAmount, calculations.formatDollarAmount, etc.) remain as
  * local useCallback implementations. This is intentional - they need component state access
  * and are optimized for React's rendering cycle. The extracted utility versions are available
  * for reuse in other components.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { providers } from 'near-api-js';
 import Big from 'big.js';
@@ -32,7 +32,6 @@ import { useWallet } from '@/features/wallet';
 import {
   checkStorageDeposit,
   formatTokenAmount,
-  formatTokenAmountNoAbbrev,
   getMainnetTokens,
   getMinStorageBalance,
   parseTokenAmount,
@@ -48,12 +47,15 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { TransactionCancelledModal, TransactionFailureModal, TransactionSuccessModal } from '@/components/ui/transaction-modal';
-import type { TokenMetadata, TransactionState } from '@/types';
+import type { TokenMetadata } from '@/types';
 
 // === REFACTORED IMPORTS: Our modular hooks, utilities, and components ===
 import {
+  useLiquidityCalculations,
+  useLiquidityForm,
   useLiquidityPool,
   useLiquidityStats,
+  useLiquidityTransaction,
   useRefBalances,
   useUserShares,
   useWalletBalances,
@@ -69,8 +71,6 @@ import {
   UserLiquidityDisplay,
 } from './subcomponents';
 
-type LiquidityState = 'add' | 'remove' | null;
-
 export const LiquidityCard: React.FC = () => {
   const { accountId, wallet, connector } = useWallet();
 
@@ -78,21 +78,12 @@ export const LiquidityCard: React.FC = () => {
   const POOL_ID = 5094; // NEAR-VEGANFRIENDS pool
   const VF_TOKEN = 'veganfriends.tkn.near';
 
-  // UI State
-  const [liquidityState, setLiquidityState] = useState<LiquidityState>(null);
-  const [transactionState, setTransactionState] = useState<TransactionState>(null);
-  const [tx, setTx] = useState<string | undefined>(undefined);
-  const [error, setError] = useState<string | null>(null);
+  // Form state hook - manages liquidity form state, form.slippage, and token amounts
+  const form = useLiquidityForm();
+
+  // Transaction state hook - manages transaction execution state
+  const transaction = useLiquidityTransaction();
   
-  // Settings
-  const [slippage, setSlippage] = useState(0.5);
-  const [showSettings, setShowSettings] = useState(false);
-  const [customSlippage, setCustomSlippage] = useState('');
-
-  // Form State
-  const [token1Amount, setToken1Amount] = useState('');
-  const [token2Amount, setToken2Amount] = useState('');
-
   // Available tokens (needed by useLiquidityPool hook)
   const [availableTokens, setAvailableTokens] = useState<TokenMetadata[]>([]);
 
@@ -119,12 +110,11 @@ export const LiquidityCard: React.FC = () => {
     POOL_ID,
     poolInfo,
     tokenPrices,
-    transactionState
+    transaction.transactionState
   );
-  
-  // Gas reserve notification
-  const [showGasReserveInfo, setShowGasReserveInfo] = useState(false);
-  const [showGasReserveMessage, setShowGasReserveMessage] = useState(false);
+
+  // Calculation utilities hook
+  const calculations = useLiquidityCalculations(poolInfo);
 
   // Fetch token metadata
   useEffect(() => {
@@ -216,89 +206,17 @@ export const LiquidityCard: React.FC = () => {
     if (!accountId) {
       // Reset UI-only state when wallet disconnects
       // Note: Data fetching hooks handle their own state reset
-      setToken1Amount('');
-      setToken2Amount('');
-      setShowGasReserveInfo(false);
-      setShowGasReserveMessage(false);
+      form.resetForm();
+      transaction.resetTransactionState();
     }
-  }, [accountId]);
-
-  // Calculate optimal token amounts for adding liquidity
-  const calculateOptimalAmount = useCallback((inputAmount: string, inputTokenId: string) => {
-    if (!poolInfo || !inputAmount) return '';
-
-    // Convert input amount to contract units
-    const inputToken = inputTokenId === poolInfo.token1.id ? poolInfo.token1 : poolInfo.token2;
-    const inputAmountContract = parseTokenAmount(inputAmount, inputToken.decimals);
-
-    const inputReserve = Big(poolInfo.reserves[inputTokenId]);
-    const outputReserve = Big(poolInfo.reserves[inputTokenId === poolInfo.token1.id ? poolInfo.token2.id : poolInfo.token1.id]);
-
-    // For liquidity provision, provide tokens in the exact ratio of current reserves
-    // Formula: optimalAmount = (inputAmount * outputReserve) / inputReserve
-    const optimalOutputContract = Big(inputAmountContract).mul(outputReserve).div(inputReserve);
-
-    // Convert back to display units - use same formatting as swap widget
-    const outputToken = inputTokenId === poolInfo.token1.id ? poolInfo.token2 : poolInfo.token1;
-    const optimalOutputDisplay = formatTokenAmountNoAbbrev(
-      optimalOutputContract.toFixed(0), 
-      outputToken.decimals, 
-      6
-    );
-
-    return optimalOutputDisplay;
-  }, [poolInfo]);
-
-  // Calculate token amounts user will receive when removing liquidity
-  const calculateRemoveLiquidityAmounts = useCallback((sharesAmount: string) => {
-    if (!poolInfo || !sharesAmount || sharesAmount === '0') {
-      return { token1Amount: '0', token2Amount: '0' };
-    }
-
-    try {
-      // Parse shares amount to contract units (24 decimals for LP tokens)
-      const sharesContract = parseTokenAmount(sharesAmount, 24);
-      
-      // Ensure shareSupply is a string and handle potential formatting issues
-  const shareSupplyStr = String(poolInfo.shareSupply ?? '0');
-      
-      if (shareSupplyStr === '0' || shareSupplyStr === '') {
-        console.error('[calculateRemoveLiquidityAmounts] Pool has zero shareSupply!');
-        return { token1Amount: '0', token2Amount: '0' };
-      }
-      
-      const totalShares = Big(shareSupplyStr);
-
-      // Calculate proportional share of each reserve
-      // Formula: tokenAmount = (sharesAmount * tokenReserve) / totalShares
-  const token1Reserve = Big(poolInfo.reserves[poolInfo.token1.id] ?? '0');
-  const token2Reserve = Big(poolInfo.reserves[poolInfo.token2.id] ?? '0');
-
-      const token1Contract = Big(sharesContract).mul(token1Reserve).div(totalShares);
-      const token2Contract = Big(sharesContract).mul(token2Reserve).div(totalShares);
-
-      // Convert to display units
-      const token1Display = Big(token1Contract.toFixed(0)).div(Big(10).pow(poolInfo.token1.decimals)).toFixed(6, 0);
-      const token2Display = Big(token2Contract.toFixed(0)).div(Big(10).pow(poolInfo.token2.decimals)).toFixed(6, 0);
-
-      return {
-        token1Amount: token1Display,
-        token2Amount: token2Display,
-      };
-    } catch (error) {
-      console.error('[LiquidityCard] Error calculating remove amounts:', error);
-      console.error('[LiquidityCard] poolInfo:', poolInfo);
-      console.error('[LiquidityCard] sharesAmount:', sharesAmount);
-      return { token1Amount: '0', token2Amount: '0' };
-    }
-  }, [poolInfo]);
+  }, [accountId, form, transaction]);
 
   // Handle token amount changes
   const handleToken1AmountChange = (amount: string) => {
-    setToken1Amount(amount);
+    form.setToken1Amount(amount);
     
     // Clear the message when user manually types
-    setShowGasReserveMessage(false);
+    form.setShowGasReserveMessage(false);
     
     // Check if we need to show gas reserve warning
     if (poolInfo && (poolInfo.token1.id === 'wrap.near' || poolInfo.token1.id === 'near') && amount && rawBalances[poolInfo.token1.id]) {
@@ -310,80 +228,51 @@ export const LiquidityCard: React.FC = () => {
       // Only show gas reserve message if amount is within balance but exceeds (balance - 0.25)
       // If amount exceeds total balance, insufficient funds message will show instead
       if (requestedAmount.lte(Big(rawBalance)) && requestedAmount.gt(maxAvailable) && maxAvailable.gt(0)) {
-        setShowGasReserveInfo(true);
+        form.setShowGasReserveInfo(true);
       } else {
-        setShowGasReserveInfo(false);
+        form.setShowGasReserveInfo(false);
       }
     } else {
-      setShowGasReserveInfo(false);
+      form.setShowGasReserveInfo(false);
     }
     
-    if (liquidityState === 'add') {
+    if (form.liquidityState === 'add') {
       if (amount && amount !== '0') {
-        const optimalAmount = calculateOptimalAmount(amount, poolInfo?.token1.id ?? '');
-        setToken2Amount(optimalAmount);
+        const optimalAmount = calculations.calculateOptimalAmount(amount, poolInfo?.token1.id ?? '');
+        form.setToken2Amount(optimalAmount);
       } else {
         // Clear the other field when this field is empty or 0
-        setToken2Amount('');
+        form.setToken2Amount('');
       }
     }
   };
 
   const handleToken2AmountChange = (amount: string) => {
-    setToken2Amount(amount);
-    if (liquidityState === 'add') {
+    form.setToken2Amount(amount);
+    if (form.liquidityState === 'add') {
       if (amount && amount !== '0') {
-        const optimalAmount = calculateOptimalAmount(amount, poolInfo?.token2.id ?? '');
-        setToken1Amount(optimalAmount);
+        const optimalAmount = calculations.calculateOptimalAmount(amount, poolInfo?.token2.id ?? '');
+        form.setToken1Amount(optimalAmount);
       } else {
         // Clear the other field when this field is empty or 0
-        setToken1Amount('');
+        form.setToken1Amount('');
       }
     }
   };
 
   // Slippage handlers
   const handleSlippageChange = (value: number) => {
-    setSlippage(value);
-    setCustomSlippage('');
+    form.setSlippage(value);
+    form.setCustomSlippage('');
   };
 
   const handleCustomSlippage = (value: string) => {
-    setCustomSlippage(value);
+    form.setCustomSlippage(value);
     const numValue = parseFloat(value);
     if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
-      setSlippage(numValue);
+      form.setSlippage(numValue);
     }
   };
-
-  // Format dollar amount with special handling for small numbers (matches swap widget)
-  const formatDollarAmount = useCallback((amount: number) => {
-    try {
-      if (amount === 0) {
-        return '$0.00';
-      }
-      if (amount >= 0.01) {
-        return `$${amount.toFixed(2)}`;
-      } else {
-        // Format small numbers: $0.0 followed by green zeros count and significant digits
-        const fixedStr = amount.toFixed(20);
-  const decimalPart = fixedStr.split('.')[1] ?? '';
-        const firstNonZeroIndex = decimalPart.search(/[1-9]/);
-        if (firstNonZeroIndex === -1) {
-          return '$0.00';
-        }
-        const zerosCount = firstNonZeroIndex;
-        const significantDigits = decimalPart.slice(firstNonZeroIndex, firstNonZeroIndex + 4);
-        return (
-          <span>
-            $0.0<span className="text-primary text-[10px]">{zerosCount}</span>{significantDigits}
-          </span>
-        );
-      }
-    } catch {
-      return '$0.00';
-    }
-  }, []);
 
   // Handle liquidity operations
   const handleAddLiquidity = async () => {
@@ -409,12 +298,12 @@ export const LiquidityCard: React.FC = () => {
      *    - msg: '' (empty string - just deposit, don't swap)
      * 6. add_liquidity: Add tokens from Ref Finance balance to pool (150T gas)
      *    - For SIMPLE pools: { pool_id, amounts } - NO min_shares parameter
-     *    - For STABLE pools: { pool_id, amounts, min_shares } - requires slippage protection
+     *    - For STABLE pools: { pool_id, amounts, min_shares } - requires form.slippage protection
      * 
      * Key Differences from Stable Pools:
      * - Simple pools: Contract auto-calculates shares using sqrt(amount1 * amount2) for new pools
      *                 or proportional shares for existing pools
-     * - Stable pools: Must specify min_shares for slippage protection
+     * - Stable pools: Must specify min_shares for form.slippage protection
      * 
      * Pattern verified against:
      * - pool.ts lines 854-941: addLiquidityToPool
@@ -422,10 +311,10 @@ export const LiquidityCard: React.FC = () => {
      * - wrap-near.ts lines 44-58: nearDepositTransaction
      * - token.ts lines 147-180: getDepositTransactions
      */
-    if (!accountId || !poolInfo || !token1Amount || !token2Amount) return;
+    if (!accountId || !poolInfo || !form.token1Amount || !form.token2Amount) return;
 
-    setTransactionState('waitingForConfirmation');
-    setError(null);
+    transaction.setTransactionState('waitingForConfirmation');
+    transaction.setError(null);
 
     try {
       let walletInstance = wallet;
@@ -439,17 +328,17 @@ export const LiquidityCard: React.FC = () => {
       }
 
       // Parse amounts to contract format
-      let amount1Parsed = parseTokenAmount(token1Amount, poolInfo.token1.decimals);
-      let amount2Parsed = parseTokenAmount(token2Amount, poolInfo.token2.decimals);
+      let amount1Parsed = parseTokenAmount(form.token1Amount, poolInfo.token1.decimals);
+      let amount2Parsed = parseTokenAmount(form.token2Amount, poolInfo.token2.decimals);
 
       // Validate that inputs are not empty and contain valid numbers
-      if (!token1Amount.trim() || !token2Amount.trim()) {
+      if (!form.token1Amount.trim() || !form.token2Amount.trim()) {
         throw new Error('Please enter amounts for both tokens');
       }
 
       // Check if parsing failed (returned '0' for invalid input)
-      const amount1Num = parseFloat(token1Amount.replace(/,/g, '').trim());
-      const amount2Num = parseFloat(token2Amount.replace(/,/g, '').trim());
+      const amount1Num = parseFloat(form.token1Amount.replace(/,/g, '').trim());
+      const amount2Num = parseFloat(form.token2Amount.replace(/,/g, '').trim());
       if (isNaN(amount1Num) || isNaN(amount2Num)) {
         throw new Error('Please enter valid numeric amounts');
       }
@@ -517,7 +406,7 @@ export const LiquidityCard: React.FC = () => {
       // We don't need to predict or specify minimum shares like stable pools do
       // The contract uses the formula: shares = sqrt(amount1 * amount2) for new pools
       // or proportional shares for existing pools
-      // We just need to send min_amounts for slippage protection instead
+      // We just need to send min_amounts for form.slippage protection instead
 
       // SMART DEPOSIT DETECTION: Check what's already deposited in Ref Finance
       const depositedBalances = await getRefDepositedBalances(poolData.token_account_ids);
@@ -757,7 +646,7 @@ export const LiquidityCard: React.FC = () => {
       if (outcomes) {
         // If outcomes is a string, it's likely a transaction hash
         if (typeof outcomes === 'string') {
-          setTx(outcomes);
+          transaction.setTx(outcomes);
           // Wait for blockchain to finalize (add_liquidity needs more time)
           await new Promise(resolve => setTimeout(resolve, 1500));
             // Start fetches immediately (they will set loading states)
@@ -766,7 +655,7 @@ export const LiquidityCard: React.FC = () => {
             void refetchPool();
             // Small delay to ensure fetch functions have set their loading states
             await new Promise(resolve => setTimeout(resolve, 100));
-            setTransactionState('success');
+            transaction.setTransactionState('success');
             return;
           }
           
@@ -776,7 +665,7 @@ export const LiquidityCard: React.FC = () => {
             const txHash = String(finalOutcome?.transaction?.hash ?? finalOutcome?.transaction_outcome?.id ?? '');
 
             if (txHash) {
-              setTx(txHash);
+              transaction.setTx(txHash);
               // Wait for blockchain to finalize (add_liquidity needs more time)
               await new Promise(resolve => setTimeout(resolve, 1500));
               // Start fetches immediately (they will set loading states)
@@ -785,34 +674,34 @@ export const LiquidityCard: React.FC = () => {
               void refetchPool();
               // Small delay to ensure fetch functions have set their loading states
               await new Promise(resolve => setTimeout(resolve, 100));
-              setTransactionState('success');
+              transaction.setTransactionState('success');
               return;
             }
           }
         }
         
         // If we didn't get a clear success, mark as waiting for confirmation
-        setTransactionState('waitingForConfirmation');
+        transaction.setTransactionState('waitingForConfirmation');
     } catch (err: any) {
       // Handle user cancellation with robust detection
       if (isUserCancellation(err)) {
         console.warn('[LiquidityCard] Add liquidity cancelled by user');
-        setTransactionState('cancelled');
-        setError(null);
+        transaction.setTransactionState('cancelled');
+        transaction.setError(null);
       } else {
         console.error('[LiquidityCard] Add liquidity error:', err);
         const errorMsg = getErrorMessage(err, 'Failed to add liquidity');
-        setError(errorMsg);
-        setTransactionState('fail');
+        transaction.setError(errorMsg);
+        transaction.setTransactionState('fail');
       }
     }
   };
 
   const handleRemoveLiquidity = async () => {
-    if (!accountId || !poolInfo || !token1Amount) return;
+    if (!accountId || !poolInfo || !form.token1Amount) return;
 
-    setTransactionState('waitingForConfirmation');
-    setError(null);
+    transaction.setTransactionState('waitingForConfirmation');
+    transaction.setError(null);
 
     try {
       let walletInstance = wallet;
@@ -826,7 +715,7 @@ export const LiquidityCard: React.FC = () => {
       }
 
       // Parse shares amount to contract format
-      const sharesToRemove = parseTokenAmount(token1Amount, 24); // LP tokens have 24 decimals
+      const sharesToRemove = parseTokenAmount(form.token1Amount, 24); // LP tokens have 24 decimals
 
       // Validate shares amount
       if (sharesToRemove === '0') {
@@ -834,7 +723,7 @@ export const LiquidityCard: React.FC = () => {
       }
 
       // Validate that amount is positive and doesn't exceed user shares
-      const sharesNum = parseFloat(token1Amount);
+      const sharesNum = parseFloat(form.token1Amount);
       if (isNaN(sharesNum) || sharesNum <= 0) {
         throw new Error('Please enter a valid positive amount');
       }
@@ -862,7 +751,7 @@ export const LiquidityCard: React.FC = () => {
         total_shares: string;
       };
 
-      // Calculate minimum amounts to receive (with slippage protection)
+      // Calculate minimum amounts to receive (with form.slippage protection)
       const shareSupplyStr = String(poolInfo.shareSupply || '0');
       const totalReserve1Str = String(poolInfo.reserves['wrap.near'] || poolInfo.reserves[poolInfo.token1.id] || '0');
       const totalReserve2Str = String(poolInfo.reserves['veganfriends.tkn.near'] || poolInfo.reserves[poolInfo.token2.id] || '0');
@@ -881,8 +770,8 @@ export const LiquidityCard: React.FC = () => {
       const amount1 = sharesToRemoveBig.mul(totalReserve1).div(totalShares);
       const amount2 = sharesToRemoveBig.mul(totalReserve2).div(totalShares);
 
-      // Apply slippage protection based on user setting
-      const slippageMultiplier = Big(1 - slippage / 100);
+      // Apply form.slippage protection based on user setting
+      const slippageMultiplier = Big(1 - form.slippage / 100);
       const minAmount1 = amount1.mul(slippageMultiplier).toFixed(0);
       const minAmount2 = amount2.mul(slippageMultiplier).toFixed(0);
 
@@ -1008,7 +897,7 @@ export const LiquidityCard: React.FC = () => {
         const txHash = String(finalOutcome?.transaction?.hash ?? finalOutcome?.transaction_outcome?.id ?? '');
 
         if (txHash) {
-          setTx(txHash);
+          transaction.setTx(txHash);
           // Wait for blockchain to finalize
           await new Promise(resolve => setTimeout(resolve, 1500));
           // Start fetches immediately (they will set loading states)
@@ -1017,24 +906,24 @@ export const LiquidityCard: React.FC = () => {
           void refetchPool();
           // Small delay to ensure fetch functions have set their loading states
           await new Promise(resolve => setTimeout(resolve, 100));
-          setTransactionState('success');
+          transaction.setTransactionState('success');
         } else {
-          setTransactionState('waitingForConfirmation');
+          transaction.setTransactionState('waitingForConfirmation');
         }
       } else {
-        setTransactionState('waitingForConfirmation');
+        transaction.setTransactionState('waitingForConfirmation');
       }
     } catch (err: any) {
       // Handle user cancellation with robust detection
       if (isUserCancellation(err)) {
         console.warn('[LiquidityCard] Remove liquidity cancelled by user');
-        setTransactionState('cancelled');
-        setError(null);
+        transaction.setTransactionState('cancelled');
+        transaction.setError(null);
       } else {
         console.error('[LiquidityCard] Remove liquidity error:', err);
         const errorMsg = getErrorMessage(err, 'Failed to remove liquidity');
-        setError(errorMsg);
-        setTransactionState('fail');
+        transaction.setError(errorMsg);
+        transaction.setTransactionState('fail');
       }
     }
   };
@@ -1053,14 +942,14 @@ export const LiquidityCard: React.FC = () => {
           poolStats={poolStats}
           tokenPrices={tokenPrices}
           hasLoadedPoolStats={hasLoadedPoolStats}
-          onSettingsToggle={() => setShowSettings(!showSettings)}
+          onSettingsToggle={() => form.setShowSettings(!form.showSettings)}
         />
 
         {/* Settings Panel */}
-        {showSettings && (
+        {form.showSettings && (
           <SlippageSettings
-            slippage={slippage}
-            customSlippage={customSlippage}
+            slippage={form.slippage}
+            customSlippage={form.customSlippage}
             onSlippageChange={handleSlippageChange}
             onCustomSlippageChange={handleCustomSlippage}
           />
@@ -1075,21 +964,21 @@ export const LiquidityCard: React.FC = () => {
         {poolInfo && accountId && (!userShares || Number(userShares) === 0) && <EmptyLiquidityState />}
 
         {/* Action Buttons */}
-        {!liquidityState && (
+        {!form.liquidityState && (
           <ActionButtons
             isWalletConnected={!!accountId}
-            onAddLiquidity={() => setLiquidityState('add')}
-            onRemoveLiquidity={() => setLiquidityState('remove')}
+            onAddLiquidity={() => form.setLiquidityState('add')}
+            onRemoveLiquidity={() => form.setLiquidityState('remove')}
           />
         )}
 
         {/* Error Display */}
-        {(error ?? poolError) && (
+        {(transaction.error ?? poolError) && (
           <ErrorDisplay
-            error={(error ?? poolError)!}
+            error={(transaction.error ?? poolError)!}
             onDismiss={() => {
-              setError(null);
-              setTransactionState(null);
+              transaction.setError(null);
+              transaction.setTransactionState(null);
             }}
           />
         )}
@@ -1097,18 +986,18 @@ export const LiquidityCard: React.FC = () => {
       </div>
 
       {/* Add Liquidity Form - Separate Card */}
-      {liquidityState === 'add' && poolInfo && (
+      {form.liquidityState === 'add' && poolInfo && (
         <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 space-y-4 shadow-lg mt-4">
           <div className="space-y-4">
             {/* Header with Back Button */}
             <div className="flex items-center justify-between pb-3 border-b border-border">
               <button
                 onClick={() => {
-                  setLiquidityState(null);
-                  setToken1Amount('');
-                  setToken2Amount('');
-                  setShowGasReserveInfo(false);
-                  setShowGasReserveMessage(false);
+                  form.setLiquidityState(null);
+                  form.setToken1Amount('');
+                  form.setToken2Amount('');
+                  form.setShowGasReserveInfo(false);
+                  form.setShowGasReserveMessage(false);
                 }}
                 className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group p-2 rounded-md"
               >
@@ -1151,14 +1040,14 @@ export const LiquidityCard: React.FC = () => {
                           const displayValue = percentBalance.div(Big(10).pow(poolInfo.token1.decimals)).toFixed(poolInfo.token1.decimals, Big.roundDown);
                           
                           // Update states BEFORE setting amount to avoid race conditions
-                          setShowGasReserveInfo(reserveApplied);
-                          setShowGasReserveMessage(reserveApplied);
-                          setToken1Amount(displayValue);
+                          form.setShowGasReserveInfo(reserveApplied);
+                          form.setShowGasReserveMessage(reserveApplied);
+                          form.setToken1Amount(displayValue);
                           
                           // Calculate optimal amount for token2 if adding liquidity
-                          if (liquidityState === 'add' && displayValue && displayValue !== '0') {
-                            const optimalAmount = calculateOptimalAmount(displayValue, poolInfo.token1.id);
-                            setToken2Amount(optimalAmount);
+                          if (form.liquidityState === 'add' && displayValue && displayValue !== '0') {
+                            const optimalAmount = calculations.calculateOptimalAmount(displayValue, poolInfo.token1.id);
+                            form.setToken2Amount(optimalAmount);
                           }
                         }
                       }}
@@ -1191,14 +1080,14 @@ export const LiquidityCard: React.FC = () => {
                         const displayValue = availableBalance.div(Big(10).pow(poolInfo.token1.decimals)).toFixed(poolInfo.token1.decimals, Big.roundDown);
                         
                         // Update states BEFORE setting amount to avoid race conditions
-                        setShowGasReserveInfo(false); // MAX doesn't disable button
-                        setShowGasReserveMessage(reserveApplied); // But does show message
-                        setToken1Amount(displayValue);
+                        form.setShowGasReserveInfo(false); // MAX doesn't disable button
+                        form.setShowGasReserveMessage(reserveApplied); // But does show message
+                        form.setToken1Amount(displayValue);
                         
                         // Calculate optimal amount for token2 if adding liquidity
-                        if (liquidityState === 'add' && displayValue && displayValue !== '0') {
-                          const optimalAmount = calculateOptimalAmount(displayValue, poolInfo.token1.id);
-                          setToken2Amount(optimalAmount);
+                        if (form.liquidityState === 'add' && displayValue && displayValue !== '0') {
+                          const optimalAmount = calculations.calculateOptimalAmount(displayValue, poolInfo.token1.id);
+                          form.setToken2Amount(optimalAmount);
                         }
                       }
                     }}
@@ -1241,24 +1130,24 @@ export const LiquidityCard: React.FC = () => {
                 </div>
                 <div className="flex-1 relative">
                   <TokenInput
-                    value={token1Amount}
+                    value={form.token1Amount}
                     onChange={handleToken1AmountChange}
                     placeholder="0.0"
                     disabled={!accountId}
                     decimalLimit={poolInfo.token1.decimals}
                   />
-                  {token1Amount && (() => {
+                  {form.token1Amount && (() => {
                     const price = tokenPrices[poolInfo.token1.id] ?? tokenPrices.near ?? tokenPrices['wrap.near'];
-                    console.warn('[LiquidityCard] Token1 display - ID:', poolInfo.token1.id, 'All prices:', tokenPrices, 'Selected price:', price, 'Amount:', token1Amount);
+                    console.warn('[LiquidityCard] Token1 display - ID:', poolInfo.token1.id, 'All prices:', tokenPrices, 'Selected price:', price, 'Amount:', form.token1Amount);
                     if (!price) {
                       console.warn('[LiquidityCard] No price found for NEAR token!');
                       return null;
                     }
-                    const usdValue = parseFloat(token1Amount) * price;
+                    const usdValue = parseFloat(form.token1Amount) * price;
                     console.warn('[LiquidityCard] USD value calculated:', usdValue);
                     return (
                       <div className="absolute top-8 right-4 text-xs text-muted-foreground">
-                        ≈ {formatDollarAmount(usdValue)}
+                        ≈ {calculations.formatDollarAmount(usdValue)}
                       </div>
                     );
                   })()}
@@ -1280,15 +1169,15 @@ export const LiquidityCard: React.FC = () => {
                           const percentBalance = availableBalance.mul(percent).div(100);
                           const displayValue = percentBalance.div(Big(10).pow(poolInfo.token2.decimals)).toFixed(poolInfo.token2.decimals, Big.roundDown);
                           
-                          setToken2Amount(displayValue);
+                          form.setToken2Amount(displayValue);
                           
                           // Calculate optimal amount for token1 if adding liquidity
-                          if (liquidityState === 'add' && displayValue && displayValue !== '0') {
-                            const optimalAmount = calculateOptimalAmount(displayValue, poolInfo.token2.id);
-                            setToken1Amount(optimalAmount);
+                          if (form.liquidityState === 'add' && displayValue && displayValue !== '0') {
+                            const optimalAmount = calculations.calculateOptimalAmount(displayValue, poolInfo.token2.id);
+                            form.setToken1Amount(optimalAmount);
                             // Clear gas reserve warnings since we're recalculating token1 amount
-                            setShowGasReserveInfo(false);
-                            setShowGasReserveMessage(false);
+                            form.setShowGasReserveInfo(false);
+                            form.setShowGasReserveMessage(false);
                           }
                         }
                       }}
@@ -1305,15 +1194,15 @@ export const LiquidityCard: React.FC = () => {
                         const availableBalance = Big(rawBalance);
                         const displayValue = availableBalance.div(Big(10).pow(poolInfo.token2.decimals)).toFixed(poolInfo.token2.decimals, Big.roundDown);
                         
-                        setToken2Amount(displayValue);
+                        form.setToken2Amount(displayValue);
                         
                         // Calculate optimal amount for token1 if adding liquidity
-                        if (liquidityState === 'add' && displayValue && displayValue !== '0') {
-                          const optimalAmount = calculateOptimalAmount(displayValue, poolInfo.token2.id);
-                          setToken1Amount(optimalAmount);
+                        if (form.liquidityState === 'add' && displayValue && displayValue !== '0') {
+                          const optimalAmount = calculations.calculateOptimalAmount(displayValue, poolInfo.token2.id);
+                          form.setToken1Amount(optimalAmount);
                           // Clear gas reserve warnings since we're recalculating token1 amount
-                          setShowGasReserveInfo(false);
-                          setShowGasReserveMessage(false);
+                          form.setShowGasReserveInfo(false);
+                          form.setShowGasReserveMessage(false);
                         }
                       }
                     }}
@@ -1356,18 +1245,18 @@ export const LiquidityCard: React.FC = () => {
                 </div>
                 <div className="flex-1 relative">
                   <TokenInput
-                    value={token2Amount}
+                    value={form.token2Amount}
                     onChange={handleToken2AmountChange}
                     placeholder="0.0"
                     disabled={!accountId}
                     decimalLimit={poolInfo.token2.decimals}
                   />
-                  {token2Amount && tokenPrices[poolInfo.token2.id] && (() => {
+                  {form.token2Amount && tokenPrices[poolInfo.token2.id] && (() => {
                     const price = tokenPrices[poolInfo.token2.id];
-                    console.warn('[LiquidityCard] Token2 display - ID:', poolInfo.token2.id, 'Price:', price, 'Amount:', token2Amount);
+                    console.warn('[LiquidityCard] Token2 display - ID:', poolInfo.token2.id, 'Price:', price, 'Amount:', form.token2Amount);
                     return (
                       <div className="absolute top-8 right-4 text-xs text-muted-foreground">
-                        ≈ {formatDollarAmount(parseFloat(token2Amount) * price)}
+                        ≈ {calculations.formatDollarAmount(parseFloat(form.token2Amount) * price)}
                       </div>
                     );
                   })()}
@@ -1376,7 +1265,7 @@ export const LiquidityCard: React.FC = () => {
             </div>
 
             {/* Preview: You will add */}
-            {token1Amount && token2Amount && parseFloat(token1Amount) > 0 && parseFloat(token2Amount) > 0 && (
+            {form.token1Amount && form.token2Amount && parseFloat(form.token1Amount) > 0 && parseFloat(form.token2Amount) > 0 && (
               <div className="bg-card border border-border rounded-2xl p-4 shadow-lg space-y-2 text-xs">
                 <p className="text-sm font-medium text-foreground mb-2">You will add:</p>
                 <div className="flex items-center justify-between">
@@ -1399,14 +1288,14 @@ export const LiquidityCard: React.FC = () => {
                   <div className="text-right">
                     <span className="font-medium text-xs">
                       {(() => {
-                        const num = parseFloat(token1Amount);
+                        const num = parseFloat(form.token1Amount);
                         return num >= 1000 
-                          ? toInternationalCurrencySystemLongString(token1Amount, 2)
-                          : token1Amount;
+                          ? toInternationalCurrencySystemLongString(form.token1Amount, 2)
+                          : form.token1Amount;
                       })()}
                       {tokenPrices[poolInfo.token1.id] && (
                         <span className="text-xs text-muted-foreground ml-1">
-                          ({formatDollarAmount(parseFloat(token1Amount) * (tokenPrices[poolInfo.token1.id] ?? tokenPrices.near ?? tokenPrices['wrap.near'] ?? 0))})
+                          ({calculations.formatDollarAmount(parseFloat(form.token1Amount) * (tokenPrices[poolInfo.token1.id] ?? tokenPrices.near ?? tokenPrices['wrap.near'] ?? 0))})
                         </span>
                       )}
                     </span>
@@ -1432,14 +1321,14 @@ export const LiquidityCard: React.FC = () => {
                   <div className="text-right">
                     <span className="font-medium text-xs">
                       {(() => {
-                        const num = parseFloat(token2Amount);
+                        const num = parseFloat(form.token2Amount);
                         return num >= 1000 
-                          ? toInternationalCurrencySystemLongString(token2Amount, 2)
-                          : token2Amount;
+                          ? toInternationalCurrencySystemLongString(form.token2Amount, 2)
+                          : form.token2Amount;
                       })()}
                       {tokenPrices[poolInfo.token2.id] && (
                         <span className="text-xs text-muted-foreground ml-1">
-                          ({formatDollarAmount(parseFloat(token2Amount) * tokenPrices[poolInfo.token2.id])})
+                          ({calculations.formatDollarAmount(parseFloat(form.token2Amount) * tokenPrices[poolInfo.token2.id])})
                         </span>
                       )}
                     </span>
@@ -1453,8 +1342,8 @@ export const LiquidityCard: React.FC = () => {
                       {(() => {
                         try {
                           // Calculate expected LP shares
-                          const amount1Raw = Big(token1Amount).mul(Big(10).pow(poolInfo.token1.decimals));
-                          const amount2Raw = Big(token2Amount).mul(Big(10).pow(poolInfo.token2.decimals));
+                          const amount1Raw = Big(form.token1Amount).mul(Big(10).pow(poolInfo.token1.decimals));
+                          const amount2Raw = Big(form.token2Amount).mul(Big(10).pow(poolInfo.token2.decimals));
                           const reserve1 = Big(poolInfo.reserves[poolInfo.token1.id] || '0');
                           const reserve2 = Big(poolInfo.reserves[poolInfo.token2.id] || '0');
                           const totalShares = Big(poolInfo.shareSupply || '0');
@@ -1472,8 +1361,8 @@ export const LiquidityCard: React.FC = () => {
                             expectedShares = shares1.lt(shares2) ? shares1 : shares2;
                           }
                           
-                          // Apply slippage tolerance (default 0.5%)
-                          const minShares = expectedShares.mul(1 - slippage / 100);
+                          // Apply form.slippage tolerance (default 0.5%)
+                          const minShares = expectedShares.mul(1 - form.slippage / 100);
                           
                           // Convert to readable format
                           const minSharesDisplay = minShares.div(Big(10).pow(24)).toFixed(6, Big.roundDown);
@@ -1497,7 +1386,7 @@ export const LiquidityCard: React.FC = () => {
                             if (readableTotalShares.gt(0)) {
                               const singleLpValue = poolTVL.div(readableTotalShares);
                               const totalUsdValue = singleLpValue.mul(readableShares).toNumber();
-                              usdValue = formatDollarAmount(totalUsdValue);
+                              usdValue = calculations.formatDollarAmount(totalUsdValue);
                             }
                           }
                           
@@ -1523,7 +1412,7 @@ export const LiquidityCard: React.FC = () => {
             )}
 
             {/* Gas Reserve Info */}
-            {showGasReserveMessage && accountId && (
+            {form.showGasReserveMessage && accountId && (
               <div className="flex items-start gap-2 p-2 bg-primary/10 rounded-full">
                 <Info className="w-4 h-4 text-primary mt-0.5" />
                 <p className="text-xs text-muted-foreground">
@@ -1536,11 +1425,11 @@ export const LiquidityCard: React.FC = () => {
             <div className="flex gap-2">
               <Button
                 onClick={() => {
-                  setLiquidityState(null);
-                  setToken1Amount('');
-                  setToken2Amount('');
-                  setShowGasReserveInfo(false);
-                  setShowGasReserveMessage(false);
+                  form.setLiquidityState(null);
+                  form.setToken1Amount('');
+                  form.setToken2Amount('');
+                  form.setShowGasReserveInfo(false);
+                  form.setShowGasReserveMessage(false);
                   void refetchBalances();
                 }}
                 variant="outline"
@@ -1552,17 +1441,17 @@ export const LiquidityCard: React.FC = () => {
               onClick={() => void handleAddLiquidity()}
                 disabled={
                   !accountId || 
-                  !token1Amount || 
-                  !token2Amount || 
-                  transactionState === 'waitingForConfirmation' || 
+                  !form.token1Amount || 
+                  !form.token2Amount || 
+                  transaction.transactionState === 'waitingForConfirmation' || 
                   isLoadingPool || 
-                  !!showGasReserveInfo ||
+                  !!form.showGasReserveInfo ||
                   // Check if token1 amount exceeds balance
-                  !!(poolInfo && token1Amount && rawBalances[poolInfo.token1.id] && 
-                    Big(token1Amount).times(Big(10).pow(poolInfo.token1.decimals)).gt(Big(rawBalances[poolInfo.token1.id]))) ||
+                  !!(poolInfo && form.token1Amount && rawBalances[poolInfo.token1.id] && 
+                    Big(form.token1Amount).times(Big(10).pow(poolInfo.token1.decimals)).gt(Big(rawBalances[poolInfo.token1.id]))) ||
                   // Check if token2 amount exceeds balance
-                  !!(poolInfo && token2Amount && rawBalances[poolInfo.token2.id] && 
-                    Big(token2Amount).times(Big(10).pow(poolInfo.token2.decimals)).gt(Big(rawBalances[poolInfo.token2.id]))) ||
+                  !!(poolInfo && form.token2Amount && rawBalances[poolInfo.token2.id] && 
+                    Big(form.token2Amount).times(Big(10).pow(poolInfo.token2.decimals)).gt(Big(rawBalances[poolInfo.token2.id]))) ||
                   // Check minimum NEAR balance
                   !!(poolInfo && (poolInfo.token1.id === 'near' || poolInfo.token1.id === 'wrap.near') && 
                     rawBalances.near && Big(rawBalances.near).lt(Big('250000000000000000000000')))
@@ -1570,15 +1459,15 @@ export const LiquidityCard: React.FC = () => {
                 variant="verified"
                 className="flex-1"
               >
-                {transactionState === 'waitingForConfirmation' ? (
+                {transaction.transactionState === 'waitingForConfirmation' ? (
                   <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-                ) : showGasReserveInfo ? (
+                ) : form.showGasReserveInfo ? (
                   'Need 0.25N for gas'
-                ) : (poolInfo && token1Amount && rawBalances[poolInfo.token1.id] && 
-                    Big(token1Amount).times(Big(10).pow(poolInfo.token1.decimals)).gt(Big(rawBalances[poolInfo.token1.id]))) ? (
+                ) : (poolInfo && form.token1Amount && rawBalances[poolInfo.token1.id] && 
+                    Big(form.token1Amount).times(Big(10).pow(poolInfo.token1.decimals)).gt(Big(rawBalances[poolInfo.token1.id]))) ? (
                   'Insufficient Funds'
-                ) : (poolInfo && token2Amount && rawBalances[poolInfo.token2.id] && 
-                    Big(token2Amount).times(Big(10).pow(poolInfo.token2.decimals)).gt(Big(rawBalances[poolInfo.token2.id]))) ? (
+                ) : (poolInfo && form.token2Amount && rawBalances[poolInfo.token2.id] && 
+                    Big(form.token2Amount).times(Big(10).pow(poolInfo.token2.decimals)).gt(Big(rawBalances[poolInfo.token2.id]))) ? (
                   'Insufficient Funds'
                 ) : (
                   'Add Liquidity'
@@ -1590,18 +1479,18 @@ export const LiquidityCard: React.FC = () => {
       )}
 
       {/* Remove Liquidity Form - Separate Card */}
-      {liquidityState === 'remove' && poolInfo && (
+      {form.liquidityState === 'remove' && poolInfo && (
         <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 space-y-4 shadow-lg mt-4">
           <div className="space-y-4">
             {/* Header with Back Button */}
             <div className="flex items-center justify-between pb-3 border-b border-border">
               <button
                 onClick={() => {
-                  setLiquidityState(null);
-                  setToken1Amount('');
-                  setToken2Amount('');
-                  setShowGasReserveInfo(false);
-                  setShowGasReserveMessage(false);
+                  form.setLiquidityState(null);
+                  form.setToken1Amount('');
+                  form.setToken2Amount('');
+                  form.setShowGasReserveInfo(false);
+                  form.setShowGasReserveMessage(false);
                 }}
                 className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group p-2 rounded-md"
               >
@@ -1623,7 +1512,7 @@ export const LiquidityCard: React.FC = () => {
                       onClick={() => {
                         const percentShares = Big(userShares).mul(percent).div(100);
                         const displayValue = percentShares.div(Big(10).pow(24)).toFixed(24, Big.roundDown);
-                        setToken1Amount(displayValue);
+                        form.setToken1Amount(displayValue);
                       }}
                       variant="percentage"
                       size="xs"
@@ -1634,7 +1523,7 @@ export const LiquidityCard: React.FC = () => {
                   <Button
                     onClick={() => {
                       const displayValue = Big(userShares).div(Big(10).pow(24)).toFixed(24, Big.roundDown);
-                      setToken1Amount(displayValue);
+                      form.setToken1Amount(displayValue);
                     }}
                     variant="percentage"
                     size="xs"
@@ -1656,13 +1545,13 @@ export const LiquidityCard: React.FC = () => {
                 </div>
                 <div className="flex-1 relative">
                   <TokenInput
-                    value={token1Amount}
-                    onChange={setToken1Amount}
+                    value={form.token1Amount}
+                    onChange={form.setToken1Amount}
                     placeholder="0.0"
                     disabled={!accountId}
                     decimalLimit={24}
                   />
-                  {token1Amount && poolInfo && (() => {
+                  {form.token1Amount && poolInfo && (() => {
                     const token1Price = tokenPrices[poolInfo.token1.id] ?? tokenPrices.near ?? tokenPrices['wrap.near'] ?? 0;
                     const token2Price = tokenPrices[poolInfo.token2.id] ?? 0;
                     
@@ -1674,13 +1563,13 @@ export const LiquidityCard: React.FC = () => {
                       const totalTVL = token1TVL.plus(token2TVL);
                       
                       // Calculate LP shares value: (lpAmount / totalShares) * TVL
-                      const lpAmountNum = Big(token1Amount).mul(Big(10).pow(24));
+                      const lpAmountNum = Big(form.token1Amount).mul(Big(10).pow(24));
                       const totalSharesNum = Big(poolInfo.shareSupply);
                       const lpValue = totalSharesNum.gt(0) ? lpAmountNum.mul(totalTVL).div(totalSharesNum) : Big(0);
                       
                       return (
                         <div className="absolute top-8 right-4 text-xs text-muted-foreground">
-                          ≈ {formatDollarAmount(lpValue.toNumber())}
+                          ≈ {calculations.formatDollarAmount(lpValue.toNumber())}
                         </div>
                       );
                     }
@@ -1691,8 +1580,8 @@ export const LiquidityCard: React.FC = () => {
             </div>
 
             {/* Show token amounts user will receive */}
-            {token1Amount && parseFloat(token1Amount) > 0 && (() => {
-              const amounts = calculateRemoveLiquidityAmounts(token1Amount);
+            {form.token1Amount && parseFloat(form.token1Amount) > 0 && (() => {
+              const amounts = calculations.calculateRemoveLiquidityAmounts(form.token1Amount);
               return (
                 <div className="bg-card border border-border rounded-2xl p-4 shadow-lg space-y-2 text-xs">
                   <p className="text-sm font-medium text-foreground mb-2">You will receive:</p>
@@ -1723,7 +1612,7 @@ export const LiquidityCard: React.FC = () => {
                         })()}
                         {tokenPrices[poolInfo.token1.id] && (
                           <span className="text-xs text-muted-foreground ml-1">
-                            ({formatDollarAmount(parseFloat(amounts.token1Amount) * (tokenPrices[poolInfo.token1.id] ?? tokenPrices.near ?? tokenPrices['wrap.near'] ?? 0))})
+                            ({calculations.formatDollarAmount(parseFloat(amounts.token1Amount) * (tokenPrices[poolInfo.token1.id] ?? tokenPrices.near ?? tokenPrices['wrap.near'] ?? 0))})
                           </span>
                         )}
                       </span>
@@ -1756,7 +1645,7 @@ export const LiquidityCard: React.FC = () => {
                         })()}
                         {tokenPrices[poolInfo.token2.id] && (
                           <span className="text-xs text-muted-foreground ml-1">
-                            ({formatDollarAmount(parseFloat(amounts.token2Amount) * tokenPrices[poolInfo.token2.id])})
+                            ({calculations.formatDollarAmount(parseFloat(amounts.token2Amount) * tokenPrices[poolInfo.token2.id])})
                           </span>
                         )}
                       </span>
@@ -1770,11 +1659,11 @@ export const LiquidityCard: React.FC = () => {
             <div className="flex gap-2">
               <Button
                 onClick={() => {
-                  setLiquidityState(null);
-                  setToken1Amount('');
-                  setToken2Amount('');
-                  setShowGasReserveInfo(false);
-                  setShowGasReserveMessage(false);
+                  form.setLiquidityState(null);
+                  form.setToken1Amount('');
+                  form.setToken2Amount('');
+                  form.setShowGasReserveInfo(false);
+                  form.setShowGasReserveMessage(false);
                   void refetchBalances();
                 }}
                 variant="outline"
@@ -1786,17 +1675,17 @@ export const LiquidityCard: React.FC = () => {
                 onClick={() => void handleRemoveLiquidity()}
                 disabled={
                   !accountId || 
-                  !token1Amount || 
-                  transactionState === 'waitingForConfirmation' ||
+                  !form.token1Amount || 
+                  transaction.transactionState === 'waitingForConfirmation' ||
                   // Check if user has enough shares
-                  !!(userShares && token1Amount && Big(token1Amount).gt(Big(userShares)))
+                  !!(userShares && form.token1Amount && Big(form.token1Amount).gt(Big(userShares)))
                 }
                 variant="secondary"
                 className="flex-1"
               >
-                {transactionState === 'waitingForConfirmation' ? (
+                {transaction.transactionState === 'waitingForConfirmation' ? (
                   <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-                ) : (userShares && token1Amount && Big(token1Amount).gt(Big(userShares))) ? (
+                ) : (userShares && form.token1Amount && Big(form.token1Amount).gt(Big(userShares))) ? (
                   'Insufficient Shares'
                 ) : (
                   'Remove Liquidity'
@@ -1810,14 +1699,14 @@ export const LiquidityCard: React.FC = () => {
       {/* Modals and Error Display */}
       <div className="mt-4">
         {/* Error Display */}
-        {error && (
+        {transaction.error && (
           <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg shadow-md">
             <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-            <p className="text-sm text-red-500 flex-1">{error}</p>
+            <p className="text-sm text-red-500 flex-1">{transaction.error}</p>
             <button
               onClick={() => {
-                setError(null);
-                setTransactionState(null);
+                transaction.setError(null);
+                transaction.setTransactionState(null);
               }}
               className="text-red-500 hover:text-red-600 flex-shrink-0"
             >
@@ -1827,46 +1716,46 @@ export const LiquidityCard: React.FC = () => {
         )}
 
         {/* Success Modal */}
-        {transactionState === 'success' && (
+        {transaction.transactionState === 'success' && (
           <TransactionSuccessModal
-            title={liquidityState === 'add' ? 'Liquidity Added!' : 'Liquidity Removed!'}
+            title={form.liquidityState === 'add' ? 'Liquidity Added!' : 'Liquidity Removed!'}
             details={[
-              ...(liquidityState === 'add' && token1Amount && poolInfo
+              ...(form.liquidityState === 'add' && form.token1Amount && poolInfo
                 ? [
                     {
                       label: `Added ${poolInfo.token1.symbol}`,
                       value: `${(() => {
-                        const num = parseFloat(token1Amount);
+                        const num = parseFloat(form.token1Amount);
                         return num >= 1000
-                          ? toInternationalCurrencySystemLongString(token1Amount, 2)
-                          : token1Amount;
+                          ? toInternationalCurrencySystemLongString(form.token1Amount, 2)
+                          : form.token1Amount;
                       })()} ${poolInfo.token1.symbol}`,
                     },
                   ]
                 : []),
-              ...(liquidityState === 'add' && token2Amount && poolInfo
+              ...(form.liquidityState === 'add' && form.token2Amount && poolInfo
                 ? [
                     {
                       label: `Added ${poolInfo.token2.symbol}`,
                       value: `${(() => {
-                        const num = parseFloat(token2Amount);
+                        const num = parseFloat(form.token2Amount);
                         return num >= 1000
-                          ? toInternationalCurrencySystemLongString(token2Amount, 2)
-                          : token2Amount;
+                          ? toInternationalCurrencySystemLongString(form.token2Amount, 2)
+                          : form.token2Amount;
                       })()} ${poolInfo.token2.symbol}`,
                     },
                   ]
                 : []),
-              ...(liquidityState === 'remove' && token1Amount
+              ...(form.liquidityState === 'remove' && form.token1Amount
                 ? [
                     {
                       label: 'LP Shares Removed',
-                      value: token1Amount,
+                      value: form.token1Amount,
                     },
                   ]
                 : []),
               {
-                label: liquidityState === 'remove' ? 'Remaining LP Shares' : 'LP Shares',
+                label: form.liquidityState === 'remove' ? 'Remaining LP Shares' : 'LP Shares',
                 value: isLoadingShares || isLoadingBalances ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
@@ -1874,13 +1763,13 @@ export const LiquidityCard: React.FC = () => {
                 ),
               },
             ]}
-            tx={tx}
+            tx={transaction.tx}
             onClose={() => {
-              setTransactionState(null);
-              setLiquidityState(null);
-              setToken1Amount('');
-              setToken2Amount('');
-              setTx(undefined);
+              transaction.setTransactionState(null);
+              form.setLiquidityState(null);
+              form.setToken1Amount('');
+              form.setToken2Amount('');
+              transaction.setTx(undefined);
               void refetchBalances();
               void refetchShares();
             }}
@@ -1888,22 +1777,22 @@ export const LiquidityCard: React.FC = () => {
         )}
 
         {/* Fail Modal */}
-        {transactionState === 'fail' && (
+        {transaction.transactionState === 'fail' && (
           <TransactionFailureModal
-            error={error ?? undefined}
+            error={transaction.error ?? undefined}
             onClose={() => {
-              setTransactionState(null);
-              setError(null);
+              transaction.setTransactionState(null);
+              transaction.setError(null);
             }}
           />
         )}
 
         {/* Cancelled Modal */}
-        {transactionState === 'cancelled' && (
+        {transaction.transactionState === 'cancelled' && (
           <TransactionCancelledModal
             onClose={() => {
-              setTransactionState(null);
-              setError(null);
+              transaction.setTransactionState(null);
+              transaction.setError(null);
             }}
           />
         )}

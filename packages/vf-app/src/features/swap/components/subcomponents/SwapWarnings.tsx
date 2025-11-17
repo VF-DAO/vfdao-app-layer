@@ -9,7 +9,6 @@ interface SwapWarningsProps {
   accountId: string | null;
   error: string | null;
   showGasReserveMessage: boolean;
-  showGasReserveInfo: boolean;
   currentEstimate: SwapEstimate | undefined;
   tokenOutId: string | undefined;
   rawBalancesNear: string | undefined;
@@ -19,7 +18,6 @@ export const SwapWarnings: React.FC<SwapWarningsProps> = ({
   accountId,
   error,
   showGasReserveMessage,
-  showGasReserveInfo,
   currentEstimate,
   tokenOutId,
   rawBalancesNear,

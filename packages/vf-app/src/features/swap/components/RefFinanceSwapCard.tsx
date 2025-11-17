@@ -13,24 +13,24 @@
  * - Components: SwapForm, SwapDetails, SwapWarnings
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Big from 'big.js';
 import { toInternationalCurrencySystemLongString } from '@ref-finance/ref-sdk';
 
 import { useWallet } from '@/features/wallet';
 import { 
   useSwap,
+  useSwapBalances,
+  useSwapEstimate,
   useSwapForm,
   useSwapTransaction,
-  useSwapEstimate,
-  useSwapBalances,
 } from '../hooks';
-import { SwapForm, SwapDetails, SwapWarnings } from './subcomponents';
+import { SwapDetails, SwapForm, SwapWarnings } from './subcomponents';
 import { Button } from '@/components/ui/button';
 import { TransactionCancelledModal, TransactionFailureModal, TransactionSuccessModal } from '@/components/ui/transaction-modal';
 import { SlippageSettings } from '@/features/liquidity/components/subcomponents/SlippageSettings';
-import { Loader2, Settings, AlertCircle } from 'lucide-react';
-import { getMainnetTokens, SLIPPAGE_PRESETS, formatTokenAmount, formatTokenAmountNoAbbrev } from '@/lib/swap-utils';
+import { AlertCircle, Loader2, Settings } from 'lucide-react';
+import { getMainnetTokens, SLIPPAGE_PRESETS } from '@/lib/swap-utils';
 import Logo from '@/components/ui/logo';
 import type { TokenMetadata } from '@/types';
 
@@ -300,7 +300,6 @@ export const RefFinanceSwapCard: React.FC = () => {
           accountId={accountId}
           error={transaction.error}
           showGasReserveMessage={form.showGasReserveMessage}
-          showGasReserveInfo={form.showGasReserveInfo}
           currentEstimate={estimate.currentEstimate}
           tokenOutId={form.tokenOut?.id}
           rawBalancesNear={balances.rawBalances.near}

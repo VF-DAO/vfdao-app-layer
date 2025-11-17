@@ -133,7 +133,7 @@ export function useSwapTransaction(): UseSwapTransactionReturn {
         try {
           const { wallet: connectedWallet } = await connector.getConnectedWallet();
           walletInstance = connectedWallet;
-        } catch (err) {
+        } catch {
           setError('Please reconnect your wallet');
           return;
         }

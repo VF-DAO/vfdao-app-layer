@@ -174,6 +174,20 @@ export default tseslint.config(
   },
 
   {
+    // Swap hooks - NEAR wallet connector returns any types
+    files: [
+      'src/features/swap/hooks/useSwapTransaction.ts',
+      'src/features/swap/hooks/useSwapBalances.ts',
+    ],
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+    },
+  },
+
+  {
     // Liquidity components - Ref Finance SDK interactions
     files: ['src/features/liquidity/components/LiquidityCard.tsx'],
     rules: {

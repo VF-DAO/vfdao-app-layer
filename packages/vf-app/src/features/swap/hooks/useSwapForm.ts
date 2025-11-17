@@ -1,7 +1,6 @@
 import { useCallback, useState } from 'react';
 import Big from 'big.js';
 import type { TokenMetadata } from '@/types';
-import { parseTokenAmount } from '@/lib/swap-utils';
 
 export interface UseSwapFormReturn {
   // Token selection
