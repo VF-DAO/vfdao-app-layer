@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Wallet } from 'lucide-react';
 import { useWallet } from '@/features/wallet';
 import { providers } from 'near-api-js';
+import { LoadingDots } from '@/components/ui/loading-dots';
 import Big from 'big.js';
 import { formatTokenAmount } from '@/lib/swap-utils';
 
@@ -235,7 +236,7 @@ export function TokenBalance() {
         <div className="text-left">
           <div className="text-xs text-muted-foreground">VF Balance</div>
           {isLoading ? (
-            <div className="h-5 w-20 bg-muted animate-pulse rounded"></div>
+            <LoadingDots />
           ) : (
             <div className={`font-semibold text-sm sm:text-base transition-opacity ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
               {balance} VF
@@ -247,7 +248,7 @@ export function TokenBalance() {
       <div className="text-left">
         <div className="text-xs text-muted-foreground">USD Value</div>
         {isLoading ? (
-          <div className="h-5 w-16 bg-muted animate-pulse rounded"></div>
+          <LoadingDots />
         ) : (
           <div className={`font-semibold text-sm sm:text-base text-primary transition-opacity ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
             {formatDollarAmount(parseFloat(usdValue))}

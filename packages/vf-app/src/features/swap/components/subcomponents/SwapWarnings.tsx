@@ -2,13 +2,12 @@
 
 import React from 'react';
 import Big from 'big.js';
-import { AlertCircle, Info } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import type { SwapEstimate } from '@/types';
 
 interface SwapWarningsProps {
   accountId: string | null;
   error: string | null;
-  showGasReserveMessage: boolean;
   currentEstimate: SwapEstimate | undefined;
   tokenOutId: string | undefined;
   rawBalancesNear: string | undefined;
@@ -17,7 +16,6 @@ interface SwapWarningsProps {
 export const SwapWarnings: React.FC<SwapWarningsProps> = ({
   accountId,
   error,
-  showGasReserveMessage,
   currentEstimate,
   tokenOutId,
   rawBalancesNear,
@@ -28,28 +26,18 @@ export const SwapWarnings: React.FC<SwapWarningsProps> = ({
     <>
       {/* Error Display */}
       {error && (
-        <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-full shadow-md">
+        <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-full shadow-md animate-in fade-in slide-in-from-top-2 duration-300">
           <AlertCircle className="w-4 h-4 text-red-500" />
           <p className="text-sm sm:text-base text-red-500">{error}</p>
         </div>
       )}
 
-      {/* Gas Reserve Info */}
-      {showGasReserveMessage && (
-        <div className="flex items-start gap-2 p-2 bg-primary/10 rounded-full">
-          <Info className="w-4 h-4 text-primary mt-0.5" />
-          <p className="text-xs text-muted-foreground">
-            Keeping 0.25 NEAR in your wallet for gas fees
-          </p>
-        </div>
-      )}
-
       {/* High Price Impact Warning */}
       {currentEstimate?.priceImpact && currentEstimate.priceImpact > 5 && (
-        <div className="flex items-start gap-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl shadow-md">
-          <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5" />
+        <div className="flex items-start gap-2 p-3 border border-orange/30 rounded-2xl animate-in fade-in slide-in-from-top-2 duration-300">
+          <AlertCircle className="w-4 h-4 text-orange mt-0.5" />
           <div className="flex-1">
-            <p className="text-xs font-medium text-yellow-500">High Price Impact</p>
+            <p className="text-xs font-medium text-orange">High Price Impact</p>
             <p className="text-xs text-muted-foreground mt-1">
               This swap will significantly affect the token price. Consider splitting into
               smaller trades.
@@ -71,16 +59,10 @@ export const SwapWarnings: React.FC<SwapWarningsProps> = ({
         const showKeepToppedUp = isSwappingToNear || !isCritical;
         
         return (
-          <div className={`flex items-start gap-2 p-3 rounded-2xl shadow-md ${
-            isCritical && !isSwappingToNear
-              ? 'bg-yellow-500/10 border border-yellow-500/20' 
-              : 'bg-blue-500/10 border border-blue-500/20'
-          }`}>
-            <AlertCircle className={`w-4 h-4 mt-0.5 ${isCritical && !isSwappingToNear ? 'text-yellow-500' : 'text-blue-500'}`} />
+          <div className="flex items-start gap-2 p-3 border border-orange/30 rounded-2xl text-orange animate-in fade-in slide-in-from-top-2 duration-300">
+            <AlertCircle className="w-4 h-4 mt-0.5 text-orange" />
             <div className="flex-1">
-              <p className={`text-xs font-medium ${
-                isCritical && !isSwappingToNear ? 'text-yellow-500' : 'text-blue-500'
-              }`}>
+              <p className="text-xs font-medium text-orange">
                 {showKeepToppedUp ? 'Keep your wallet topped up' : 'Almost ready to swap'}
               </p>
               <p className="text-xs text-muted-foreground mt-1">

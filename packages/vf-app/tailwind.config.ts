@@ -1,5 +1,6 @@
 import type { Config } from 'tailwindcss';
 import defaultTheme from 'tailwindcss/defaultTheme';
+import tailwindcssAnimate from 'tailwindcss-animate';
 
 const config: Config = {
   darkMode: ['class'],
@@ -48,6 +49,7 @@ const config: Config = {
           foreground: 'hsl(var(--card-foreground) / <alpha-value>)',
         },
         verified: 'hsl(var(--verified) / <alpha-value>)',
+        orange: 'hsl(var(--orange) / <alpha-value>)',
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -57,9 +59,36 @@ const config: Config = {
       fontFamily: {
         sans: ['var(--font-sans)', ...defaultTheme.fontFamily.sans],
       },
+      keyframes: {
+        'scale-in': {
+          '0%': { transform: 'scale(0)', opacity: '0' },
+          '50%': { transform: 'scale(1.1)' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+        'check-in': {
+          '0%': { transform: 'scale(0) rotate(-45deg)', opacity: '0' },
+          '60%': { transform: 'scale(1.2) rotate(5deg)' },
+          '100%': { transform: 'scale(1) rotate(0deg)', opacity: '1' },
+        },
+        shake: {
+          '0%, 100%': { transform: 'translateX(0) rotate(0deg)' },
+          '10%, 30%, 50%, 70%, 90%': { transform: 'translateX(-8px) rotate(-2deg)' },
+          '20%, 40%, 60%, 80%': { transform: 'translateX(8px) rotate(2deg)' },
+        },
+        'fade-in': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+      },
+      animation: {
+        'scale-in': 'scale-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+        'check-in': 'check-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.15s both',
+        shake: 'shake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97)',
+        'fade-in': 'fade-in 0.3s ease-out',
+      },
     },
   },
-  plugins: [],
+  plugins: [tailwindcssAnimate],
 };
 
 export default config;

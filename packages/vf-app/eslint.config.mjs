@@ -188,13 +188,17 @@ export default tseslint.config(
   },
 
   {
-    // Liquidity components - Ref Finance SDK interactions
-    files: ['src/features/liquidity/components/LiquidityCard.tsx'],
+    // Liquidity components and hooks - Ref Finance SDK interactions
+    files: [
+      'src/features/liquidity/components/LiquidityCard.tsx',
+      'src/features/liquidity/hooks/useLiquidityActions.ts',
+    ],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',
       '@typescript-eslint/no-unsafe-call': 'off',
+      'react-hooks/exhaustive-deps': 'off', // Params object is intentionally stable
     },
   },
   

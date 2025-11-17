@@ -14,8 +14,6 @@ import type {
 
 interface UseSwapReturn {
   pools: { loaded: boolean } | null;
-  loading: boolean;
-  error: string | null;
   tokenPrices: Record<string, { price: string; symbol?: string; decimal?: number }>;
   estimateSwapOutput: (
     tokenInId: string,
@@ -68,10 +66,7 @@ async function _getLocalTokenMetadata(tokenId: string) {
 export function useSwap(): UseSwapReturn {
   const { accountId } = useWallet();
   const [pools, setPools] = useState<{ loaded: boolean } | null>(null);
-  const [loading] = useState(false);
-  const [error] = useState<string | null>(null);
   const [tokenPrices, setTokenPrices] = useState<Record<string, { price: string; symbol?: string; decimal?: number }>>({});
-  const [, setPricesLoading] = useState(false);
 
   // Initialize REF SDK with the configured RPC endpoint
   useEffect(() => {
@@ -86,7 +81,6 @@ export function useSwap(): UseSwapReturn {
 
   // Fetch token prices from Ref Finance indexer
   const fetchTokenPrices = useCallback(async () => {
-    setPricesLoading(true);
     try {
       const response = await fetch('https://mainnet-indexer.ref-finance.com/list-token-price', {
         method: 'GET',
@@ -173,8 +167,6 @@ export function useSwap(): UseSwapReturn {
     } catch (_err) {
       console.error('[useSwap] Failed to fetch token prices');
       // Don't set error state for prices, just log it
-    } finally {
-      setPricesLoading(false);
     }
   }, []);
 
@@ -647,8 +639,6 @@ export function useSwap(): UseSwapReturn {
 
   return {
     pools,
-    loading,
-    error,
     tokenPrices,
     estimateSwapOutput,
     executeSwap,

@@ -96,6 +96,7 @@ export function useSwapForm(): UseSwapFormReturn {
     setEstimatedOutDisplay('');
     setRawEstimatedOut('');
     setIsRateReversed(false);
+    setShowGasReserveMessage(false); // Reset gas reserve message when swapping tokens
     setLastUserInteraction(Date.now());
   }, [tokenIn, tokenOut]);
 

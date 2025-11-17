@@ -230,31 +230,25 @@ export function useSwapTransaction(): UseSwapTransactionReturn {
               
               const status = result.status;
               if (status.SuccessValue ?? status.SuccessReceiptId) {
-                // Small delay to allow balances to update on-chain before showing success modal
-                successTimeoutRef.current = setTimeout(() => {
-                  setSwapState('success');
-                  setTx(txHash);
-                  onSuccess?.();
-                }, 1500);
+                // Show modal immediately - balance loading handled by useSwapBalances hook
+                setSwapState('success');
+                setTx(txHash);
+                onSuccess?.();
               } else if (status.Failure) {
                 console.error('[SwapTransaction] Transaction failed on chain:', status.Failure);
                 setSwapState('fail');
                 setError(`Transaction failed: ${JSON.stringify(status.Failure)}`);
               } else {
-                // Small delay to allow balances to update on-chain before showing success modal
-                successTimeoutRef.current = setTimeout(() => {
-                  setSwapState('success');
-                  setTx(txHash);
-                  onSuccess?.();
-                }, 1500);
-              }
-            } catch {
-              // Small delay to allow balances to update on-chain before showing success modal
-              successTimeoutRef.current = setTimeout(() => {
+                // Show modal immediately - balance loading handled by useSwapBalances hook
                 setSwapState('success');
                 setTx(txHash);
                 onSuccess?.();
-              }, 1500);
+              }
+            } catch {
+              // Show modal immediately - balance loading handled by useSwapBalances hook
+              setSwapState('success');
+              setTx(txHash);
+              onSuccess?.();
             }
           } else {
             setSwapState('waitingForConfirmation');
@@ -273,8 +267,8 @@ export function useSwapTransaction(): UseSwapTransactionReturn {
           setError('Wallet popup blocked. Please allow popups for this site and try again.');
           setSwapState('fail');
         } else if (isUserCancellation(err)) {
-          setError('Transaction cancelled');
           setSwapState('cancelled');
+          // Don't set error for cancellation - modal is enough
         } else {
           console.error('[SwapTransaction] Swap error:', err);
           setError(errorMessage ?? 'Transaction failed');

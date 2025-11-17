@@ -29,7 +29,8 @@ import { SwapDetails, SwapForm, SwapWarnings } from './subcomponents';
 import { Button } from '@/components/ui/button';
 import { TransactionCancelledModal, TransactionFailureModal, TransactionSuccessModal } from '@/components/ui/transaction-modal';
 import { SlippageSettings } from '@/features/liquidity/components/subcomponents/SlippageSettings';
-import { AlertCircle, Loader2, Settings } from 'lucide-react';
+import { Info, Settings } from 'lucide-react';
+import { LoadingDots } from '@/components/ui/loading-dots';
 import { getMainnetTokens, SLIPPAGE_PRESETS } from '@/lib/swap-utils';
 import Logo from '@/components/ui/logo';
 import type { TokenMetadata } from '@/types';
@@ -37,8 +38,6 @@ import type { TokenMetadata } from '@/types';
 export const RefFinanceSwapCard: React.FC = () => {
   const { accountId, wallet } = useWallet();
   const {
-    loading,
-    error: swapError,
     tokenPrices,
     estimateSwapOutput,
     executeSwap,
@@ -54,6 +53,11 @@ export const RefFinanceSwapCard: React.FC = () => {
 
   // Track if we've already fetched balances for current success state
   const balancesFetchedRef = useRef(false);
+  
+  // Snapshot of final values to show in success modal (prevents flickering)
+  const [finalBalance, setFinalBalance] = useState<string | null>(null);
+  const [finalReceivedAmount, setFinalReceivedAmount] = useState<string | null>(null);
+  const [finalSwapRate, setFinalSwapRate] = useState<React.ReactNode | null>(null);
 
   // Use swap estimate hook
   const estimate = useSwapEstimate(
@@ -121,6 +125,9 @@ export const RefFinanceSwapCard: React.FC = () => {
     if (transaction.swapState === 'success' && !balancesFetchedRef.current) {
       balancesFetchedRef.current = true;
       
+      // Set loading state immediately
+      balances.setLoadingState(true);
+      
       // Invalidate both tokenIn and tokenOut balances to ensure fresh data
       if (form.tokenIn) {
         balances.invalidateBalance(form.tokenIn.id);
@@ -129,18 +136,32 @@ export const RefFinanceSwapCard: React.FC = () => {
         balances.invalidateBalance(form.tokenOut.id);
       }
       
-      // Fetch fresh balances immediately
-      void balances.fetchBalances().then(() => {
-        if (typeof window !== 'undefined' && (window as any).refreshTokenBalance) {
-          (window as any).refreshTokenBalance();
-        }
-      }).catch((error) => {
-        console.warn('[SwapWidget] Failed to fetch balances after swap success:', error);
-      });
+      // Wait 1.5s for on-chain state to propagate, then fetch fresh balances
+      setTimeout(() => {
+        void balances.fetchBalances().then((freshBalances) => {
+          // Capture final balance for the success modal (exactly like liquidity captures finalUserShares)
+          if (form.tokenOut && freshBalances[form.tokenOut.id]) {
+            setFinalBalance(freshBalances[form.tokenOut.id]);
+          }
+          
+          // Refresh both TokenBalance and PortfolioDashboard components
+          if (typeof window !== 'undefined') {
+            if ((window as any).refreshTokenBalance) {
+              (window as any).refreshTokenBalance();
+            }
+            if ((window as any).refreshPortfolioDashboard) {
+              (window as any).refreshPortfolioDashboard();
+            }
+          }
+        }).catch((error) => {
+          console.warn('[SwapWidget] Failed to fetch balances after swap success:', error);
+        });
+      }, 1500);
     }
     // Reset the ref when transaction state changes away from success
     if (transaction.swapState !== 'success') {
       balancesFetchedRef.current = false;
+      setFinalBalance(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transaction.swapState]);
@@ -157,6 +178,46 @@ export const RefFinanceSwapCard: React.FC = () => {
   const handleSwap = async () => {
     if (!form.tokenIn || !form.tokenOut || !form.amountIn) {
       return;
+    }
+
+    // Capture the received amount and rate before transaction to prevent them from changing in the modal
+    if (form.estimatedOutDisplay) {
+      setFinalReceivedAmount(form.estimatedOutDisplay);
+    }
+
+    // Capture the swap rate
+    if (form.amountIn && form.rawEstimatedOut && form.tokenIn && form.tokenOut) {
+      try {
+        const fromAmount = parseFloat(form.amountIn);
+        const toAmount = parseFloat(form.rawEstimatedOut) / Math.pow(10, form.tokenOut.decimals);
+        const rate = toAmount / fromAmount;
+        const bigValue = new Big(rate);
+        const numValue = bigValue.toNumber();
+        
+        let rateDisplay: React.ReactNode;
+        if (numValue >= 0.0001) {
+          rateDisplay = <span>{toInternationalCurrencySystemLongString(bigValue.toString(), 4)}</span>;
+        } else {
+          const fixedStr = bigValue.toFixed(20);
+          const decimalPart = fixedStr.split('.')[1] || '';
+          const firstNonZeroIndex = decimalPart.search(/[1-9]/);
+          if (firstNonZeroIndex === -1) {
+            rateDisplay = <span>0.0000</span>;
+          } else {
+            const zerosCount = firstNonZeroIndex;
+            const significantDigits = decimalPart.slice(firstNonZeroIndex, firstNonZeroIndex + 4);
+            rateDisplay = (
+              <span>
+                0.0<span className="text-primary text-[10px]">{zerosCount}</span>{significantDigits}
+              </span>
+            );
+          }
+        }
+        setFinalSwapRate(rateDisplay);
+      } catch {
+        const rate = parseFloat(form.estimatedOut || '0') / parseFloat(form.amountIn);
+        setFinalSwapRate(<span>{rate.toFixed(4)}</span>);
+      }
     }
 
     await transaction.executeSwapTransaction(
@@ -241,27 +302,6 @@ export const RefFinanceSwapCard: React.FC = () => {
           />
         )}
 
-        {/* Pool Loading State */}
-        {loading && (
-          <div className="flex items-center gap-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-full shadow-md">
-            <span 
-              className="inline-flex items-center justify-center" 
-              style={{ transform: 'none', willChange: 'auto', backfaceVisibility: 'visible' }}
-            >
-              <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
-            </span>
-            <p className="text-sm sm:text-base text-blue-500">Loading liquidity pools...</p>
-          </div>
-        )}
-
-        {/* Pool Error State */}
-        {swapError && (
-          <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-full shadow-md">
-            <AlertCircle className="w-4 h-4 text-red-500" />
-            <p className="text-sm sm:text-base text-red-500">Failed to load pools: {swapError}</p>
-          </div>
-        )}
-
         {/* Swap Form */}
         <SwapForm
           tokenIn={form.tokenIn}
@@ -299,7 +339,6 @@ export const RefFinanceSwapCard: React.FC = () => {
         <SwapWarnings
           accountId={accountId}
           error={transaction.error}
-          showGasReserveMessage={form.showGasReserveMessage}
           currentEstimate={estimate.currentEstimate}
           tokenOutId={form.tokenOut?.id}
           rawBalancesNear={balances.rawBalances.near}
@@ -321,10 +360,17 @@ export const RefFinanceSwapCard: React.FC = () => {
               formatDollarAmount={formatDollarAmount}
               accountId={accountId}
             />
-            <p className="text-center text-[11px] text-muted-foreground">
-              Live quotes refresh every 10 seconds
-            </p>
           </>
+        )}
+
+        {/* Gas Reserve Info */}
+        {form.showGasReserveMessage && accountId && (
+          <div className="flex items-start gap-2 p-2 bg-primary/10 rounded-full">
+            <Info className="w-4 h-4 text-primary mt-0.5" />
+            <p className="text-xs text-muted-foreground">
+              Keeping 0.25 NEAR in your wallet for gas fees
+            </p>
+          </div>
         )}
 
         {/* Swap Button */}
@@ -347,22 +393,6 @@ export const RefFinanceSwapCard: React.FC = () => {
           size="lg"
           className="w-full font-bold"
         >
-          {transaction.isSwapping && (
-            <span 
-              className="inline-flex items-center justify-center mr-2 relative" 
-              style={{ transform: 'none', willChange: 'auto', backfaceVisibility: 'visible' }}
-            >
-              <Loader2 className="w-5 h-5 animate-spin" />
-            </span>
-          )}
-          {!transaction.isSwapping && !isAutoRefreshingEstimate && estimate.isEstimating && (
-            <span 
-              className="inline-flex items-center justify-center mr-2 relative" 
-              style={{ transform: 'none', willChange: 'auto', backfaceVisibility: 'visible' }}
-            >
-              <Loader2 className="w-5 h-5 animate-spin" />
-            </span>
-          )}
           <span className={
             (() => {
               try {
@@ -378,17 +408,10 @@ export const RefFinanceSwapCard: React.FC = () => {
               }
             })()
           }>
-            {transaction.isSwapping ? 'Swapping...' : isAutoRefreshingEstimate ? (
-              <span className="inline-flex items-center justify-center gap-1">
-                {[0, 1, 2].map((dot) => (
-                  <span
-                    key={`refresh-dot-${dot}`}
-                    className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-pulse"
-                    style={{ animationDelay: `${dot * 120}ms` }}
-                    aria-hidden="true"
-                  />
-                ))}
-              </span>
+            {transaction.isSwapping ? (
+              <LoadingDots />
+            ) : isAutoRefreshingEstimate ? (
+              <LoadingDots />
             ) : isManualEstimating ? 'Finding best route...' : 
              form.showGasReserveInfo
                ? 'Need 0.25N for gas' :
@@ -429,48 +452,16 @@ export const RefFinanceSwapCard: React.FC = () => {
           title="Swap Successful!"
           details={[
             ...(form.amountIn && form.tokenIn ? [{ label: 'Swapped', value: `${form.amountIn} ${form.tokenIn.symbol}` }] : []),
-            ...(form.estimatedOut && form.tokenOut ? [{ label: 'Received', value: `${form.estimatedOutDisplay} ${form.tokenOut.symbol}` }] : []),
+            ...(form.tokenOut && finalReceivedAmount ? [{ label: 'Received', value: `${finalReceivedAmount} ${form.tokenOut.symbol}` }] : []),
             ...(form.tokenOut ? [{
               label: 'New Balance',
-              value: balances.balances[form.tokenOut.id] ? (
-                `${balances.balances[form.tokenOut.id]} ${form.tokenOut.symbol}`
-              ) : (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              )
+              value: finalBalance ? `${finalBalance} ${form.tokenOut.symbol}` : <LoadingDots />
             }] : []),
-            ...(form.tokenIn && form.tokenOut && form.amountIn && form.estimatedOut ? [{
+            ...(form.tokenIn && form.tokenOut && finalSwapRate ? [{
               label: '',
               value: (
                 <div className="text-center text-xs text-muted-foreground">
-                  Rate: 1 {form.tokenIn.symbol} ≈ {(() => {
-                    try {
-                      const fromAmount = parseFloat(form.amountIn);
-                      const toAmount = parseFloat(form.rawEstimatedOut) / Math.pow(10, form.tokenOut?.decimals || 18);
-                      const rate = toAmount / fromAmount;
-                      const bigValue = new Big(rate);
-                      const numValue = bigValue.toNumber();
-                      if (numValue >= 0.0001) {
-                        return <span>{toInternationalCurrencySystemLongString(bigValue.toString(), 4)}</span>;
-                      } else {
-                        const fixedStr = bigValue.toFixed(20);
-                        const decimalPart = fixedStr.split('.')[1] || '';
-                        const firstNonZeroIndex = decimalPart.search(/[1-9]/);
-                        if (firstNonZeroIndex === -1) {
-                          return <span>0.0000</span>;
-                        }
-                        const zerosCount = firstNonZeroIndex;
-                        const significantDigits = decimalPart.slice(firstNonZeroIndex, firstNonZeroIndex + 4);
-                        return (
-                          <span>
-                            0.0<span className="text-primary text-[10px]">{zerosCount}</span>{significantDigits}
-                          </span>
-                        );
-                      }
-                    } catch {
-                      const rate = parseFloat(form.estimatedOut) / parseFloat(form.amountIn);
-                      return rate.toFixed(4);
-                    }
-                  })()} {form.tokenOut.symbol}
+                  Rate: 1 {form.tokenIn.symbol} ≈ {finalSwapRate} {form.tokenOut.symbol}
                 </div>
               )
             }] : [])
@@ -479,6 +470,9 @@ export const RefFinanceSwapCard: React.FC = () => {
           onClose={() => {
             transaction.resetTransactionState();
             form.resetForm();
+            setFinalBalance(null);
+            setFinalReceivedAmount(null);
+            setFinalSwapRate(null);
           }}
         />
       )}

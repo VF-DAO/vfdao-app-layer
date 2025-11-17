@@ -5,6 +5,7 @@ interface UseWalletBalancesResult {
   rawBalances: Record<string, string>;
   isLoadingBalances: boolean;
   refetchBalances: () => Promise<void>;
+  setLoadingState: (loading: boolean) => void;
 }
 
 export function useWalletBalances(accountId: string | null): UseWalletBalancesResult {
@@ -81,5 +82,6 @@ export function useWalletBalances(accountId: string | null): UseWalletBalancesRe
     rawBalances,
     isLoadingBalances,
     refetchBalances: fetchBalances,
+    setLoadingState: setIsLoadingBalances,
   };
 }

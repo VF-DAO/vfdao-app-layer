@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertCircle, CheckCircle2, ExternalLink, Info } from 'lucide-react';
+import { Check, ExternalLink, X, XCircle } from 'lucide-react';
 import { Button } from './button';
 import type {
   TransactionCancelledModalProps,
@@ -12,8 +12,8 @@ import type {
  */
 function TransactionModalWrapper({ children, onClose: _onClose }: { children: React.ReactNode; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 max-w-md w-full shadow-xl">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+      <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 max-w-md w-full shadow-xl animate-in zoom-in-95 duration-300">
         <div className="text-center space-y-4">{children}</div>
       </div>
     </div>
@@ -26,14 +26,14 @@ function TransactionModalWrapper({ children, onClose: _onClose }: { children: Re
 export function TransactionSuccessModal({ title, details, tx, onClose, children }: TransactionSuccessModalProps) {
   return (
     <TransactionModalWrapper onClose={onClose}>
-      <div className="w-12 h-12 sm:w-16 sm:h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto">
-        <CheckCircle2 className="w-6 h-6 sm:w-8 sm:h-8 text-green-500" />
+      <div className="w-12 h-12 sm:w-16 sm:h-16 bg-secondary/20 rounded-full flex items-center justify-center mx-auto animate-scale-in">
+        <Check className="w-6 h-6 sm:w-8 sm:h-8 text-secondary animate-check-in" />
       </div>
       
-      <h3 className="text-base sm:text-lg font-bold">{title}</h3>
+      <h3 className="text-base sm:text-lg font-bold animate-fade-in">{title}</h3>
 
       {details && details.length > 0 && (
-        <div className="space-y-2 text-xs sm:text-sm">
+        <div className="space-y-2 text-xs sm:text-sm animate-fade-in">
           {details.map((detail, index) => (
             <div
               key={index}
@@ -72,13 +72,13 @@ export function TransactionSuccessModal({ title, details, tx, onClose, children 
 export function TransactionFailureModal({ error, onClose }: TransactionFailureModalProps) {
   return (
     <TransactionModalWrapper onClose={onClose}>
-      <div className="w-12 h-12 sm:w-16 sm:h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto">
-        <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 text-red-500" />
+      <div className="w-12 h-12 sm:w-16 sm:h-16 bg-orange/20 rounded-full flex items-center justify-center mx-auto animate-shake">
+        <XCircle className="w-6 h-6 sm:w-8 sm:h-8 text-orange" />
       </div>
       
-      <h3 className="text-base sm:text-lg font-bold">Transaction Failed</h3>
+      <h3 className="text-base sm:text-lg font-bold animate-fade-in">Transaction Failed</h3>
       
-      {error && <p className="text-xs sm:text-sm text-muted-foreground">{error}</p>}
+      {error && <p className="text-xs sm:text-sm text-muted-foreground animate-fade-in">{error}</p>}
 
       <Button onClick={onClose} variant="destructive" className="w-full py-2 sm:py-3">
         Close
@@ -97,13 +97,13 @@ export function TransactionCancelledModal({
 }: TransactionCancelledModalProps) {
   return (
     <TransactionModalWrapper onClose={onClose}>
-      <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto">
-        <Info className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500" />
+      <div className="w-12 h-12 sm:w-16 sm:h-16 bg-verified/20 rounded-full flex items-center justify-center mx-auto animate-scale-in">
+        <X className="w-6 h-6 sm:w-8 sm:h-8 text-verified" />
       </div>
       
-      <h3 className="text-base sm:text-lg font-bold">{title}</h3>
+      <h3 className="text-base sm:text-lg font-bold animate-fade-in">{title}</h3>
       
-      <p className="text-xs sm:text-sm text-muted-foreground">{message}</p>
+      <p className="text-xs sm:text-sm text-muted-foreground animate-fade-in">{message}</p>
 
       <Button onClick={onClose} variant="verified" className="w-full py-2 sm:py-3 font-bold">
         Close

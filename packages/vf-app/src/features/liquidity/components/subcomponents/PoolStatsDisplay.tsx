@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { Settings } from 'lucide-react';
 import { formatDollarAmount } from '../../utils';
 import { formatTokenAmount } from '@/lib/swap-utils';
+import { LoadingDots } from '@/components/ui/loading-dots';
 import type { PoolInfo, PoolStats } from '@/types';
 
 interface PoolStatsDisplayProps {
@@ -86,27 +87,19 @@ export function PoolStatsDisplay({
             <div className="flex items-center justify-center gap-4 text-sm pb-3 border-b border-border/30">
               <div className="flex items-center gap-1.5">
                 <span className="text-muted-foreground">NEAR:</span>
-                <span
-                  className={`font-semibold text-primary transition-opacity ${
-                    hasLoadedPoolStats ? 'opacity-100' : 'opacity-50'
-                  }`}
-                >
+                <span className="font-semibold text-primary">
                   {hasLoadedPoolStats
                     ? formatTokenAmount(poolInfo.reserves[poolInfo.token1.id], poolInfo.token1.decimals, 2)
-                    : '-'}
+                    : <LoadingDots size="xs" />}
                 </span>
               </div>
               <span className="text-muted-foreground">•</span>
               <div className="flex items-center gap-1.5">
                 <span className="text-muted-foreground">VF:</span>
-                <span
-                  className={`font-semibold text-primary transition-opacity ${
-                    hasLoadedPoolStats ? 'opacity-100' : 'opacity-50'
-                  }`}
-                >
+                <span className="font-semibold text-primary">
                   {hasLoadedPoolStats
                     ? formatTokenAmount(poolInfo.reserves[poolInfo.token2.id], poolInfo.token2.decimals, 2)
-                    : '-'}
+                    : <LoadingDots size="xs" />}
                 </span>
               </div>
             </div>
@@ -116,11 +109,7 @@ export function PoolStatsDisplay({
               {/* TVL */}
               <div className="text-center">
                 <p className="text-muted-foreground mb-0.5">TVL</p>
-                <p
-                  className={`font-semibold text-primary transition-opacity ${
-                    hasLoadedPoolStats ? 'opacity-100' : 'opacity-50'
-                  }`}
-                >
+                <div className="font-semibold text-primary">
                   {hasLoadedPoolStats
                     ? (() => {
                         const token1Price =
@@ -142,18 +131,14 @@ export function PoolStatsDisplay({
                         }
                         return '-';
                       })()
-                    : '-'}
-                </p>
+                    : <LoadingDots size="xs" />}
+                </div>
               </div>
 
               {/* Volume (24h) */}
               <div className="text-center">
                 <p className="text-muted-foreground mb-0.5">Volume</p>
-                <p
-                  className={`font-semibold text-primary transition-opacity ${
-                    hasLoadedPoolStats ? 'opacity-100' : 'opacity-50'
-                  }`}
-                >
+                <div className="font-semibold text-primary">
                   {hasLoadedPoolStats
                     ? (() => {
                         const vol = Number(poolStats.volume24h);
@@ -161,18 +146,14 @@ export function PoolStatsDisplay({
                         if (vol < 0.01) return '<$0.01';
                         return formatDollarAmount(vol);
                       })()
-                    : '-'}
-                </p>
+                    : <LoadingDots size="xs" />}
+                </div>
               </div>
 
               {/* Fee (24h) */}
               <div className="text-center">
                 <p className="text-muted-foreground mb-0.5">Fee(24h)</p>
-                <p
-                  className={`font-semibold text-primary transition-opacity ${
-                    hasLoadedPoolStats ? 'opacity-100' : 'opacity-50'
-                  }`}
-                >
+                <div className="font-semibold text-primary">
                   {hasLoadedPoolStats
                     ? (() => {
                         const fee = Number(poolStats.fee24h);
@@ -180,26 +161,22 @@ export function PoolStatsDisplay({
                         if (fee < 0.01) return '<$0.01';
                         return formatDollarAmount(fee);
                       })()
-                    : '-'}
-                </p>
+                    : <LoadingDots size="xs" />}
+                </div>
               </div>
 
               {/* APY */}
               <div className="text-center">
                 <p className="text-muted-foreground mb-0.5">APY</p>
-                <p
-                  className={`font-semibold text-primary transition-opacity ${
-                    hasLoadedPoolStats ? 'opacity-100' : 'opacity-50'
-                  }`}
-                >
+                <div className="font-semibold text-primary">
                   {hasLoadedPoolStats
                     ? (() => {
                         if (poolStats.apy === 0) return '0%';
                         if (poolStats.apy < 0.01) return '<0.01%';
                         return `${poolStats.apy.toFixed(2)}%`;
                       })()
-                    : '-'}
-                </p>
+                    : <LoadingDots size="xs" />}
+                </div>
               </div>
             </div>
           </div>

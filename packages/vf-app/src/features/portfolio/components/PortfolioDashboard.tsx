@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Leaf, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useWallet } from '@/features/wallet';
+import { LoadingDots } from '@/components/ui/loading-dots';
 import { providers } from 'near-api-js';
 import Big from 'big.js';
 import { formatTokenAmount } from '@/lib/swap-utils';
@@ -398,10 +399,7 @@ export function PortfolioDashboard() {
                   <p className="text-xs text-muted-foreground">VF</p>
                   <div className="h-[32px] flex flex-col justify-center">
                     {isLoading ? (
-                      <div className="space-y-0.5 animate-pulse">
-                        <div className="h-[18px] w-16 bg-muted rounded"></div>
-                        <div className="h-[14px] w-12 bg-muted rounded"></div>
-                      </div>
+                      <LoadingDots />
                     ) : (
                       <div className={`transition-opacity ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
                         <p className="text-sm sm:text-base font-bold text-foreground truncate">{vfBalance}</p>
@@ -462,10 +460,7 @@ export function PortfolioDashboard() {
                   <p className="text-xs text-muted-foreground">Pool</p>
                   <div className="h-[32px] flex flex-col justify-center">
                     {isLoading ? (
-                      <div className="space-y-0.5 animate-pulse">
-                        <div className="h-[18px] w-16 bg-muted rounded"></div>
-                        <div className="h-[14px] w-12 bg-muted rounded"></div>
-                      </div>
+                      <LoadingDots />
                     ) : (
                       <div className={`transition-opacity ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
                         <p className="text-sm sm:text-base font-bold text-foreground truncate">{lpShares}</p>
@@ -493,7 +488,7 @@ export function PortfolioDashboard() {
                   <p className="text-xs text-muted-foreground">Total</p>
                   <div className="h-[18px] flex items-center">
                     {isLoading ? (
-                      <div className="h-[18px] w-20 bg-muted animate-pulse rounded"></div>
+                      <LoadingDots />
                     ) : (
                       <div className={`transition-opacity ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
                         <p className="text-sm sm:text-base font-bold text-primary truncate">

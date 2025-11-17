@@ -7,7 +7,7 @@ export interface UseSwapBalancesReturn {
   balances: Record<string, string>;
   rawBalances: Record<string, string>;
   isLoadingBalances: boolean;
-  fetchBalances: () => Promise<void>;
+  fetchBalances: () => Promise<Record<string, string>>;
   resetBalances: () => void;
   setLoadingState: (loading: boolean) => void;
   invalidateBalance: (tokenId: string) => void;
@@ -26,7 +26,7 @@ export function useSwapBalances(
   // Fetch token balances
   const fetchBalances = useCallback(async () => {
     if (!accountId || !wallet) {
-      return;
+      return {};
     }
 
     setIsLoadingBalances(true);
@@ -76,8 +76,10 @@ export function useSwapBalances(
 
       setBalances(newBalances);
       setRawBalances(newRawBalances);
+      return newBalances;
     } catch (err) {
       console.error('Failed to fetch balances:', err);
+      return {};
     } finally {
       setIsLoadingBalances(false);
     }

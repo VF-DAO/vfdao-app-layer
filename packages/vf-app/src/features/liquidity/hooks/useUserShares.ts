@@ -4,15 +4,20 @@ import { providers } from 'near-api-js';
 interface UseUserSharesResult {
   userShares: string;
   isLoadingShares: boolean;
-  refetchShares: () => Promise<void>;
+  refetchShares: () => Promise<string>;
+  setLoadingState: (loading: boolean) => void;
 }
 
 export function useUserShares(poolId: number, accountId: string | null): UseUserSharesResult {
   const [userShares, setUserShares] = useState('0');
   const [isLoadingShares, setIsLoadingShares] = useState(false);
 
-  const fetchUserShares = useCallback(async () => {
-    if (!accountId) return;
+  const fetchUserShares = useCallback(async (): Promise<string> => {
+    if (!accountId) {
+      setUserShares('0');
+      setIsLoadingShares(false);
+      return '0';
+    }
 
     setIsLoadingShares(true);
     try {
@@ -36,7 +41,7 @@ export function useUserShares(poolId: number, accountId: string | null): UseUser
 
         const shares = JSON.parse(Buffer.from(sharesResult.result).toString()) as string;
         setUserShares(shares);
-        return;
+        return shares;
       } catch {
         // Fallback to mft_balance_of (alternative method)
         const mftResult = (await provider.query({
@@ -54,10 +59,12 @@ export function useUserShares(poolId: number, accountId: string | null): UseUser
 
         const shares = JSON.parse(Buffer.from(mftResult.result).toString()) as string;
         setUserShares(shares);
+        return shares;
       }
     } catch (error) {
       console.error('[useUserShares] Failed to fetch user shares (both methods):', error);
       setUserShares('0');
+      return '0';
     } finally {
       setIsLoadingShares(false);
     }
@@ -77,5 +84,6 @@ export function useUserShares(poolId: number, accountId: string | null): UseUser
     userShares,
     isLoadingShares,
     refetchShares: fetchUserShares,
+    setLoadingState: setIsLoadingShares,
   };
 }
