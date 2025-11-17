@@ -1,51 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Transaction } from '@ref-finance/ref-sdk';
 import { init_env } from '@ref-finance/ref-sdk';
-import { useWallet } from '@/contexts/wallet-context';
+import { useWallet } from '@/features/wallet';
 import { getTokenMetadata, MAINNET_TOKENS } from '@/lib/swap-utils';
 import Big from 'big.js';
-
-interface PoolData {
-  token_account_ids: string[];
-  amounts: string[];
-  total_fee: number;
-  shares_total_supply: string;
-  tvl: string;
-  token0_ref_price: string;
-  pool_kind?: string;
-}
-
-interface RpcResponse {
-  jsonrpc: '2.0';
-  id: string | number;
-  result?: { result: Uint8Array };
-  error?: {
-    code: number;
-    message: string;
-    data?: unknown;
-  };
-}
-
-interface FunctionCall {
-  methodName: string;
-  args: Record<string, unknown>;
-  gas: string;
-  amount: string;
-}
-
-interface NearTransaction {
-  receiverId: string;
-  functionCalls: FunctionCall[];
-}
-
-export interface SwapEstimate {
-  outputAmount: string;
-  priceImpact: number;
-  route: { pool_id: number }[];
-  fee: number;
-  minReceived?: string;
-  highImpact?: boolean;
-}
+import type {
+  FunctionCall,
+  NearTransaction,
+  PoolDataRaw,
+  RpcResponse,
+  SwapEstimate,
+} from '@/types';
 
 interface UseSwapReturn {
   pools: { loaded: boolean } | null;
@@ -170,7 +135,7 @@ export function useSwap(): UseSwapReturn {
               console.warn('[useSwap] No result in pool response');
               return;
             }
-            const pool = JSON.parse(Buffer.from(poolData.result.result).toString()) as PoolData;
+            const pool = JSON.parse(Buffer.from(poolData.result.result).toString()) as PoolDataRaw;
             
             // Find token indices
             const nearIndex = pool.token_account_ids.indexOf('wrap.near');
@@ -280,7 +245,7 @@ export function useSwap(): UseSwapReturn {
           return null;
         }
         
-        const pool = JSON.parse(Buffer.from(data.result.result).toString()) as PoolData;
+        const pool = JSON.parse(Buffer.from(data.result.result).toString()) as PoolDataRaw;
 
         // Find token indices
         const tokenInIndex = pool.token_account_ids.indexOf(tokenInId === 'near' ? 'wrap.near' : tokenInId);

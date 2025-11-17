@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Leaf, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useWallet } from '@/contexts/wallet-context';
+import { useWallet } from '@/features/wallet';
 import { providers } from 'near-api-js';
 import Big from 'big.js';
 import { formatTokenAmount } from '@/lib/swap-utils';
@@ -509,3 +509,5 @@ export function PortfolioDashboard() {
     </div>
   );
 }
+
+export default PortfolioDashboard;

@@ -2,10 +2,10 @@
 
 import { ArrowLeftRight, Droplets } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { RheaSwapWidget } from '@/components/swap/SwapWidget';
-import { PortfolioDashboard } from '@/components/portfolio-dashboard';
-import { LiquidityCard } from '@/components/liquidity/LiquidityCard';
-import { useWallet } from '@/contexts/wallet-context';
+import { RheaSwapWidget } from '@/features/swap/components/SwapWidget';
+import { PortfolioDashboard } from '@/features/portfolio';
+import { LiquidityCard } from '@/features/liquidity';
+import { useWallet } from '@/features/wallet';
 
 export default function Home() {
   const { accountId, isConnected, isLoading } = useWallet();

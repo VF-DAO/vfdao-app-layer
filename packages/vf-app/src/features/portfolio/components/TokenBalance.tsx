@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Wallet } from 'lucide-react';
-import { useWallet } from '@/contexts/wallet-context';
+import { useWallet } from '@/features/wallet';
 import { providers } from 'near-api-js';
 import Big from 'big.js';
 import { formatTokenAmount } from '@/lib/swap-utils';

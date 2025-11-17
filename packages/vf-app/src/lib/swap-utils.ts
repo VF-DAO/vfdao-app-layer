@@ -1,34 +1,10 @@
 import { providers } from 'near-api-js';
 import Big from 'big.js';
-
-/**
- * Near RPC query response interface
- */
-interface NearRpcQueryResponse {
-  result: Uint8Array;
-}
-
-/**
- * Storage balance bounds interface
- */
-interface StorageBalanceBounds {
-  min: string;
-  max?: string;
-}
-
-/**
- * Token metadata interface (NEP-141 standard)
- */
-export interface TokenMetadata {
-  id: string;
-  name: string;
-  symbol: string;
-  decimals: number;
-  icon?: string;
-  reference?: string;
-  reference_hash?: string;
-  spec?: string;
-}
+import type {
+  NearRpcQueryResponse,
+  StorageBalanceBounds,
+  TokenMetadata,
+} from '@/types';
 
 /**
  * Storage deposit configuration - Ref Finance pattern

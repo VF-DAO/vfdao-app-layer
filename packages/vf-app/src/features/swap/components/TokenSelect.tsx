@@ -4,21 +4,14 @@ import React, { useMemo, useState } from 'react';
 import { Search, X } from 'lucide-react';
 import Image from 'next/image';
 import { MAINNET_TOKENS } from '@/lib/swap-utils';
-
-interface Token {
-  id: string;
-  symbol: string;
-  name: string;
-  decimals: number;
-  icon?: string;
-}
+import type { TokenMetadata } from '@/types';
 
 interface TokenSelectProps {
-  selectedToken?: Token;
-  onSelectToken: (token: Token) => void;
-  otherToken?: Token;
+  selectedToken?: TokenMetadata;
+  onSelectToken: (token: TokenMetadata) => void;
+  otherToken?: TokenMetadata;
   label?: string;
-  tokens?: Token[];
+  tokens?: TokenMetadata[];
 }
 
 export function TokenSelect({
@@ -54,7 +47,7 @@ export function TokenSelect({
     return tokenList;
   }, [searchQuery, otherToken, tokens]);
 
-  const handleSelect = (token: Token) => {
+  const handleSelect = (token: TokenMetadata) => {
     onSelectToken(token);
     setIsOpen(false);
     setSearchQuery('');

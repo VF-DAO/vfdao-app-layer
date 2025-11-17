@@ -39,7 +39,10 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const volume = await response.json() as number;
+    const volumeData = await response.json() as number | number[];
+    
+    // Handle both array and number responses from Ref Finance API
+    const volume = Array.isArray(volumeData) ? volumeData[0] : volumeData;
     
     return NextResponse.json({
       pool_id: poolId,

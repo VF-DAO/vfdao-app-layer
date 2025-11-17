@@ -6,9 +6,9 @@ import type { ReactNode } from 'react';
 type NearConnector = any;
 type NearWalletBase = any;
 
-interface WalletContextType {
-  connector: NearConnector | null;
-  wallet: NearWalletBase | null;
+export interface WalletContextType {
+  connector: NearConnector;
+  wallet: NearWalletBase;
   accounts: { accountId: string }[];
   accountId: string | null;
   isConnected: boolean;
@@ -24,8 +24,12 @@ const WalletContext = createContext<WalletContextType>({
   accountId: null,
   isConnected: false,
   isLoading: true,
-  signIn: async () => {},
-  signOut: async () => {},
+  signIn: async () => {
+    // Placeholder - implemented in provider
+  },
+  signOut: async () => {
+    // Placeholder - implemented in provider
+  },
 });
 
 export function useWallet() {
@@ -68,10 +72,10 @@ export function WalletProvider({
       } catch (error) {
         // Handle user cancellation gracefully - this is normal behavior, not an error
         if (error instanceof Error && (error.message === 'User rejected' || error.message === 'Wallet closed')) {
-          console.log('[WalletContext] User cancelled wallet connection');
+          console.warn('[WalletContext] User cancelled wallet connection');
         } else if (error === null || error === undefined) {
           // User cancelled without throwing a specific error - this is normal
-          console.log('[WalletContext] Wallet connection cancelled');
+          console.warn('[WalletContext] Wallet connection cancelled');
         } else {
           // Only log actual errors (network issues, invalid config, etc.)
           console.error('[WalletContext] Failed to connect wallet:', error);
@@ -119,10 +123,10 @@ export function WalletProvider({
         });
 
         // Listen for sign in events
-        _connector.on('wallet:signIn', async (event: any) => {
+        _connector.on('wallet:signIn', async (event: { accounts: { accountId: string }[] }) => {
           const connectedWallet = await _connector.wallet();
           setWallet(connectedWallet);
-          setAccounts(event.accounts.map((acc: any) => ({ accountId: acc.accountId })));
+          setAccounts(event.accounts.map((acc) => ({ accountId: acc.accountId })));
           setAccountId(event.accounts[0]?.accountId ?? null);
         });
 

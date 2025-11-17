@@ -133,7 +133,11 @@ export default tseslint.config(
   },
   
   {
-    files: ['src/contexts/wallet-context.tsx'],
+    // Wallet integration - NEAR SDK returns any types
+    files: [
+      'src/features/wallet/contexts/wallet-context.tsx',
+      'src/features/wallet/components/WalletButton.tsx',
+    ],
     rules: {
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',
@@ -147,7 +151,8 @@ export default tseslint.config(
   },
 
   {
-    files: ['src/components/token-balance.tsx'],
+    // Portfolio components - token balance queries
+    files: ['src/features/portfolio/components/TokenBalance.tsx'],
     rules: {
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',
@@ -157,27 +162,20 @@ export default tseslint.config(
   },
 
   {
-    files: ['src/components/wallet-button.tsx'],
-    rules: {
-      '@typescript-eslint/no-unsafe-assignment': 'off',
-      '@typescript-eslint/no-unsafe-call': 'off',
-      '@typescript-eslint/no-unsafe-member-access': 'off',
-    },
-  },
-
-  {
-    files: ['src/components/swap/RefFinanceSwapCard.tsx'],
+    // Swap components - Ref Finance SDK interactions
+    files: ['src/features/swap/components/RefFinanceSwapCard.tsx'],
     rules: {
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',
       '@typescript-eslint/no-unsafe-call': 'off',
-      'react-hooks/exhaustive-deps': 'off',
+      'react-hooks/exhaustive-deps': 'warn', // Keep as warning for visibility
     },
   },
 
   {
-    files: ['src/components/liquidity/LiquidityCard.tsx'],
+    // Liquidity components - Ref Finance SDK interactions
+    files: ['src/features/liquidity/components/LiquidityCard.tsx'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unsafe-assignment': 'off',

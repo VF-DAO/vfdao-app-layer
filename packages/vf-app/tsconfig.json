@@ -18,20 +18,20 @@
     "paths": {
       "@/*": ["./src/*"],
       "@/components/*": ["./src/components/*"],
-      "@/contexts/*": ["./src/contexts/*"],
       "@/lib/*": ["./src/lib/*"],
-      "@/types/*": ["./src/types/*"]
+      "@/types/*": ["./src/types/*"],
+      "@/features/*": ["./src/features/*"]
     },
     "allowImportingTsExtensions": true,
     "allowJs": true,
     "incremental": true,
-    "types": [],
+    "types": ["vitest/globals", "node"],
     "plugins": [
       {
         "name": "next"
       }
     ]
   },
-  "include": ["src", "next-env.d.ts", ".next/types/**/*.ts"],
+  "include": ["src", "next-env.d.ts", ".next/types/**/*.ts", "vitest.config.ts"],
   "exclude": ["node_modules", "src/ref-finance", "**/node_modules/bignumber.js/**"]
 }

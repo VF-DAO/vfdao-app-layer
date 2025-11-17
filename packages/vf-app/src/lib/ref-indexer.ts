@@ -1,37 +1,5 @@
 import db from '@/lib/ref-database';
-
-interface PoolView {
-  id: number;
-  token_account_ids: string[];
-  amounts: string[];
-  total_fee: number;
-  shares_total_supply: string;
-  tvl: string;
-  token0_ref_price: string;
-  pool_kind?: string;
-}
-
-interface Pool {
-  id: number;
-  tokenIds: string[];
-  supplies: Record<string, string>;
-  fee: number;
-  shareSupply: string;
-  tvl: string;
-  token0_ref_price: string;
-  pool_kind?: string;
-  Dex?: string;
-}
-
-interface PoolData {
-  id: number;
-  tokenIds: string[];
-  supplies: Record<string, string>;
-  fee: number;
-  shareSupply: string;
-  token0_ref_price: string;
-  Dex: string;
-}
+import type { Pool, PoolData, PoolView } from '@/types/pool';
 
 interface DbTopPool {
   id: string;

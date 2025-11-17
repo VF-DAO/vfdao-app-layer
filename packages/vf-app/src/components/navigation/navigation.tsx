@@ -7,7 +7,7 @@ import { ArrowRightLeft, ChevronLeft, ChevronRight, Droplets, Github, Home, Menu
 import type { LucideIcon } from 'lucide-react';
 import { FaXTwitter } from 'react-icons/fa6';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { WalletButton } from '@/components/wallet-button';
+import { WalletButton } from '@/features/wallet';
 import Logo from '@/components/ui/logo';
 
 interface NavItem {

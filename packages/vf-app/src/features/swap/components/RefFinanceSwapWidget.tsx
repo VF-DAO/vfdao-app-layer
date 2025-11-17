@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useWallet } from '@/contexts/wallet-context';
+import { useWallet } from '@/features/wallet';
 
 /**
  * Ref Finance Swap Widget Adapter for Next.js

@@ -15,16 +15,16 @@ import { providers } from 'near-api-js';
 import Big from 'big.js';
 import { toInternationalCurrencySystemLongString } from '@ref-finance/ref-sdk';
 
-import { useWallet } from '@/contexts/wallet-context';
-import { useSwap } from '@/hooks/useSwap';
-import type { SwapEstimate } from '@/hooks/useSwap';
+import { useWallet } from '@/features/wallet';
+import { useSwap } from '../hooks/useSwap';
 import { TokenSelect } from './TokenSelect';
 import { TokenInput } from './TokenInput';
+import { Button } from '@/components/ui/button';
+import { TransactionCancelledModal, TransactionFailureModal, TransactionSuccessModal } from '@/components/ui/transaction-modal';
+import { SlippageSettings } from '@/features/liquidity/components/subcomponents/SlippageSettings';
 import {
   AlertCircle,
   ArrowDownUp,
-  CheckCircle2,
-  ExternalLink,
   Info,
   Loader2,
   Settings,
@@ -35,22 +35,15 @@ import {
   getMainnetTokens,
   parseTokenAmount,
   SLIPPAGE_PRESETS,
-  type TokenMetadata,
 } from '@/lib/swap-utils';
+import { getErrorMessage, isUserCancellation } from '@/lib/transaction-utils';
 import Logo from '@/components/ui/logo';
+import type { SwapEstimate, TokenMetadata } from '@/types';
 
 type SwapState = 'success' | 'fail' | 'cancelled' | 'waitingForConfirmation' | null;
 type EstimateReason = 'user' | 'auto';
 
 const AUTO_REFRESH_INTERVAL_MS = 10_000;
-
-interface Token {
-  id: string;
-  symbol: string;
-  name: string;
-  decimals: number;
-  icon?: string;
-}
 
 export const RefFinanceSwapCard: React.FC = () => {
   const { accountId, wallet, connector } = useWallet();
@@ -63,8 +56,8 @@ export const RefFinanceSwapCard: React.FC = () => {
   } = useSwap();
 
   // Token selection
-  const [tokenIn, setTokenIn] = useState<Token | undefined>(undefined);
-  const [tokenOut, setTokenOut] = useState<Token | undefined>(undefined);
+  const [tokenIn, setTokenIn] = useState<TokenMetadata | undefined>(undefined);
+  const [tokenOut, setTokenOut] = useState<TokenMetadata | undefined>(undefined);
 
   // Amounts
   const [amountIn, setAmountIn] = useState('');
@@ -306,6 +299,8 @@ export const RefFinanceSwapCard: React.FC = () => {
     };
 
     void fetchTokens();
+    // tokenIn and tokenOut are managed by user interactions, not dependencies
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Helper function to check if a string is a valid number
@@ -619,10 +614,7 @@ export const RefFinanceSwapCard: React.FC = () => {
         console.warn('[SwapWidget] All transactions successful:', outcomes);
       } catch (txError: unknown) {
         // Check if this is a user cancellation first
-        const isNullError = txError === null || txError === undefined;
-        const isEmptyObject = txError && typeof txError === 'object' && !Array.isArray(txError) && Object.keys(txError).length === 0;
-        
-        if (isNullError || isEmptyObject) {
+        if (isUserCancellation(txError)) {
           console.warn('[SwapWidget] Transaction cancelled by user');
           throw txError;
         } else {
@@ -689,15 +681,7 @@ export const RefFinanceSwapCard: React.FC = () => {
       }
       } catch (err: unknown) {
         // Handle user rejection (closing wallet) differently from actual errors
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        const isNullError = err === null || err === undefined;
-        const isEmptyObject = Boolean(err && typeof err === 'object' && !Array.isArray(err) && Object.keys(err).length === 0);
-        
-        // Enhanced user rejection detection
-        const hasRejectionKeywords = ['User rejected', 'User closed the window', 'Request was cancelled', 'User denied', 'cancelled', 'Transaction was cancelled', 'User cancelled', 'Wallet closed'].some(msg => 
-          errorMessage.toLowerCase().includes(msg.toLowerCase())
-        );
-        const isUserRejection = isNullError || isEmptyObject || hasRejectionKeywords;
+        const errorMessage = getErrorMessage(err);
         
         // Handle wallet popup issues
         const isWalletPopupError = ['Couldn\'t open popup', 'popup window', 'MeteorActionError', 'wallet action'].some(msg => 
@@ -710,7 +694,7 @@ export const RefFinanceSwapCard: React.FC = () => {
           return;
         }
 
-        if (isUserRejection) {
+        if (isUserCancellation(err)) {
           console.warn('[SwapWidget] Transaction cancelled by user');
           setError('Transaction cancelled');
           setSwapState('cancelled');
@@ -872,43 +856,13 @@ export const RefFinanceSwapCard: React.FC = () => {
 
         {/* Settings Panel */}
         {showSettings && (
-          <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 shadow-lg space-y-3">
-            <div>
-              <p className="text-xs sm:text-sm font-medium text-foreground mb-2">Slippage Tolerance</p>
-              <div className="flex gap-2 mb-2">
-                {SLIPPAGE_PRESETS.map((preset) => (
-                  <button
-                    key={preset.value}
-                    onClick={() => handleSlippageChange(preset.value)}
-                    className={`flex-1 px-3 py-2 rounded-full text-xs font-medium transition-colors ${
-                      slippage === preset.value && !customSlippage
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-card hover:bg-muted-foreground/10'
-                    }`}
-                  >
-                    {preset.label}
-                  </button>
-                ))}
-              </div>
-              <div className="flex items-center gap-2">
-                <TokenInput
-                  value={customSlippage}
-                  onChange={handleCustomSlippage}
-                  placeholder="Custom"
-                  className="flex-1 px-3 py-2 bg-transparent border border-border rounded-full text-xs focus:outline-none focus:border-primary/50 focus:shadow-lg transition-all placeholder:text-primary placeholder:font-medium placeholder:opacity-60"
-                  decimalLimit={2}
-                />
-                <span className="text-xs text-muted-foreground">%</span>
-              </div>
-            </div>
-            <div className="flex items-start gap-2 p-2 bg-primary/10 rounded-full">
-              <Info className="w-4 h-4 text-primary mt-0.5" />
-              <p className="text-xs text-muted-foreground">
-                Your transaction will revert if the price changes unfavorably by more than this
-                percentage.
-              </p>
-            </div>
-          </div>
+          <SlippageSettings
+            slippage={slippage}
+            customSlippage={customSlippage}
+            onSlippageChange={handleSlippageChange}
+            onCustomSlippageChange={handleCustomSlippage}
+            presets={SLIPPAGE_PRESETS}
+          />
         )}
 
         {/* Pool Loading State */}
@@ -948,30 +902,39 @@ export const RefFinanceSwapCard: React.FC = () => {
                     onClick={() => {
                       const rawBalance = rawBalances[tokenIn.id];
                       if (rawBalance) {
-                        let availableBalance = new Big(rawBalance);
+                        let finalAmount = new Big(0);
                         let reserveApplied = false;
                         
-                        // Check if user is trying to use more than available (need to reduce for gas reserve)
+                        // Calculate percentage of FULL balance first
+                        const requestedAmount = new Big(rawBalance).mul(percent).div(100);
+                        
+                        // Check if this would leave enough for gas reserve (NEAR only)
                         if (tokenIn.id === 'wrap.near' || tokenIn.id === 'near') {
                           const reserveAmount = new Big(0.25).mul(new Big(10).pow(24)); // 0.25 NEAR in yocto
-                          const requestedAmount = new Big(rawBalance).mul(percent).div(100); // What user wants
-                          const maxAvailable = new Big(rawBalance).minus(reserveAmount); // Max they can have
+                          const remainingAfterSwap = new Big(rawBalance).minus(requestedAmount);
                           
-                          // Only show message if requested amount exceeds what's available after reserve
-                          if (requestedAmount.gt(maxAvailable) && maxAvailable.gt(0)) {
+                          // If remaining balance would be less than reserve, cap the swap amount
+                          if (remainingAfterSwap.lt(reserveAmount)) {
+                            finalAmount = new Big(rawBalance).minus(reserveAmount);
                             reserveApplied = true;
+                            
+                            // If that results in negative or zero, don't allow it
+                            if (finalAmount.lte(0)) {
+                              finalAmount = new Big(0);
+                            }
+                          } else {
+                            // Safe to use the requested percentage
+                            finalAmount = requestedAmount;
                           }
-                          // Always use max available (balance - 0.25) for calculation
-                          availableBalance = maxAvailable.lt(0) ? new Big(0) : maxAvailable;
+                        } else {
+                          finalAmount = requestedAmount;
                         }
                         
-                        // Calculate percentage of available balance
-                        const percentBalance = availableBalance.mul(percent).div(100);
                         // Convert to display format
-                        const displayValue = percentBalance.div(new Big(10).pow(tokenIn.decimals)).toFixed(tokenIn.decimals, Big.roundDown);
+                        const displayValue = finalAmount.div(new Big(10).pow(tokenIn.decimals)).toFixed(tokenIn.decimals, Big.roundDown);
                         
                         // Update states BEFORE setting amount to avoid race conditions
-                        setShowGasReserveInfo(reserveApplied);
+                        setShowGasReserveInfo(false); // Don't disable button for percentages
                         setShowGasReserveMessage(reserveApplied);
                         setLastUserInteraction(Date.now()); // Track user interaction
                         setAmountIn(displayValue);
@@ -1313,7 +1276,7 @@ export const RefFinanceSwapCard: React.FC = () => {
         })()}
 
         {/* Swap Button */}
-        <button
+        <Button
           onClick={accountId ? () => void handleSwap() : undefined}
           disabled={!accountId || !canSwap || isSwapping || isEstimating || (() => {
             try {
@@ -1328,7 +1291,9 @@ export const RefFinanceSwapCard: React.FC = () => {
               return false;
             }
           })() || showGasReserveInfo}
-          className="w-full py-3 sm:py-4 border border-verified bg-verified/10 disabled:bg-transparent disabled:text-muted-foreground disabled:cursor-not-allowed disabled:border-verified/30 disabled:shadow-none text-primary shadow-md shadow-verified/20 font-bold rounded-full transition-colors transition-shadow duration-200 hover:bg-verified/20 hover:shadow-lg hover:shadow-verified/30 disabled:hover:bg-transparent flex items-center justify-center text-sm"
+          variant="verified"
+          size="lg"
+          className="w-full font-bold"
         >
           {isSwapping && (
             <span 
@@ -1396,7 +1361,7 @@ export const RefFinanceSwapCard: React.FC = () => {
              })()
             }
           </span>
-        </button>
+        </Button>
 
         {/* Powered by Rhea */}
         <div className="text-center">
@@ -1414,127 +1379,98 @@ export const RefFinanceSwapCard: React.FC = () => {
         </div>
       </div>
 
-      {/* Success/Fail/Cancelled Modal */}
-      {swapState && swapState !== 'waitingForConfirmation' && accountId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 max-w-md w-full shadow-xl">
-            <div className="text-center space-y-4">
-              {swapState === 'success' ? (
-                <>
-                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto">
-                    <CheckCircle2 className="w-6 h-6 sm:w-8 sm:h-8 text-green-500" />
-                  </div>
-                  <h3 className="text-base sm:text-lg font-bold">Swap Successful!</h3>
-                  <div className="space-y-2 text-xs sm:text-sm">
-                    {amountIn && tokenIn && (
-                      <div className="flex justify-between items-center py-2 px-3 border border-border rounded-full">
-                        <span className="text-muted-foreground">Swapped</span>
-                        <span className="font-semibold">{amountIn} {tokenIn.symbol}</span>
-                      </div>
-                    )}
-                    {estimatedOut && tokenOut && (
-                      <div className="flex justify-between items-center py-2 px-3 border border-border rounded-full">
-                        <span className="text-muted-foreground">Received</span>
-                        <span className="font-semibold">{estimatedOutDisplay} {tokenOut.symbol}</span>
-                      </div>
-                    )}
-                    {tokenOut && (
-                      <div className="flex justify-between items-center py-2 px-3 border border-border rounded-full">
-                        <span className="text-muted-foreground">New Balance</span>
-                        <span className="font-semibold">
-                          {isLoadingBalances ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            `${balances[tokenOut.id] ?? '0'} ${tokenOut.symbol}`
-                          )}
-                        </span>
-                      </div>
-                    )}
-                    {tokenIn && tokenOut && amountIn && estimatedOut && (
-                      <div className="text-center text-xs text-muted-foreground mt-3">
-                        Rate: 1 {tokenIn.symbol} ≈ {(() => {
-                          try {
-                            // Use same rate calculation as the swap card
-                            const fromAmount = parseFloat(amountIn);
-                            const toAmount = parseFloat(rawEstimatedOut) / Math.pow(10, tokenOut?.decimals || 18);
-                            const rate = toAmount / fromAmount;
-                            const bigValue = new Big(rate);
-                            const numValue = bigValue.toNumber();
-                            if (numValue >= 0.0001) {
-                              return <span>{toInternationalCurrencySystemLongString(bigValue.toString(), 4)}</span>;
-                            } else {
-                              // Format small numbers: .0 followed by green zeros count and significant digits
-                              const fixedStr = bigValue.toFixed(20); // Get full precision
-                              const decimalPart = fixedStr.split('.')[1] || '';
-                              const firstNonZeroIndex = decimalPart.search(/[1-9]/);
-                              if (firstNonZeroIndex === -1) {
-                                return <span>0.0000</span>;
-                              }
-                              const zerosCount = firstNonZeroIndex;
-                              const significantDigits = decimalPart.slice(firstNonZeroIndex, firstNonZeroIndex + 4);
-                              return (
-                                <span>
-                                  0.0<span className="text-primary text-[10px]">{zerosCount}</span>{significantDigits}
-                                </span>
-                              );
-                            }
-                          } catch {
-                            const rate = parseFloat(estimatedOut) / parseFloat(amountIn);
-                            return rate.toFixed(4);
-                          }
-                        })()} {tokenOut.symbol}
-                      </div>
-                    )}
-                  </div>
-                  {tx && accountId && (
-                    <a
-                      href={`https://nearblocks.io/txns/${tx}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-primary hover:underline text-xs sm:text-sm mt-4"
-                    >
-                      View Transaction <ExternalLink className="w-4 h-4" />
-                    </a>
-                  )}
-                </>
-              ) : swapState === 'cancelled' ? (
-                <>
-                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto">
-                    <Info className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500" />
-                  </div>
-                  <h3 className="text-base sm:text-lg font-bold">Transaction Cancelled</h3>
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    You cancelled the transaction. No changes were made.
-                  </p>
-                </>
+      {/* Transaction Modals */}
+      {swapState === 'success' && accountId && (
+        <TransactionSuccessModal
+          title="Swap Successful!"
+          details={[
+            ...(amountIn && tokenIn ? [{ label: 'Swapped', value: `${amountIn} ${tokenIn.symbol}` }] : []),
+            ...(estimatedOut && tokenOut ? [{ label: 'Received', value: `${estimatedOutDisplay} ${tokenOut.symbol}` }] : []),
+            ...(tokenOut ? [{
+              label: 'New Balance',
+              value: isLoadingBalances ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <>
-                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto">
-                    <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 text-red-500" />
-                  </div>
-                  <h3 className="text-base sm:text-lg font-bold">Swap Failed</h3>
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    {error}
-                  </p>
-                </>
-              )}
-              <button
-                onClick={() => {
-                  setSwapState(null);
-                  setTx(undefined);
-                  setError(null);
-                  setAmountIn('');
-                  setEstimatedOut('');
-                  setEstimatedOutDisplay('');
-                  void fetchBalances();
-                }}
-                className="w-full py-2 sm:py-3 border border-verified bg-verified/10 text-primary shadow-md shadow-verified/20 font-bold rounded-full transition-colors transition-shadow duration-200 hover:bg-verified/20 hover:shadow-lg hover:shadow-verified/30 flex items-center justify-center text-sm"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
+                `${balances[tokenOut.id] ?? '0'} ${tokenOut.symbol}`
+              )
+            }] : []),
+            ...(tokenIn && tokenOut && amountIn && estimatedOut ? [{
+              label: '',
+              value: (
+                <div className="text-center text-xs text-muted-foreground">
+                  Rate: 1 {tokenIn.symbol} ≈ {(() => {
+                    try {
+                      const fromAmount = parseFloat(amountIn);
+                      const toAmount = parseFloat(rawEstimatedOut) / Math.pow(10, tokenOut?.decimals || 18);
+                      const rate = toAmount / fromAmount;
+                      const bigValue = new Big(rate);
+                      const numValue = bigValue.toNumber();
+                      if (numValue >= 0.0001) {
+                        return <span>{toInternationalCurrencySystemLongString(bigValue.toString(), 4)}</span>;
+                      } else {
+                        const fixedStr = bigValue.toFixed(20);
+                        const decimalPart = fixedStr.split('.')[1] || '';
+                        const firstNonZeroIndex = decimalPart.search(/[1-9]/);
+                        if (firstNonZeroIndex === -1) {
+                          return <span>0.0000</span>;
+                        }
+                        const zerosCount = firstNonZeroIndex;
+                        const significantDigits = decimalPart.slice(firstNonZeroIndex, firstNonZeroIndex + 4);
+                        return (
+                          <span>
+                            0.0<span className="text-primary text-[10px]">{zerosCount}</span>{significantDigits}
+                          </span>
+                        );
+                      }
+                    } catch {
+                      const rate = parseFloat(estimatedOut) / parseFloat(amountIn);
+                      return rate.toFixed(4);
+                    }
+                  })()} {tokenOut.symbol}
+                </div>
+              )
+            }] : [])
+          ]}
+          tx={tx}
+          onClose={() => {
+            setSwapState(null);
+            setTx(undefined);
+            setError(null);
+            setAmountIn('');
+            setEstimatedOut('');
+            setEstimatedOutDisplay('');
+            void fetchBalances();
+          }}
+        />
+      )}
+
+      {swapState === 'cancelled' && accountId && (
+        <TransactionCancelledModal
+          onClose={() => {
+            setSwapState(null);
+            setTx(undefined);
+            setError(null);
+            setAmountIn('');
+            setEstimatedOut('');
+            setEstimatedOutDisplay('');
+            void fetchBalances();
+          }}
+        />
+      )}
+
+      {swapState === 'fail' && accountId && (
+        <TransactionFailureModal
+          error={error ?? undefined}
+          onClose={() => {
+            setSwapState(null);
+            setTx(undefined);
+            setError(null);
+            setAmountIn('');
+            setEstimatedOut('');
+            setEstimatedOutDisplay('');
+            void fetchBalances();
+          }}
+        />
       )}
     </div>
   );

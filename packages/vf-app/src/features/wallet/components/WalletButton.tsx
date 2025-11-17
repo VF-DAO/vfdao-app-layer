@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, ExternalLink, LogOut, RefreshCw, User, Wallet } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useWallet } from '@/contexts/wallet-context';
+import { useWallet } from '../contexts/wallet-context';
 
 interface WalletButtonProps {
   compact?: boolean;

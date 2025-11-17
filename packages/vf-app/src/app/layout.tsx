@@ -4,7 +4,7 @@ import { type ReactNode } from 'react';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/providers/theme-provider';
-import { WalletProviderWrapper } from '@/components/providers/wallet-provider-wrapper';
+import { WalletProviderWrapper } from '@/features/wallet';
 import { Navigation } from '@/components/navigation/navigation';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -20,7 +20,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           disableTransitionOnChange
           storageKey="vf-app-theme"
         >
-          <WalletProviderWrapper contractId="vfdao.near" network="mainnet">
+          <WalletProviderWrapper network="mainnet">
             <Navigation />
             <main className="min-h-screen pt-16 md:pt-0 pb-16 md:pb-0" suppressHydrationWarning>
               {children}

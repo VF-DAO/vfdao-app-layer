@@ -5,7 +5,7 @@ import { type ReactNode } from 'react';
 
 // Dynamically import WalletProvider with ssr disabled to avoid server-side issues
 const WalletProviderDynamic = dynamic(
-  () => import('@/contexts/wallet-context').then((mod) => mod.WalletProvider),
+  () => import('../contexts/wallet-context').then((mod) => mod.WalletProvider),
   {
     loading: () => <div>{/* Loading wallet provider */}</div>,
     ssr: false,
@@ -14,17 +14,15 @@ const WalletProviderDynamic = dynamic(
 
 interface WalletProviderWrapperProps {
   children: ReactNode;
-  contractId?: string;
   network?: 'testnet' | 'mainnet';
 }
 
 export function WalletProviderWrapper({
   children,
-  contractId = 'vfdao.testnet',
   network = 'testnet',
 }: WalletProviderWrapperProps) {
   return (
-    <WalletProviderDynamic contractId={contractId} network={network}>
+    <WalletProviderDynamic network={network}>
       {children}
     </WalletProviderDynamic>
   );
