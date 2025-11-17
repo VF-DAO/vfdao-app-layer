@@ -1,52 +1,41 @@
 'use client';
 
 /**
- * Enhanced Swap Widget with Ref Finance Integration
+ * Enhanced Swap Widget with Ref Finance Integration - REFACTORED ✅
  * 
- * This widget incorporates the best features from Ref Finance's swap widget:
- * - Advanced routing and price impact calculation
- * - Better error handling and validation
- * - Improved UI/UX patterns
- * - Full swap estimation and execution
+ * This component has been refactored to improve maintainability and code organization:
+ * - Extracted 5 custom hooks for state management
+ * - Separated UI into 3 focused subcomponents
+ * - Reduced main component from 1,479 lines to ~470 lines (68% reduction)
+ * 
+ * Extracted modules:
+ * - Hooks: useSwapForm, useSwapTransaction, useSwapEstimate, useSwapBalances
+ * - Components: SwapForm, SwapDetails, SwapWarnings
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { providers } from 'near-api-js';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Big from 'big.js';
 import { toInternationalCurrencySystemLongString } from '@ref-finance/ref-sdk';
 
 import { useWallet } from '@/features/wallet';
-import { useSwap } from '../hooks/useSwap';
-import { TokenSelect } from './TokenSelect';
-import { TokenInput } from './TokenInput';
+import { 
+  useSwap,
+  useSwapForm,
+  useSwapTransaction,
+  useSwapEstimate,
+  useSwapBalances,
+} from '../hooks';
+import { SwapForm, SwapDetails, SwapWarnings } from './subcomponents';
 import { Button } from '@/components/ui/button';
 import { TransactionCancelledModal, TransactionFailureModal, TransactionSuccessModal } from '@/components/ui/transaction-modal';
 import { SlippageSettings } from '@/features/liquidity/components/subcomponents/SlippageSettings';
-import {
-  AlertCircle,
-  ArrowDownUp,
-  Info,
-  Loader2,
-  Settings,
-} from 'lucide-react';
-import {
-  formatTokenAmount,
-  formatTokenAmountNoAbbrev,
-  getMainnetTokens,
-  parseTokenAmount,
-  SLIPPAGE_PRESETS,
-} from '@/lib/swap-utils';
-import { getErrorMessage, isUserCancellation } from '@/lib/transaction-utils';
+import { Loader2, Settings, AlertCircle } from 'lucide-react';
+import { getMainnetTokens, SLIPPAGE_PRESETS, formatTokenAmount, formatTokenAmountNoAbbrev } from '@/lib/swap-utils';
 import Logo from '@/components/ui/logo';
-import type { SwapEstimate, TokenMetadata } from '@/types';
-
-type SwapState = 'success' | 'fail' | 'cancelled' | 'waitingForConfirmation' | null;
-type EstimateReason = 'user' | 'auto';
-
-const AUTO_REFRESH_INTERVAL_MS = 10_000;
+import type { TokenMetadata } from '@/types';
 
 export const RefFinanceSwapCard: React.FC = () => {
-  const { accountId, wallet, connector } = useWallet();
+  const { accountId, wallet } = useWallet();
   const {
     loading,
     error: swapError,
@@ -55,203 +44,31 @@ export const RefFinanceSwapCard: React.FC = () => {
     executeSwap,
   } = useSwap();
 
-  // Token selection
-  const [tokenIn, setTokenIn] = useState<TokenMetadata | undefined>(undefined);
-  const [tokenOut, setTokenOut] = useState<TokenMetadata | undefined>(undefined);
-
-  // Amounts
-  const [amountIn, setAmountIn] = useState('');
-  const [estimatedOut, setEstimatedOut] = useState('');
-  const [estimatedOutDisplay, setEstimatedOutDisplay] = useState(''); // For main display without abbreviations
-  const [rawEstimatedOut, setRawEstimatedOut] = useState('');
-  const [lastUserInteraction, setLastUserInteraction] = useState<number>(Date.now());
-
-  // Settings
-  const [slippage, setSlippage] = useState(0.5);
-  const [showSettings, setShowSettings] = useState(false);
-  const [customSlippage, setCustomSlippage] = useState('');
-
-  // State
-  const [isEstimating, setIsEstimating] = useState(false);
-  const [isSwapping, setIsSwapping] = useState(false);
-  const [swapState, setSwapState] = useState<SwapState>(null);
-  const [tx, setTx] = useState<string | undefined>(undefined);
-  const [error, setError] = useState<string | null>(null);
-
-  // Balances
-  const [balances, setBalances] = useState<Record<string, string>>({});
-  const [rawBalances, setRawBalances] = useState<Record<string, string>>({});
-  const [isLoadingBalances, setIsLoadingBalances] = useState(false);
-
-  // Current estimate
-  const [currentEstimate, setCurrentEstimate] = useState<SwapEstimate | undefined>(undefined);
-
-  // Rate display
-  const [isRateReversed, setIsRateReversed] = useState(false);
-
+  // Use extracted hooks
+  const form = useSwapForm();
+  const transaction = useSwapTransaction();
+  const balances = useSwapBalances(accountId, wallet, form.tokenIn, form.tokenOut);
+  
   // Available tokens with metadata
   const [availableTokens, setAvailableTokens] = useState<TokenMetadata[]>([]);
-  const [estimateReason, setEstimateReason] = useState<EstimateReason | null>(null);
-  
-  // Gas reserve notification
-  const [showGasReserveInfo, setShowGasReserveInfo] = useState(false);
-  const [showGasReserveMessage, setShowGasReserveMessage] = useState(false);
 
-  // Check for transaction results in URL
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const errorCode = urlParams.get('errorCode');
-    const transactions = urlParams.get('transactionHashes');
-    const errorMessage = urlParams.get('errorMessage');
-    const lastTX = transactions?.split(',').pop();
+  // Track if we've already fetched balances for current success state
+  const balancesFetchedRef = useRef(false);
 
-    // Process URL callback params (keep minimal logging for debugging)
-    if (errorCode) {
-      console.warn('[SwapWidget] Transaction error from URL:', errorCode, errorMessage);
-      setSwapState('fail');
-      setError(errorMessage ?? 'Transaction failed');
-    } else if (lastTX) {
-      console.warn('[SwapWidget] Transaction success from URL:', lastTX);
-      setSwapState('success');
-      setTx(lastTX);
-    }
-
-    // Clear URL params after processing
-    if (errorCode || transactions) {
-      window.history.replaceState({}, '', window.location.origin + window.location.pathname);
-    }
-  }, []); // Process URL params only once on mount
-
-  // Fallback: If stuck in waitingForConfirmation for too long, assume success
-  useEffect(() => {
-    if (swapState === 'waitingForConfirmation') {
-      const timeout = setTimeout(() => {
-        console.warn('[SwapWidget] Transaction timeout - assuming success');
-        setSwapState('success');
-        // Generate a mock transaction hash for display
-        setTx('transaction-confirmed');
-      }, 3000); // Reduced to 3 seconds
-
-      return () => clearTimeout(timeout);
-    }
-  }, [swapState]);
-
-  // Fetch token balances
-  const fetchBalances = useCallback(async () => {
-    if (!accountId || !wallet) {
-      return;
-    }
-
-    setIsLoadingBalances(true);
-    try {
-      const newBalances: Record<string, string> = {};
-      const newRawBalances: Record<string, string> = {};
-
-      // Fetch NEAR balance
-      const rpcUrl = process.env.NEXT_PUBLIC_NEAR_RPC_MAINNET ?? 'https://rpc.mainnet.near.org';
-      const provider = new providers.JsonRpcProvider({ url: rpcUrl });
-      const account = (await provider.query({
-        request_type: 'view_account',
-        account_id: accountId,
-        finality: 'final',
-      }) as unknown) as { amount: string; storage_usage: string };
-      const totalNearBalance = account.amount;
-      
-      // Calculate available balance (total - storage reserve)
-      const STORAGE_PRICE_PER_BYTE = BigInt('10000000000000000000');
-      const storageCost = BigInt(account.storage_usage) * STORAGE_PRICE_PER_BYTE;
-      const availableNearBalance = BigInt(totalNearBalance) - storageCost;
-      
-      // Store available balance for NEAR token
-      newBalances.near = formatTokenAmount(availableNearBalance.toString(), 24, 6);
-      newRawBalances.near = availableNearBalance.toString();
-
-      // Fetch FT token balances
-      const tokensToFetch = [tokenIn, tokenOut].filter(Boolean);
-      for (const token of tokensToFetch) {
-        if (token && token.id !== 'near') {
-          try {
-            const provider = new providers.JsonRpcProvider({
-              url: rpcUrl,
-            });
-            const result = (await provider.query({
-              request_type: 'call_function',
-              account_id: token.id,
-              method_name: 'ft_balance_of',
-              args_base64: Buffer.from(JSON.stringify({ account_id: accountId })).toString(
-                'base64'
-              ),
-              finality: 'final',
-            })) as unknown as { result: number[] };
-            const balance = JSON.parse(Buffer.from(result.result).toString()) as string;
-            newBalances[token.id] = formatTokenAmount(balance, token.decimals, 6);
-            newRawBalances[token.id] = balance;
-          } catch {
-            console.warn('Failed to fetch FT balance');
-            newBalances[token.id] = '0';
-          }
-        }
-      }
-
-      setBalances(newBalances);
-      setRawBalances(newRawBalances);
-    } catch (err) {
-      console.error('Failed to fetch balances:', err);
-    } finally {
-      setIsLoadingBalances(false);
-    }
-  }, [accountId, wallet, tokenIn, tokenOut]);
-
-  // Fetch balances when account changes
-  useEffect(() => {
-    void (async () => {
-      try {
-        await fetchBalances();
-      } catch (error) {
-        console.warn('[SwapWidget] Failed to fetch balances on account change:', error);
-      }
-    })();
-  }, [fetchBalances, tokenIn, tokenOut]);
-
-  // Reset user-specific state when wallet disconnects
-  useEffect(() => {
-    if (!accountId) {
-      setBalances({});
-      setRawBalances({});
-      setIsLoadingBalances(false);
-      setAmountIn('');
-      setEstimatedOut('');
-      setEstimatedOutDisplay('');
-      setRawEstimatedOut('');
-      setCurrentEstimate(undefined);
-      setError(null);
-      setShowGasReserveInfo(false);
-      setShowGasReserveMessage(false);
-      setSwapState(null);
-      setTx(undefined);
-    }
-  }, [accountId]);
-
-  // Fetch updated balances when swap succeeds
-  useEffect(() => {
-    if (swapState === 'success') {
-      // Small delay to ensure transaction is confirmed
-      const timeout = setTimeout(() => {
-        void (async () => {
-          try {
-            await fetchBalances();
-            // Also refresh the TokenBalance component if it exists
-            if (typeof window !== 'undefined' && (window as any).refreshTokenBalance) {
-              (window as any).refreshTokenBalance();
-            }
-          } catch (error) {
-            console.warn('[SwapWidget] Failed to fetch balances after swap success:', error);
-          }
-        })();
-      }, 1000);
-      return () => clearTimeout(timeout);
-    }
-  }, [swapState, fetchBalances]);
+  // Use swap estimate hook
+  const estimate = useSwapEstimate(
+    form.tokenIn,
+    form.tokenOut,
+    form.amountIn,
+    form.isValidNumber,
+    estimateSwapOutput,
+    form.setEstimatedOut,
+    form.setEstimatedOutDisplay,
+    form.setRawEstimatedOut,
+    transaction.setError,
+    form.lastUserInteraction,
+    transaction.isSwapping
+  );
 
   // Fetch token metadata on mount
   useEffect(() => {
@@ -261,22 +78,20 @@ export const RefFinanceSwapCard: React.FC = () => {
         setAvailableTokens(tokens);
         
         // Set initial tokens once metadata is loaded
-        if (!tokenIn) {
+        if (!form.tokenIn) {
           const near = tokens.find(t => t.symbol === 'NEAR');
-          if (near) setTokenIn(near);
+          if (near) form.setTokenIn(near);
         }
-        if (!tokenOut) {
+        if (!form.tokenOut) {
           const veganfriends = tokens.find(t => t.id === 'veganfriends.tkn.near');
-          if (veganfriends) setTokenOut(veganfriends);
+          if (veganfriends) form.setTokenOut(veganfriends);
         }
-        
-        // Tokens fetched successfully
       } catch (error) {
         console.error('[TokenSelect] Failed to fetch token metadata:', error);
         // Fallback to static tokens
         const fallbackTokens = [
           {
-            id: 'near',  // Use 'near' as ID to match the token definition
+            id: 'near',
             symbol: 'NEAR',
             name: 'Near',
             decimals: 24,
@@ -292,519 +107,80 @@ export const RefFinanceSwapCard: React.FC = () => {
         ];
         setAvailableTokens(fallbackTokens);
         
-        // Set initial tokens with fallback
-        if (!tokenIn) setTokenIn(fallbackTokens[0]);
-        if (!tokenOut) setTokenOut(fallbackTokens[1]);
+        if (!form.tokenIn) form.setTokenIn(fallbackTokens[0]);
+        if (!form.tokenOut) form.setTokenOut(fallbackTokens[1]);
       }
     };
 
     void fetchTokens();
-    // tokenIn and tokenOut are managed by user interactions, not dependencies
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Helper function to check if a string is a valid number
-  const isValidNumber = (value: string): boolean => {
-    if (!value || value.trim() === '') return false;
-    const num = parseFloat(value);
-    return !isNaN(num) && isFinite(num) && num >= 0;
-  };
-
-  // Estimate output amount
-  const estimateOutput = useCallback(async (reason: EstimateReason = 'user') => {
-    if (!tokenIn || !tokenOut || !amountIn || !isValidNumber(amountIn) || parseFloat(amountIn) <= 0) {
-      setEstimatedOut('');
-      setEstimatedOutDisplay('');
-      setRawEstimatedOut('');
-      setCurrentEstimate(undefined); // Clear current estimate to hide warnings
-      setEstimateReason(null);
-      return;
-    }
-
-    setEstimateReason(reason);
-    setIsEstimating(true);
-    setError(null);
-
-    try {
-      const amountInParsed = parseTokenAmount(amountIn, tokenIn.decimals);
-      const estimate = await estimateSwapOutput(tokenIn.id, tokenOut.id, amountInParsed);
-
-      if (estimate) {
-      const formattedOut = formatTokenAmount(estimate.outputAmount, tokenOut.decimals, 4);
-        const formattedOutDisplay = formatTokenAmountNoAbbrev(estimate.outputAmount, tokenOut.decimals, 4);
-        console.warn('[Debug] Formatting output:', {
-          raw: estimate.outputAmount,
-          tokenOut: tokenOut?.symbol,
-          decimals: tokenOut?.decimals,
-          formatted: formattedOut,
-          display: formattedOutDisplay
-        });
-        setEstimatedOut(formattedOut);
-        setEstimatedOutDisplay(formattedOutDisplay);
-        setRawEstimatedOut(String(estimate.outputAmount ?? '0'));
-        setCurrentEstimate(estimate);
-      } else {
-        setEstimatedOut('');
-        setEstimatedOutDisplay('');
-        setRawEstimatedOut('');
-        setError('No route found for this pair');
-        setCurrentEstimate(undefined);
-      }
-    } catch (err: unknown) {
-      console.error('[SwapWidget] Estimate error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to estimate swap');
-      setEstimatedOut('');
-      setEstimatedOutDisplay('');
-      setCurrentEstimate(undefined);
-    } finally {
-      setIsEstimating(false);
-      setEstimateReason(null);
-    }
-  }, [tokenIn, tokenOut, amountIn, estimateSwapOutput]);
-
-  // Debounced estimate
+  // Fetch updated balances when swap succeeds
   useEffect(() => {
-    const timer = setTimeout(() => {
-      void estimateOutput('user');
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [estimateOutput, tokenIn, tokenOut, amountIn]);
-
-  // Periodically refresh estimates to keep prices up to date
-  // Only refresh if user has been active in the last 30 seconds
-  useEffect(() => {
-    if (!tokenIn || !tokenOut || !amountIn || !isValidNumber(amountIn)) {
-      return;
-    }
-
-    const intervalId = setInterval(() => {
-      const timeSinceInteraction = Date.now() - lastUserInteraction;
-      const INACTIVITY_THRESHOLD = 30_000; // 30 seconds
-
-      // Only auto-refresh if:
-      // - User has been active recently
-      // - Not currently estimating (avoid race conditions)
-      // - Not swapping
-      // - No modal open (success/fail/cancelled)
-      if (
-        timeSinceInteraction < INACTIVITY_THRESHOLD &&
-        !isEstimating &&
-        !isSwapping &&
-        !swapState
-      ) {
-        void estimateOutput('auto');
+    if (transaction.swapState === 'success' && !balancesFetchedRef.current) {
+      balancesFetchedRef.current = true;
+      
+      // Invalidate both tokenIn and tokenOut balances to ensure fresh data
+      if (form.tokenIn) {
+        balances.invalidateBalance(form.tokenIn.id);
       }
-    }, AUTO_REFRESH_INTERVAL_MS);
+      if (form.tokenOut) {
+        balances.invalidateBalance(form.tokenOut.id);
+      }
+      
+      // Fetch fresh balances immediately
+      void balances.fetchBalances().then(() => {
+        if (typeof window !== 'undefined' && (window as any).refreshTokenBalance) {
+          (window as any).refreshTokenBalance();
+        }
+      }).catch((error) => {
+        console.warn('[SwapWidget] Failed to fetch balances after swap success:', error);
+      });
+    }
+    // Reset the ref when transaction state changes away from success
+    if (transaction.swapState !== 'success') {
+      balancesFetchedRef.current = false;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transaction.swapState]);
 
-    return () => clearInterval(intervalId);
-  }, [tokenIn, tokenOut, amountIn, estimateOutput, lastUserInteraction, isSwapping, isEstimating, swapState]);
+  // Reset form when wallet disconnects
+  useEffect(() => {
+    if (!accountId) {
+      form.resetForm();
+      transaction.resetTransactionState();
+    }
+  }, [accountId, form, transaction]);
 
-  // Swap tokens (reverse)
-  const handleSwapTokens = () => {
-    const temp = tokenIn;
-    setTokenIn(tokenOut);
-    setTokenOut(temp);
-    setAmountIn('');
-    setEstimatedOut('');
-    setEstimatedOutDisplay('');
-    setRawEstimatedOut('');
-    setCurrentEstimate(undefined); // Clear current estimate to hide warnings
-    setError(null); // Clear any errors
-    setIsRateReversed(false);
-    setLastUserInteraction(Date.now()); // Track user interaction
-  };
-
-  // Execute swap - automatic registration is handled in executeSwap
+  // Execute swap
   const handleSwap = async () => {
-    if (!accountId || !tokenIn || !tokenOut || !amountIn) {
-      setError('Please connect wallet and enter amount');
-      console.error('[SwapWidget] Missing required fields:', { accountId, wallet: !!wallet, tokenIn: !!tokenIn, tokenOut: !!tokenOut, amountIn });
+    if (!form.tokenIn || !form.tokenOut || !form.amountIn) {
       return;
     }
 
-    // Fetch fresh quote before swapping to ensure price accuracy
-    console.warn('[SwapWidget] Fetching fresh quote before swap...');
-    setIsEstimating(true);
-    setEstimateReason('user');
-    try {
-      const amountInParsed = parseTokenAmount(amountIn, tokenIn.decimals);
-      const freshEstimate = await estimateSwapOutput(tokenIn.id, tokenOut.id, amountInParsed);
-      
-      if (freshEstimate) {
-        const formattedOut = formatTokenAmount(freshEstimate.outputAmount, tokenOut.decimals, 4);
-        const formattedOutDisplay = formatTokenAmountNoAbbrev(freshEstimate.outputAmount, tokenOut.decimals, 4);
-        setEstimatedOut(formattedOut);
-        setEstimatedOutDisplay(formattedOutDisplay);
-        setRawEstimatedOut(String(freshEstimate.outputAmount ?? '0'));
-        setCurrentEstimate(freshEstimate);
-        console.warn('[SwapWidget] Fresh quote received:', { outputAmount: freshEstimate.outputAmount });
-      } else {
-        setError('Failed to get fresh quote. Please try again.');
-        setIsEstimating(false);
-        setEstimateReason(null);
-        return;
-      }
-    } catch (err) {
-      console.error('[SwapWidget] Failed to fetch fresh quote:', err);
-      setError('Failed to get fresh quote. Please try again.');
-      setIsEstimating(false);
-      setEstimateReason(null);
-      return;
-    } finally {
-      setIsEstimating(false);
-      setEstimateReason(null);
-    }
-    
-    // Get wallet instance directly from connector if not in state
-    let walletInstance = wallet;
-    if (!walletInstance && connector) {
-      console.warn('[SwapWidget] Wallet not in state, fetching from connector...');
-      try {
-        const { wallet: connectedWallet } = await connector.getConnectedWallet();
-        walletInstance = connectedWallet;
-        console.warn('[SwapWidget] Fetched wallet from connector:', !!walletInstance);
-      } catch (err) {
-        console.error('[SwapWidget] Failed to get wallet from connector:', err);
-        setError('Please reconnect your wallet');
-        return;
-      }
-    }
-    
-    if (!walletInstance) {
-      setError('Please connect wallet');
-      console.error('[SwapWidget] No wallet available');
-      return;
-    }
-
-    if (parseFloat(amountIn) <= 0) {
-      setError('Please enter a valid amount');
-      return;
-    }
-
-    setIsSwapping(true);
-    setError(null);
-
-    try {
-      console.warn('[SwapWidget] Starting swap with estimate:', {
-        currentEstimate: currentEstimate ? 'exists' : 'null',
-        minReceived: currentEstimate?.minReceived,
-        outputAmount: currentEstimate?.outputAmount,
-        slippage
-      });
-
-      // Execute swap - this will automatically batch any needed registration transactions
-      const amountInParsed = parseTokenAmount(amountIn, tokenIn.decimals);
-      const rpcUrl = process.env.NEXT_PUBLIC_NEAR_RPC_MAINNET ?? 'https://rpc.mainnet.near.org';
-      
-      const swapTransactions = await executeSwap(
-        tokenIn.id,
-        tokenOut.id,
-        amountInParsed,
-        slippage,
-        currentEstimate,
-        rpcUrl // Pass RPC URL for registration checks
-      );
-
-      // Validate transaction structure before processing
-      if (!Array.isArray(swapTransactions) || swapTransactions.length === 0) {
-        throw new Error('Invalid transaction data: no transactions returned');
-      }
-
-      // Convert to wallet selector format using Ref SDK's formatting functions
-      // HOT Connect wallet API is compatible with wallet selector
-      const accountIdValue = accountId;
-      
-      const wsTransactions = swapTransactions.map((tx, txIdx) => {
-        // Validate transaction structure
-        if (!tx || typeof tx !== 'object') {
-          throw new Error(`Invalid transaction at index ${txIdx}: transaction is not an object`);
-        }
-        
-        if (!tx.functionCalls || !Array.isArray(tx.functionCalls)) {
-          throw new Error(`Invalid transaction at index ${txIdx}: functionCalls is not an array`);
-        }
-        
-        if (!tx.receiverId || typeof tx.receiverId !== 'string') {
-          throw new Error(`Invalid transaction at index ${txIdx}: receiverId is missing or invalid`);
-        }
-        
-        const actions = tx.functionCalls.map((fc, fcIdx) => {
-          // Validate function call structure
-          if (!fc || typeof fc !== 'object') {
-            throw new Error(`Invalid function call at transaction ${txIdx}, index ${fcIdx}: function call is not an object`);
-          }
-          
-          if (!fc.methodName || typeof fc.methodName !== 'string') {
-            throw new Error(`Invalid function call at transaction ${txIdx}, index ${fcIdx}: methodName is missing or invalid`);
-          }
-          
-          // Use dynamic gas based on transaction complexity
-          // Base gas for simple transfers: 10 TGas, complex swaps: 50-100 TGas
-          const baseGas = fc.gas ? BigInt(fc.gas.toString()) : BigInt('20000000000000'); // 20 TGas base
-          const gasBuffer = BigInt('10000000000000'); // 10 TGas buffer for safety
-          const gasBigInt = baseGas + gasBuffer;
-          
-          try {
-            // HOT Connect expects plain action objects, not near-api-js Action objects
-            // Format: { type: "FunctionCall", params: { methodName, args, gas, deposit } }
-            const action = {
-              type: "FunctionCall" as const,
-              params: {
-                methodName: fc.methodName,
-                args: fc.args ?? {},
-                gas: gasBigInt.toString(),
-                deposit: (fc.amount ?? '0').toString(),
-              }
-            };
-            
-            return action;
-          } catch (actionError: unknown) {
-            console.error(`[SwapWidget] Failed to create action for TX${txIdx} FC${fcIdx}:`, actionError);
-            throw new Error(`Failed to create transaction action: ${actionError instanceof Error ? actionError.message : String(actionError)}`);
-          }
-        });
-        
-        return {
-          signerId: accountIdValue,
-          receiverId: tx.receiverId,
-          actions,
-        };
-      });
-      
-      // Validate final transaction structure before sending to wallet
-      if (!Array.isArray(wsTransactions) || wsTransactions.length === 0) {
-        throw new Error('No valid transactions to send to wallet');
-      }
-      
-      for (let i = 0; i < wsTransactions.length; i++) {
-        const tx = wsTransactions[i];
-        if (!tx.signerId || !tx.receiverId || !Array.isArray(tx.actions) || tx.actions.length === 0) {
-          throw new Error(`Invalid transaction structure at index ${i}`);
-        }
-      }
-      
-      // Batch all transactions for single wallet confirmation
-      console.warn('[SwapWidget] Batching transactions:', {
-        count: wsTransactions.length,
-        transactions: wsTransactions.map((tx, idx) => ({
-          index: idx,
-          receiverId: tx.receiverId,
-          actionsCount: tx.actions.length
-        }))
-      });
-      
-      if (!walletInstance) {
-        throw new Error('Wallet is not initialized. Please reconnect your wallet.');
-      }
-      
-      if (typeof walletInstance.signAndSendTransactions !== 'function') {
-        throw new Error('Wallet does not support batch transactions');
-      }
-      
-      let outcomes;
-      try {
-        console.warn('[SwapWidget] Sending batched transactions to wallet');
-        
-        // Send all transactions in one wallet confirmation
-        outcomes = await walletInstance.signAndSendTransactions({
-          transactions: wsTransactions as any,
-        });
-        
-        console.warn('[SwapWidget] All transactions successful:', outcomes);
-      } catch (txError: unknown) {
-        // Check if this is a user cancellation first
-        if (isUserCancellation(txError)) {
-          console.warn('[SwapWidget] Transaction cancelled by user');
-          throw txError;
-        } else {
-          console.error('[SwapWidget] Transaction error:', txError);
-          throw txError;
-        }
-      }
-
-      // Check if transaction was successful
-      if (outcomes && outcomes.length > 0) {
-        const finalOutcome = outcomes[outcomes.length - 1] as unknown as { transaction?: { hash?: string }; transaction_outcome?: { id?: string } };
-        const txHash = finalOutcome?.transaction?.hash ?? finalOutcome?.transaction_outcome?.id;
-
-        if (txHash) {
-          // Check transaction status
-          try {
-            const rpcUrl = process.env.NEXT_PUBLIC_NEAR_RPC_MAINNET ?? 'https://rpc.mainnet.near.org';
-            const provider = new providers.JsonRpcProvider({ url: rpcUrl });
-            
-            const result = await provider.query({
-              request_type: 'tx',
-              tx_hash: txHash,
-              account_id: accountIdValue,
-            }) as unknown as { status: { SuccessValue?: unknown; SuccessReceiptId?: unknown; Failure?: unknown } };
-            
-            console.warn('[SwapWidget] Transaction result:', JSON.stringify(result, null, 2));
-            
-            // Check if transaction succeeded
-            const status = result.status;
-            if (status.SuccessValue ?? status.SuccessReceiptId) {
-              console.warn('[SwapWidget] Transaction succeeded, checking balances...');
-              // Wait a moment for balances to update
-              setTimeout(() => {
-                fetchBalances().catch((error) => {
-                  console.warn('[SwapWidget] Failed to update balances:', error);
-                });
-              }, 2000);
-              
-              setIsLoadingBalances(true); // Start loading immediately
-              setSwapState('success');
-              setTx(txHash);
-            } else if (status.Failure) {
-              console.error('[SwapWidget] Transaction failed on chain:', status.Failure);
-              setSwapState('fail');
-              setError(`Transaction failed: ${JSON.stringify(status.Failure)}`);
-            } else {
-              console.warn('[SwapWidget] Transaction status unclear, assuming success');
-              setIsLoadingBalances(true); // Start loading immediately
-              setSwapState('success');
-              setTx(txHash);
-            }
-          } catch (_err) {
-            console.warn('[SwapWidget] Could not verify transaction status, assuming success');
-            // If we can't query, assume success since wallet returned outcome
-            setIsLoadingBalances(true); // Start loading immediately
-            setSwapState('success');
-            setTx(txHash);
-          }
-        } else {
-          setSwapState('waitingForConfirmation');
-        }
-      } else {
-        setSwapState('waitingForConfirmation');
-      }
-      } catch (err: unknown) {
-        // Handle user rejection (closing wallet) differently from actual errors
-        const errorMessage = getErrorMessage(err);
-        
-        // Handle wallet popup issues
-        const isWalletPopupError = ['Couldn\'t open popup', 'popup window', 'MeteorActionError', 'wallet action'].some(msg => 
-          errorMessage.toLowerCase().includes(msg.toLowerCase())
-        );
-
-        if (isWalletPopupError) {
-          setError('Wallet popup blocked. Please allow popups for this site and try again, or check your wallet settings.');
-          setSwapState('fail');
-          return;
-        }
-
-        if (isUserCancellation(err)) {
-          console.warn('[SwapWidget] Transaction cancelled by user');
-          setError('Transaction cancelled');
-          setSwapState('cancelled');
-        } else {
-          // Handle different types of errors safely
-          let errorDetails: string;
-          try {
-            if (err && typeof err === 'object') {
-              errorDetails = JSON.stringify(err, null, 2);
-            } else if (err !== null && err !== undefined) {
-              // Cast to string/number/boolean to avoid object stringification
-              errorDetails = String(err as string | number | boolean);
-            } else {
-              errorDetails = 'Unknown error';
-            }
-          } catch {
-            errorDetails = 'Error could not be serialized';
-          }
-
-          console.error('[SwapWidget] Swap error:', errorDetails);
-          console.error('[SwapWidget] Error stack:', err instanceof Error ? err.stack : 'No stack trace available');
-
-          setError(errorMessage ?? 'Transaction failed');
-          setSwapState('fail');
-        }
-      } finally {
-      setIsSwapping(false);
-    }
+    await transaction.executeSwapTransaction(
+      form.tokenIn,
+      form.tokenOut,
+      form.amountIn,
+      form.slippage,
+      estimate.currentEstimate,
+      executeSwap,
+      estimateSwapOutput
+    );
   };
 
-  // Slippage setting
-  const handleSlippageChange = (value: number) => {
-    setSlippage(value);
-    setCustomSlippage('');
-  };
-
-  const handleCustomSlippage = (value: string) => {
-    setCustomSlippage(value);
-    const numValue = parseFloat(value);
-    if (!isNaN(numValue) && numValue > 0 && numValue <= 50) {
-      setSlippage(numValue);
-    }
-  };
-
-  const exchangeRate = useMemo(() => {
-
-    try {
-      // Use raw amounts for rate calculation, not formatted strings
-      const fromAmount = parseFloat(amountIn);
-      const toAmount = parseFloat(rawEstimatedOut) / Math.pow(10, tokenOut?.decimals ?? 18);
-
-      let rate = toAmount / fromAmount;
-
-      if (isRateReversed) {
-        rate = 1 / rate;
-      }
-
-      return new Big(rate).toString(); // Return string for precision
-    } catch {
-      return '-';
-    }
-  }, [amountIn, rawEstimatedOut, isRateReversed, tokenOut]);
-
-  // Format exchange rate for display with special handling for small numbers
-  const formattedExchangeRate = useMemo(() => {
-    if (exchangeRate === '-') {
-      return <span>{exchangeRate}</span>;
-    }
-    try {
-      const bigValue = new Big(exchangeRate);
-      const numValue = bigValue.toNumber();
-      if (numValue >= 0.0001) {
-        return <span>{toInternationalCurrencySystemLongString(bigValue.toString(), 4)}</span>;
-      } else {
-        // Format small numbers: .0 followed by green zeros count and significant digits
-        const fixedStr = bigValue.toFixed(20); // Get full precision
-  const decimalPart = fixedStr.split('.')[1] ?? '';
-        const firstNonZeroIndex = decimalPart.search(/[1-9]/);
-        if (firstNonZeroIndex === -1) {
-          return <span>0.0000</span>;
-        }
-        const zerosCount = firstNonZeroIndex;
-        const significantDigits = decimalPart.slice(firstNonZeroIndex, firstNonZeroIndex + 4);
-        return (
-          <span>
-            0.0<span className="text-primary text-[10px]">{zerosCount}</span>{significantDigits}
-          </span>
-        );
-      }
-    } catch {
-      return <span>-</span>;
-    }
-  }, [exchangeRate]);
-
-  // Format dollar amount with special handling for small numbers (like exchange rate)
+  // Format dollar amount with special handling for small numbers
   const formatDollarAmount = useCallback((amount: number) => {
     try {
-      if (amount === 0) {
-        return '$0.00';
-      }
+      if (amount === 0) return '$0.00';
       if (amount >= 0.01) {
         return `$${amount.toFixed(2)}`;
       } else {
-        // Format small numbers: $0.0 followed by green zeros count and significant digits
         const fixedStr = amount.toFixed(20);
         const decimalPart = fixedStr.split('.')[1] || '';
         const firstNonZeroIndex = decimalPart.search(/[1-9]/);
-        if (firstNonZeroIndex === -1) {
-          return '$0.00';
-        }
+        if (firstNonZeroIndex === -1) return '$0.00';
         const zerosCount = firstNonZeroIndex;
         const significantDigits = decimalPart.slice(firstNonZeroIndex, firstNonZeroIndex + 4);
         return (
@@ -819,17 +195,17 @@ export const RefFinanceSwapCard: React.FC = () => {
   }, []);
 
   const canSwap =
-    tokenIn &&
-    tokenOut &&
-    amountIn &&
-    parseFloat(amountIn) > 0 &&
-    estimatedOutDisplay &&
-    currentEstimate && // Ensure we have a valid estimate
-    !isSwapping &&
+    form.tokenIn &&
+    form.tokenOut &&
+    form.amountIn &&
+    parseFloat(form.amountIn) > 0 &&
+    form.estimatedOutDisplay &&
+    estimate.currentEstimate &&
+    !transaction.isSwapping &&
     accountId;
 
-  const isAutoRefreshingEstimate = isEstimating && estimateReason === 'auto';
-  const isManualEstimating = isEstimating && estimateReason === 'user';
+  const isAutoRefreshingEstimate = estimate.isEstimating && estimate.estimateReason === 'auto';
+  const isManualEstimating = estimate.isEstimating && estimate.estimateReason === 'user';
 
   return (
     <div className="w-full max-w-[480px] mx-auto">
@@ -844,7 +220,7 @@ export const RefFinanceSwapCard: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setShowSettings(!showSettings)}
+                  onClick={() => form.setShowSettings(!form.showSettings)}
                   className="p-2 bg-card/50 hover:bg-card border border-border/50 rounded-full transition-all duration-200 hover:shadow-md"
                 >
                   <Settings className="w-5 h-5 text-muted-foreground hover:text-primary transition-colors" />
@@ -855,12 +231,12 @@ export const RefFinanceSwapCard: React.FC = () => {
         </div>
 
         {/* Settings Panel */}
-        {showSettings && (
+        {form.showSettings && (
           <SlippageSettings
-            slippage={slippage}
-            customSlippage={customSlippage}
-            onSlippageChange={handleSlippageChange}
-            onCustomSlippageChange={handleCustomSlippage}
+            slippage={form.slippage}
+            customSlippage={form.customSlippage}
+            onSlippageChange={form.handleSlippageChange}
+            onCustomSlippageChange={form.handleCustomSlippage}
             presets={SLIPPAGE_PRESETS}
           />
         )}
@@ -870,11 +246,7 @@ export const RefFinanceSwapCard: React.FC = () => {
           <div className="flex items-center gap-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-full shadow-md">
             <span 
               className="inline-flex items-center justify-center" 
-              style={{ 
-                transform: 'none', 
-                willChange: 'auto',
-                backfaceVisibility: 'visible'
-              }}
+              style={{ transform: 'none', willChange: 'auto', backfaceVisibility: 'visible' }}
             >
               <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
             </span>
@@ -890,431 +262,104 @@ export const RefFinanceSwapCard: React.FC = () => {
           </div>
         )}
 
-        {/* Token Inputs Container */}
-        <div className="relative">
-          {/* Token In */}
-          <div className="w-full space-y-1">
-            {accountId && tokenIn && rawBalances[tokenIn.id] && rawBalances[tokenIn.id] !== '0' && (
-              <div className="flex items-center justify-end gap-1">
-                {[25, 50, 75].map((percent) => (
-                  <button
-                    key={percent}
-                    onClick={() => {
-                      const rawBalance = rawBalances[tokenIn.id];
-                      if (rawBalance) {
-                        let finalAmount = new Big(0);
-                        let reserveApplied = false;
-                        
-                        // Calculate percentage of FULL balance first
-                        const requestedAmount = new Big(rawBalance).mul(percent).div(100);
-                        
-                        // Check if this would leave enough for gas reserve (NEAR only)
-                        if (tokenIn.id === 'wrap.near' || tokenIn.id === 'near') {
-                          const reserveAmount = new Big(0.25).mul(new Big(10).pow(24)); // 0.25 NEAR in yocto
-                          const remainingAfterSwap = new Big(rawBalance).minus(requestedAmount);
-                          
-                          // If remaining balance would be less than reserve, cap the swap amount
-                          if (remainingAfterSwap.lt(reserveAmount)) {
-                            finalAmount = new Big(rawBalance).minus(reserveAmount);
-                            reserveApplied = true;
-                            
-                            // If that results in negative or zero, don't allow it
-                            if (finalAmount.lte(0)) {
-                              finalAmount = new Big(0);
-                            }
-                          } else {
-                            // Safe to use the requested percentage
-                            finalAmount = requestedAmount;
-                          }
-                        } else {
-                          finalAmount = requestedAmount;
-                        }
-                        
-                        // Convert to display format
-                        const displayValue = finalAmount.div(new Big(10).pow(tokenIn.decimals)).toFixed(tokenIn.decimals, Big.roundDown);
-                        
-                        // Update states BEFORE setting amount to avoid race conditions
-                        setShowGasReserveInfo(false); // Don't disable button for percentages
-                        setShowGasReserveMessage(reserveApplied);
-                        setLastUserInteraction(Date.now()); // Track user interaction
-                        setAmountIn(displayValue);
-                      }
-                    }}
-                    className="px-1 py-0.5 text-xs bg-card hover:bg-muted rounded-full border border-border text-primary font-semibold opacity-70 hover:opacity-80 transition-all whitespace-nowrap"
-                  >
-                    {percent}%
-                  </button>
-                ))}
-                <button
-                  onClick={() => {
-                    // Use the raw balance value to avoid precision issues
-                    const rawBalance = rawBalances[tokenIn.id];
-                    if (rawBalance) {
-                      let availableBalance = new Big(rawBalance);
-                      let reserveApplied = false;
-                      
-                      // Check if user is trying to use more than available (need to reduce for gas reserve)
-                      if (tokenIn.id === 'wrap.near' || tokenIn.id === 'near') {
-                        const reserveAmount = new Big(0.25).mul(new Big(10).pow(24)); // 0.25 NEAR in yocto
-                        const maxAvailable = new Big(rawBalance).minus(reserveAmount); // Max they can have
-                        
-                        // MAX button always reduces amount to keep 0.25 NEAR, so show message
-                        if (new Big(rawBalance).gt(reserveAmount)) {
-                          reserveApplied = true;
-                        }
-                        // Always use max available (balance - 0.25) for calculation
-                        availableBalance = maxAvailable.lt(0) ? new Big(0) : maxAvailable;
-                      }
-                      
-                      // Convert raw contract balance to display format
-                      const displayValue = availableBalance.div(new Big(10).pow(tokenIn.decimals)).toFixed(tokenIn.decimals, Big.roundDown);
-                      
-                      // Update states BEFORE setting amount to avoid race conditions
-                      setShowGasReserveInfo(false); // MAX doesn't disable button
-                      setShowGasReserveMessage(reserveApplied); // But does show message
-                      setLastUserInteraction(Date.now()); // Track user interaction
-                      setAmountIn(displayValue);
-                    }
-                  }}
-                  className="px-1 py-0.5 text-xs bg-card hover:bg-muted rounded-full border border-border text-primary font-semibold opacity-70 hover:opacity-80 transition-all whitespace-nowrap"
-                >
-                  MAX
-                </button>
-              </div>
-            )}
-            <div className="flex items-center gap-0 p-4 border border-border rounded-full transition-all hover:border-primary/50 hover:shadow-lg">
-              <div className="flex flex-col items-start w-[200px]">
-                <TokenSelect
-                  selectedToken={tokenIn}
-                  onSelectToken={(token) => {
-                    setTokenIn(token);
-                    setLastUserInteraction(Date.now()); // Track user interaction
-                  }}
-                  otherToken={tokenOut}
-                  label="Select"
-                  tokens={availableTokens}
-                />
-                {accountId && tokenIn && (
-                  <div className="flex flex-col items-start mt-1 ml-3">
-                    <span className="text-xs text-muted-foreground">
-                      Balance: {isLoadingBalances ? '...' : balances[tokenIn.id] ?? '0'}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div className="flex-1 relative">
-                <TokenInput
-                  value={amountIn}
-                  onChange={(value) => {
-                    setAmountIn(value);
-                    setLastUserInteraction(Date.now()); // Track user interaction
-                    
-                    // Clear the message when user manually types
-                    setShowGasReserveMessage(false);
-                    
-                    // Check if we need to show gas reserve warning
-                    if (tokenIn && (tokenIn.id === 'wrap.near' || tokenIn.id === 'near') && value && isValidNumber(value) && rawBalances[tokenIn.id]) {
-                      try {
-                        const rawBalance = rawBalances[tokenIn.id];
-                        const reserveAmount = new Big(0.25).mul(new Big(10).pow(24)); // 0.25 NEAR in yocto
-                        const requestedAmount = new Big(value).mul(new Big(10).pow(tokenIn.decimals)); // User input in yocto
-                        const maxAvailable = new Big(rawBalance).minus(reserveAmount); // Max they can have
-                        
-                        // Only show gas reserve message if amount is within balance but exceeds (balance - 0.25)
-                        // If amount exceeds total balance, insufficient funds message will show instead
-                        if (requestedAmount.lte(new Big(rawBalance)) && requestedAmount.gt(maxAvailable) && maxAvailable.gt(0)) {
-                          setShowGasReserveInfo(true);
-                        } else {
-                          setShowGasReserveInfo(false);
-                        }
-                      } catch (_error) {
-                        // Invalid number input, reset gas reserve info
-                        setShowGasReserveInfo(false);
-                      }
-                    } else {
-                      setShowGasReserveInfo(false);
-                    }
-                  }}
-                  placeholder='0.0'
-                  disabled={!accountId}
-                  decimalLimit={tokenIn?.decimals ?? 18}
-                />
-                {amountIn && tokenIn && tokenPrices[tokenIn.id]?.price && (
-                  <div className="absolute top-8 right-4 text-xs text-muted-foreground">
-                    ≈ {formatDollarAmount(parseFloat(amountIn) * parseFloat(String(tokenPrices[tokenIn.id].price)))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+        {/* Swap Form */}
+        <SwapForm
+          tokenIn={form.tokenIn}
+          tokenOut={form.tokenOut}
+          availableTokens={availableTokens}
+          onTokenInChange={(token) => {
+            form.setTokenIn(token);
+            form.setLastUserInteraction(Date.now());
+          }}
+          onTokenOutChange={(token) => {
+            form.setTokenOut(token);
+            form.setLastUserInteraction(Date.now());
+          }}
+          amountIn={form.amountIn}
+          estimatedOutDisplay={form.estimatedOutDisplay}
+          onAmountInChange={(value) => {
+            form.setAmountIn(value);
+            form.setLastUserInteraction(Date.now());
+          }}
+          accountId={accountId}
+          balances={balances.balances}
+          rawBalances={balances.rawBalances}
+          isLoadingBalances={balances.isLoadingBalances}
+          tokenPrices={tokenPrices}
+          onSwapTokens={form.handleSwapTokens}
+          onAmountFromBalance={form.setAmountFromBalance}
+          onMaxAmount={form.setMaxAmount}
+          onGasReserveCheck={form.setShowGasReserveInfo}
+          onGasReserveMessageChange={form.setShowGasReserveMessage}
+          isValidNumber={form.isValidNumber}
+          formatDollarAmount={formatDollarAmount}
+        />
 
-          {/* Token Out - Positioned with medium gap from Token In */}
-          <div className="w-full space-y-1 mt-2">
-            <div className="flex items-center gap-0 p-4 border border-border rounded-full transition-all">
-              <div className="flex flex-col items-start w-[200px]">
-                <TokenSelect
-                  selectedToken={tokenOut}
-                  onSelectToken={(token) => {
-                    setTokenOut(token);
-                    setLastUserInteraction(Date.now()); // Track user interaction
-                  }}
-                  otherToken={tokenIn}
-                  label="Select"
-                  tokens={availableTokens}
-                />
-                {accountId && tokenOut && (
-                  <div className="flex flex-col items-start mt-1 ml-3">
-                    <span className="text-xs text-muted-foreground">
-                      Balance: {isLoadingBalances ? '...' : balances[tokenOut.id] ?? '0'}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div className="flex-1 relative">
-                <input
-                  type="text"
-                  value={estimatedOutDisplay || '0.0'}
-                  readOnly
-                  className={`w-full text-xl font-semibold text-right bg-transparent border-none outline-none ${!estimatedOutDisplay || estimatedOutDisplay === '0.0' ? 'text-primary opacity-60' : 'text-foreground'}`}
-                  placeholder={
-                    tokenOut && tokenPrices[tokenOut.id]?.price
-                      ? `≈ $${(parseFloat(String(tokenPrices[tokenOut.id].price)) * 1000).toFixed(2)} for 1000 ${tokenOut.symbol}`
-                      : '0.0'
-                  }
-                />
-                {estimatedOutDisplay && tokenOut && tokenPrices[tokenOut.id]?.price && (
-                  <div className="absolute top-8 right-4 text-xs text-muted-foreground">
-                    ≈ {formatDollarAmount(parseFloat(estimatedOutDisplay) * parseFloat(String(tokenPrices[tokenOut.id].price)))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Swap Direction Button - Positioned over the touching borders */}
-                    {/* Swap Direction Button - Positioned in center of gap */}
-          <div className="absolute left-1/2 top-[calc(50%-0.5rem)] -translate-x-1/2 z-20">
-            {/* Arrow button with background circle */}
-            <div className="relative">
-              {/* Background circle */}
-              <div className="w-14 h-14 rounded-full bg-card border-t border-b border-border absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
-              {/* Arrow button */}
-              <button
-                onClick={handleSwapTokens}
-                className="w-10 h-10 rounded-full border border-verified bg-gradient-to-br from-verified/20 via-verified/10 to-verified/5 text-primary flex items-center justify-center font-bold text-sm transition-all duration-500 hover:rotate-180 hover:border-verified/80 backdrop-blur-sm relative z-10"
-              >
-                <ArrowDownUp className="w-5 h-5 transition-transform duration-300" />
-              </button>
-            </div>
-          </div>
-        </div>        {/* Error Display */}
-        {error && accountId && (
-          <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-full shadow-md">
-            <AlertCircle className="w-4 h-4 text-red-500" />
-            <p className="text-sm sm:text-base text-red-500">{error}</p>
-          </div>
-        )}
-
-        {/* Gas Reserve Info */}
-        {showGasReserveMessage && accountId && (
-          <div className="flex items-start gap-2 p-2 bg-primary/10 rounded-full">
-            <Info className="w-4 h-4 text-primary mt-0.5" />
-            <p className="text-xs text-muted-foreground">
-              Keeping 0.25 NEAR in your wallet for gas fees
-            </p>
-          </div>
-        )}
+        {/* Warnings */}
+        <SwapWarnings
+          accountId={accountId}
+          error={transaction.error}
+          showGasReserveMessage={form.showGasReserveMessage}
+          showGasReserveInfo={form.showGasReserveInfo}
+          currentEstimate={estimate.currentEstimate}
+          tokenOutId={form.tokenOut?.id}
+          rawBalancesNear={balances.rawBalances.near}
+        />
 
         {/* Swap Info */}
-        {estimatedOutDisplay && !error && accountId && (
-          <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 shadow-lg space-y-3 text-xs">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground text-xs">Rate</span>
-              <button
-                onClick={() => setIsRateReversed(!isRateReversed)}
-                className={`text-right cursor-pointer transition-colors ${
-                  !tokenIn || !tokenOut || exchangeRate === '-' || exchangeRate === '0'
-                    ? 'text-primary opacity-60 font-medium'
-                    : 'font-medium hover:text-primary'
-                }`}
-              >
-                {(() => {
-                  if (!tokenIn || !tokenOut) return '0';
-                  const fromToken = isRateReversed ? tokenOut : tokenIn;
-                  const toToken = isRateReversed ? tokenIn : tokenOut;
-                  const fromPrice = tokenPrices[fromToken.id]?.price;
-
-                  return (
-                    <>
-                      <span>1 {fromToken.symbol}</span>
-                      {fromPrice && <span className="text-muted-foreground"> ({formatDollarAmount(parseFloat(String(fromPrice)))})</span>}
-                      <span> ≈ </span>
-                      {formattedExchangeRate}
-                      <span> {toToken.symbol}</span>
-                    </>
-                  );
-                })()}
-              </button>
-            </div>
-            {(() => {
-              const estimate = currentEstimate;
-              return (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground text-xs">Price Impact</span>
-                  <span
-                    className={`font-medium text-xs ${
-                      !estimate?.priceImpact
-                        ? 'text-primary opacity-60'
-                        : estimate.priceImpact > 5
-                          ? 'text-destructive'
-                          : estimate.priceImpact > 2
-                            ? 'text-verified'
-                            : 'text-primary'
-                    }`}
-                  >
-                    {!estimate?.priceImpact
-                      ? '0.00%'
-                      : estimate.priceImpact > 0.01
-                        ? `${estimate.priceImpact.toFixed(2)}%`
-                        : '< 0.01%'}
-                  </span>
-                </div>
-              );
-            })()}
-            <div className="flex justify-between">
-              <span className="text-muted-foreground text-xs">Slippage Tolerance</span>
-              <span className="font-medium text-xs">{slippage}%</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground text-xs">Minimum Received</span>
-              <span className={`font-medium text-xs ${
-                !currentEstimate?.minReceived ? 'text-primary opacity-60' : ''
-              }`}>
-                {(!currentEstimate?.minReceived
-                  ? '0.0'
-                  : `${formatTokenAmount(currentEstimate?.minReceived ?? '0', tokenOut?.decimals ?? 18, 4)} ${tokenOut?.symbol ?? ''}`
-                )}
-              </span>
-            </div>
-          </div>
+        {form.estimatedOutDisplay && !transaction.error && accountId && (
+          <>
+            <SwapDetails
+              tokenIn={form.tokenIn}
+              tokenOut={form.tokenOut}
+              amountIn={form.amountIn}
+              rawEstimatedOut={form.rawEstimatedOut}
+              currentEstimate={estimate.currentEstimate}
+              slippage={form.slippage}
+              isRateReversed={form.isRateReversed}
+              onToggleRate={() => form.setIsRateReversed(!form.isRateReversed)}
+              tokenPrices={tokenPrices}
+              formatDollarAmount={formatDollarAmount}
+              accountId={accountId}
+            />
+            <p className="text-center text-[11px] text-muted-foreground">
+              Live quotes refresh every 10 seconds
+            </p>
+          </>
         )}
-
-        {estimatedOutDisplay && (
-          <p className="text-center text-[11px] text-muted-foreground">
-            Live quotes refresh every 10 seconds
-          </p>
-        )}
-
-        {/* High Price Impact Warning */}
-        {(() => {
-          const estimate = currentEstimate;
-          if (!estimate?.priceImpact || estimate.priceImpact <= 5 || !accountId) return null;
-          return (
-            <div className="flex items-start gap-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl shadow-md">
-              <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-xs font-medium text-yellow-500">High Price Impact</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  This swap will significantly affect the token price. Consider splitting into
-                  smaller trades.
-                </p>
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* Low NEAR Balance Warning */}
-        {(() => {
-          const nearBalance = rawBalances.near;
-          // Show warning when swapping TO NEAR (regardless of balance) or when balance is low
-          // But exclude when swapping FROM veganfriends.tkn.near TO near
-          const isSwappingFromVeganFriendsToNear = tokenIn?.id === 'veganfriends.tkn.near' && tokenOut?.id === 'near';
-          const shouldShowWarning = accountId && !isSwappingFromVeganFriendsToNear && (tokenOut?.id === 'near' || (nearBalance && new Big(nearBalance).lt(new Big('500000000000000000000000'))));
-          if (!shouldShowWarning) return null;
-          
-          const isCritical = nearBalance && new Big(nearBalance).lt(new Big('250000000000000000000000')); // < 0.25 NEAR
-          const isSwappingToNear = tokenOut?.id === 'near';
-          
-          // If swapping to NEAR, always show "Keep your wallet topped up" instead of critical message
-          const showKeepToppedUp = isSwappingToNear || !isCritical;
-          
-          return (
-            <div className={`flex items-start gap-2 p-3 rounded-2xl shadow-md ${
-              isCritical && !isSwappingToNear
-                ? 'bg-yellow-500/10 border border-yellow-500/20' 
-                : 'bg-blue-500/10 border border-blue-500/20'
-            }`}>
-              <AlertCircle className={`w-4 h-4 mt-0.5 ${isCritical && !isSwappingToNear ? 'text-yellow-500' : 'text-blue-500'}`} />
-              <div className="flex-1">
-                <p className={`text-xs font-medium ${
-                  isCritical && !isSwappingToNear ? 'text-yellow-500' : 'text-blue-500'
-                }`}>
-                  {showKeepToppedUp ? 'Keep your wallet topped up' : 'Almost ready to swap'}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {showKeepToppedUp
-                    ? isSwappingToNear
-                      ? 'Keep some NEAR in your wallet for gas fees on future transactions.'
-                      : 'A little more NEAR ensures smooth transactions and covers all fees.'
-                    : (() => {
-                        // Calculate how much more NEAR is needed to reach at least 0.25 NEAR
-                        const currentNearBalance = nearBalance ? new Big(nearBalance).div(new Big('1000000000000000000000000')) : new Big('0');
-                        const neededNear = new Big('0.25');
-                        const additionalNeeded = neededNear.minus(currentNearBalance);
-                        
-                        // Round up to 4 decimal places to ensure we reach the threshold
-                        const additionalNeededStr = additionalNeeded.gt(new Big('0')) 
-                          ? additionalNeeded.toFixed(4, Big.roundUp)
-                          : '0.2500';
-                        return `Add just ${additionalNeededStr} NEAR to cover fees and start swapping your tokens`;
-                      })()
-                  }
-                </p>
-              </div>
-            </div>
-          );
-        })()}
 
         {/* Swap Button */}
         <Button
           onClick={accountId ? () => void handleSwap() : undefined}
-          disabled={!accountId || !canSwap || isSwapping || isEstimating || (() => {
+          disabled={!accountId || !canSwap || transaction.isSwapping || estimate.isEstimating || (() => {
             try {
-              return !!(amountIn && tokenIn && isValidNumber(amountIn) && new Big(amountIn).times(new Big(10).pow(tokenIn.decimals)).gt(new Big(rawBalances[tokenIn.id] ?? '0')));
+              return !!(form.amountIn && form.tokenIn && form.isValidNumber(form.amountIn) && new Big(form.amountIn).times(new Big(10).pow(form.tokenIn.decimals)).gt(new Big(balances.rawBalances[form.tokenIn.id] ?? '0')));
             } catch {
               return false;
             }
           })() || (() => {
             try {
-              return !!(tokenIn?.id === 'near' && rawBalances.near && new Big(rawBalances.near).lt(new Big('250000000000000000000000')));
+              return !!(form.tokenIn?.id === 'near' && balances.rawBalances.near && new Big(balances.rawBalances.near).lt(new Big('250000000000000000000000')));
             } catch {
               return false;
             }
-          })() || showGasReserveInfo}
+          })() || form.showGasReserveInfo}
           variant="verified"
           size="lg"
           className="w-full font-bold"
         >
-          {isSwapping && (
+          {transaction.isSwapping && (
             <span 
               className="inline-flex items-center justify-center mr-2 relative" 
-              style={{ 
-                transform: 'none', 
-                willChange: 'auto',
-                backfaceVisibility: 'visible'
-              }}
+              style={{ transform: 'none', willChange: 'auto', backfaceVisibility: 'visible' }}
             >
               <Loader2 className="w-5 h-5 animate-spin" />
             </span>
           )}
-          {!isSwapping && !isAutoRefreshingEstimate && isEstimating && (
+          {!transaction.isSwapping && !isAutoRefreshingEstimate && estimate.isEstimating && (
             <span 
               className="inline-flex items-center justify-center mr-2 relative" 
-              style={{ 
-                transform: 'none', 
-                willChange: 'auto',
-                backfaceVisibility: 'visible'
-              }}
+              style={{ transform: 'none', willChange: 'auto', backfaceVisibility: 'visible' }}
             >
               <Loader2 className="w-5 h-5 animate-spin" />
             </span>
@@ -1322,11 +367,11 @@ export const RefFinanceSwapCard: React.FC = () => {
           <span className={
             (() => {
               try {
-                return amountIn && tokenIn && isValidNumber(amountIn) && new Big(amountIn).times(new Big(10).pow(tokenIn.decimals)).gt(new Big(rawBalances[tokenIn.id] ?? '0'))
+                return form.amountIn && form.tokenIn && form.isValidNumber(form.amountIn) && new Big(form.amountIn).times(new Big(10).pow(form.tokenIn.decimals)).gt(new Big(balances.rawBalances[form.tokenIn.id] ?? '0'))
                   ? 'text-destructive'
-                  : showGasReserveInfo
+                  : form.showGasReserveInfo
                   ? 'text-destructive'
-                  : tokenIn?.id === 'near' && rawBalances.near && new Big(rawBalances.near).lt(new Big('250000000000000000000000'))
+                  : form.tokenIn?.id === 'near' && balances.rawBalances.near && new Big(balances.rawBalances.near).lt(new Big('250000000000000000000000'))
                   ? 'text-verified'
                   : '';
               } catch {
@@ -1334,7 +379,7 @@ export const RefFinanceSwapCard: React.FC = () => {
               }
             })()
           }>
-            {isSwapping ? 'Swapping...' : isAutoRefreshingEstimate ? (
+            {transaction.isSwapping ? 'Swapping...' : isAutoRefreshingEstimate ? (
               <span className="inline-flex items-center justify-center gap-1">
                 {[0, 1, 2].map((dot) => (
                   <span
@@ -1346,14 +391,14 @@ export const RefFinanceSwapCard: React.FC = () => {
                 ))}
               </span>
             ) : isManualEstimating ? 'Finding best route...' : 
-             showGasReserveInfo
+             form.showGasReserveInfo
                ? 'Need 0.25N for gas' :
              (() => {
                try {
-                 return (tokenIn?.id === 'near' && rawBalances.near && new Big(rawBalances.near).lt(new Big('250000000000000000000000')))
+                 return (form.tokenIn?.id === 'near' && balances.rawBalances.near && new Big(balances.rawBalances.near).lt(new Big('250000000000000000000000')))
                    ? 'Need 0.25 NEAR minimum to swap' :
-                   (!amountIn || !tokenIn || !tokenOut) ? 'Enter Amount' :
-                   (amountIn && tokenIn && isValidNumber(amountIn) && new Big(amountIn).times(new Big(10).pow(tokenIn.decimals)).gt(new Big(rawBalances[tokenIn.id] ?? '0'))) 
+                   (!form.amountIn || !form.tokenIn || !form.tokenOut) ? 'Enter Amount' :
+                   (form.amountIn && form.tokenIn && form.isValidNumber(form.amountIn) && new Big(form.amountIn).times(new Big(10).pow(form.tokenIn.decimals)).gt(new Big(balances.rawBalances[form.tokenIn.id] ?? '0'))) 
                    ? 'Insufficient Funds' : 'Swap';
                } catch {
                  return 'Enter Amount';
@@ -1380,28 +425,28 @@ export const RefFinanceSwapCard: React.FC = () => {
       </div>
 
       {/* Transaction Modals */}
-      {swapState === 'success' && accountId && (
+      {transaction.swapState === 'success' && accountId && (
         <TransactionSuccessModal
           title="Swap Successful!"
           details={[
-            ...(amountIn && tokenIn ? [{ label: 'Swapped', value: `${amountIn} ${tokenIn.symbol}` }] : []),
-            ...(estimatedOut && tokenOut ? [{ label: 'Received', value: `${estimatedOutDisplay} ${tokenOut.symbol}` }] : []),
-            ...(tokenOut ? [{
+            ...(form.amountIn && form.tokenIn ? [{ label: 'Swapped', value: `${form.amountIn} ${form.tokenIn.symbol}` }] : []),
+            ...(form.estimatedOut && form.tokenOut ? [{ label: 'Received', value: `${form.estimatedOutDisplay} ${form.tokenOut.symbol}` }] : []),
+            ...(form.tokenOut ? [{
               label: 'New Balance',
-              value: isLoadingBalances ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+              value: balances.balances[form.tokenOut.id] ? (
+                `${balances.balances[form.tokenOut.id]} ${form.tokenOut.symbol}`
               ) : (
-                `${balances[tokenOut.id] ?? '0'} ${tokenOut.symbol}`
+                <Loader2 className="w-4 h-4 animate-spin" />
               )
             }] : []),
-            ...(tokenIn && tokenOut && amountIn && estimatedOut ? [{
+            ...(form.tokenIn && form.tokenOut && form.amountIn && form.estimatedOut ? [{
               label: '',
               value: (
                 <div className="text-center text-xs text-muted-foreground">
-                  Rate: 1 {tokenIn.symbol} ≈ {(() => {
+                  Rate: 1 {form.tokenIn.symbol} ≈ {(() => {
                     try {
-                      const fromAmount = parseFloat(amountIn);
-                      const toAmount = parseFloat(rawEstimatedOut) / Math.pow(10, tokenOut?.decimals || 18);
+                      const fromAmount = parseFloat(form.amountIn);
+                      const toAmount = parseFloat(form.rawEstimatedOut) / Math.pow(10, form.tokenOut?.decimals || 18);
                       const rate = toAmount / fromAmount;
                       const bigValue = new Big(rate);
                       const numValue = bigValue.toNumber();
@@ -1423,52 +468,37 @@ export const RefFinanceSwapCard: React.FC = () => {
                         );
                       }
                     } catch {
-                      const rate = parseFloat(estimatedOut) / parseFloat(amountIn);
+                      const rate = parseFloat(form.estimatedOut) / parseFloat(form.amountIn);
                       return rate.toFixed(4);
                     }
-                  })()} {tokenOut.symbol}
+                  })()} {form.tokenOut.symbol}
                 </div>
               )
             }] : [])
           ]}
-          tx={tx}
+          tx={transaction.tx}
           onClose={() => {
-            setSwapState(null);
-            setTx(undefined);
-            setError(null);
-            setAmountIn('');
-            setEstimatedOut('');
-            setEstimatedOutDisplay('');
-            void fetchBalances();
+            transaction.resetTransactionState();
+            form.resetForm();
           }}
         />
       )}
 
-      {swapState === 'cancelled' && accountId && (
+      {transaction.swapState === 'cancelled' && accountId && (
         <TransactionCancelledModal
           onClose={() => {
-            setSwapState(null);
-            setTx(undefined);
-            setError(null);
-            setAmountIn('');
-            setEstimatedOut('');
-            setEstimatedOutDisplay('');
-            void fetchBalances();
+            transaction.resetTransactionState();
+            form.resetForm();
           }}
         />
       )}
 
-      {swapState === 'fail' && accountId && (
+      {transaction.swapState === 'fail' && accountId && (
         <TransactionFailureModal
-          error={error ?? undefined}
+          error={transaction.error ?? undefined}
           onClose={() => {
-            setSwapState(null);
-            setTx(undefined);
-            setError(null);
-            setAmountIn('');
-            setEstimatedOut('');
-            setEstimatedOutDisplay('');
-            void fetchBalances();
+            transaction.resetTransactionState();
+            form.resetForm();
           }}
         />
       )}
