@@ -133,10 +133,10 @@ export function WalletButton({ compact = false, className }: WalletButtonProps) 
 
             <button
               onClick={() => void handleDisconnect()}
-              className="w-full px-4 py-2 flex items-center gap-3 hover:bg-destructive/5 transition-all duration-150 text-left group"
+              className="w-full px-4 py-2 flex items-center gap-3 hover:bg-orange/5 transition-all duration-150 text-left group"
             >
-              <LogOut className="w-4 h-4 text-muted-foreground group-hover:text-destructive transition-colors duration-150" />
-              <span className="text-sm text-muted-foreground group-hover:text-destructive font-medium transition-colors duration-150">
+              <LogOut className="w-4 h-4 text-muted-foreground group-hover:text-orange transition-colors duration-150" />
+              <span className="text-sm text-muted-foreground group-hover:text-orange font-medium transition-colors duration-150">
                 Disconnect
               </span>
             </button>
