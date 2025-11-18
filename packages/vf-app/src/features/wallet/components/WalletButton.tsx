@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, ExternalLink, LogOut, RefreshCw, User, Wallet } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useWallet } from '../contexts/wallet-context';
+import { LoadingDots } from '@/components/ui/loading-dots';
 
 interface WalletButtonProps {
   compact?: boolean;
@@ -11,7 +12,7 @@ interface WalletButtonProps {
 }
 
 export function WalletButton({ compact = false, className }: WalletButtonProps) {
-  const { connector, accountId, isConnected, signIn, signOut } = useWallet();
+  const { connector, accountId, isConnected, signIn, signOut, isConnecting } = useWallet();
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -34,6 +35,8 @@ export function WalletButton({ compact = false, className }: WalletButtonProps) 
   const handleSwitchWallet = async () => {
     if (connector) {
       try {
+        // Note: This bypasses the isConnecting state since it's a direct connector call
+        // For consistency, you might want to refactor to use signIn or add loading here
         await connector.connect();
         setShowMenu(false);
       } catch (error) {
@@ -51,13 +54,16 @@ export function WalletButton({ compact = false, className }: WalletButtonProps) 
     return (
       <button
         onClick={() => void signIn()}
-        disabled={!connector}
-        className={`flex items-center justify-center gap-2 border border-verified bg-verified/10 text-primary hover:text-primary px-4 py-2 rounded-full font-semibold transition-all hover:shadow-md hover:shadow-verified/20 text-sm disabled:opacity-50 disabled:cursor-not-allowed ${
+        disabled={!connector || isConnecting}
+        className={`flex items-center justify-center gap-2 border border-verified bg-verified/10 text-primary hover:text-primary px-4 py-2 rounded-full font-semibold transition-all hover:shadow-md hover:shadow-verified/20 text-sm disabled:opacity-50 disabled:cursor-not-allowed min-h-[40px] ${
           compact ? 'px-3 py-2 w-full min-w-[44px]' : ''
   } ${className ?? ''}`}
       >
         <Wallet className="w-4 h-4 flex-shrink-0" />
-        {!compact && <span className="hidden sm:inline whitespace-nowrap">Connect Wallet</span>}
+        <span className="inline-flex items-center justify-center min-h-[20px]">
+          {!compact && !isConnecting && <span className="hidden sm:inline whitespace-nowrap">Connect Wallet</span>}
+          {isConnecting && <LoadingDots />}
+        </span>
       </button>
     );
   }

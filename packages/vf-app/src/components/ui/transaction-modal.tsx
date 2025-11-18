@@ -26,8 +26,8 @@ function TransactionModalWrapper({ children, onClose: _onClose }: { children: Re
 export function TransactionSuccessModal({ title, details, tx, onClose, children }: TransactionSuccessModalProps) {
   return (
     <TransactionModalWrapper onClose={onClose}>
-      <div className="w-12 h-12 sm:w-16 sm:h-16 bg-secondary/20 rounded-full flex items-center justify-center mx-auto animate-scale-in">
-        <Check className="w-6 h-6 sm:w-8 sm:h-8 text-secondary animate-check-in" />
+      <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto animate-scale-in">
+        <Check className="w-8 h-8 sm:w-10 sm:h-10 text-primary animate-check-in" />
       </div>
       
       <h3 className="text-base sm:text-lg font-bold animate-fade-in">{title}</h3>
@@ -72,8 +72,8 @@ export function TransactionSuccessModal({ title, details, tx, onClose, children 
 export function TransactionFailureModal({ error, onClose }: TransactionFailureModalProps) {
   return (
     <TransactionModalWrapper onClose={onClose}>
-      <div className="w-12 h-12 sm:w-16 sm:h-16 bg-orange/20 rounded-full flex items-center justify-center mx-auto animate-shake">
-        <XCircle className="w-6 h-6 sm:w-8 sm:h-8 text-orange" />
+      <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto animate-scale-in">
+        <XCircle className="w-8 h-8 sm:w-10 sm:h-10 text-orange animate-fade-in" />
       </div>
       
       <h3 className="text-base sm:text-lg font-bold animate-fade-in">Transaction Failed</h3>
@@ -97,8 +97,8 @@ export function TransactionCancelledModal({
 }: TransactionCancelledModalProps) {
   return (
     <TransactionModalWrapper onClose={onClose}>
-      <div className="w-12 h-12 sm:w-16 sm:h-16 bg-verified/20 rounded-full flex items-center justify-center mx-auto animate-scale-in">
-        <X className="w-6 h-6 sm:w-8 sm:h-8 text-verified" />
+      <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto animate-scale-in">
+        <X className="w-8 h-8 sm:w-10 sm:h-10 text-verified animate-fade-in" />
       </div>
       
       <h3 className="text-base sm:text-lg font-bold animate-fade-in">{title}</h3>

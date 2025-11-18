@@ -61,8 +61,8 @@ export const RemoveLiquidityForm: React.FC<RemoveLiquidityFormProps> = ({
 
         {/* Share Amount Input */}
         <div className="space-y-2">
-          {accountId && userShares && userShares !== '0' && (
-            <div className="flex gap-2 justify-end">
+          {!!(accountId && userShares && userShares !== '0') && (
+            <div className="flex gap-2 justify-end animate-in fade-in slide-in-from-top-1 duration-200">
               {[25, 50, 75].map((percent) => (
                 <Button
                   key={percent}
@@ -130,10 +130,10 @@ export const RemoveLiquidityForm: React.FC<RemoveLiquidityFormProps> = ({
         </div>
 
         {/* Show token amounts user will receive */}
-        {token1Amount && parseFloat(token1Amount) > 0 && (() => {
+        {!!(token1Amount && parseFloat(token1Amount) > 0) && (() => {
           const amounts = calculateRemoveLiquidityAmounts(token1Amount);
           return (
-            <div className="bg-card border border-border rounded-2xl p-4 shadow-lg space-y-2 text-xs">
+            <div className="bg-card border border-border rounded-2xl p-4 shadow-lg space-y-2 text-xs animate-in fade-in slide-in-from-top-2 duration-300">
               <p className="text-sm font-medium text-foreground mb-2">You will receive:</p>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -209,10 +209,17 @@ export const RemoveLiquidityForm: React.FC<RemoveLiquidityFormProps> = ({
         <div className="flex gap-2">
           <Button
             onClick={onCancel}
+            disabled={transactionState === 'waitingForConfirmation'}
             variant="outline"
-            className="flex-1 py-2"
+            className="flex-1 py-2 min-h-[40px]"
           >
-            Cancel
+            <span className="inline-flex items-center justify-center min-h-[20px]">
+              {transactionState === 'waitingForConfirmation' ? (
+                <LoadingDots />
+              ) : (
+                'Cancel'
+              )}
+            </span>
           </Button>
           <Button
             onClick={onRemoveLiquidity}
@@ -224,15 +231,17 @@ export const RemoveLiquidityForm: React.FC<RemoveLiquidityFormProps> = ({
               !!(userShares && token1Amount && Big(token1Amount).gt(Big(userShares)))
             }
             variant="secondary"
-            className="flex-1"
+            className="flex-1 min-h-[40px]"
           >
-            {transactionState === 'waitingForConfirmation' ? (
-              <LoadingDots />
-            ) : (userShares && token1Amount && Big(token1Amount).gt(Big(userShares))) ? (
-              'Insufficient Shares'
-            ) : (
-              'Remove Liquidity'
-            )}
+            <span className="inline-flex items-center justify-center min-h-[20px]">
+              {transactionState === 'waitingForConfirmation' ? (
+                <LoadingDots />
+              ) : (userShares && token1Amount && Big(token1Amount).gt(Big(userShares))) ? (
+                'Insufficient Shares'
+              ) : (
+                'Remove Liquidity'
+              )}
+            </span>
           </Button>
         </div>
       </div>

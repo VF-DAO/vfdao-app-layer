@@ -84,7 +84,7 @@ export const SwapDetails: React.FC<SwapDetailsProps> = ({
   }
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 shadow-lg space-y-3 text-xs">
+    <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 shadow-lg space-y-3 text-xs animate-in fade-in slide-in-from-top-2 duration-300">
       <div className="flex justify-between">
         <span className="text-muted-foreground text-xs">Rate</span>
         <button
@@ -96,7 +96,7 @@ export const SwapDetails: React.FC<SwapDetailsProps> = ({
           }`}
         >
           {(() => {
-            if (!tokenIn || !tokenOut) return '0';
+            if (!tokenIn || !tokenOut) return null;
             const fromToken = isRateReversed ? tokenOut : tokenIn;
             const toToken = isRateReversed ? tokenIn : tokenOut;
             const fromPrice = tokenPrices[fromToken.id]?.price;

@@ -16,7 +16,7 @@ const POOL_ID = 5094;
 const REF_FINANCE_CONTRACT = 'v2.ref-finance.near';
 
 export function PortfolioDashboard() {
-  const { accountId, isConnected, signIn } = useWallet();
+  const { accountId, isConnected, signIn, isConnecting } = useWallet();
   const [vfBalance, setVfBalance] = useState<string>('0');
   const [vfUsdValue, setVfUsdValue] = useState<number>(0);
   const [lpShares, setLpShares] = useState<string>('0');
@@ -345,13 +345,18 @@ export function PortfolioDashboard() {
   if (!isConnected) {
     return (
       <div className="w-full max-w-[800px] mx-auto">
-        <button
-          onClick={() => void signIn()}
-          className="inline-flex items-center justify-center gap-2 border border-verified bg-verified/10 text-primary hover:text-primary px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold transition-all hover:shadow-md hover:shadow-verified/20 group text-sm sm:text-base whitespace-nowrap"
-        >
-          <Leaf className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-          Let's Connect
-        </button>
+        <div className="flex justify-center">
+          <button
+            onClick={() => void signIn()}
+            disabled={isConnecting}
+            className="inline-flex items-center justify-center gap-2 border border-verified bg-verified/10 hover:bg-verified/20 text-primary hover:text-primary px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold transition-all hover:shadow-lg hover:shadow-verified/30 group text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] sm:min-h-[56px]"
+          >
+            <Leaf className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
+            <span className="inline-flex items-center justify-center min-h-[20px] sm:min-h-[24px]">
+              {isConnecting ? <LoadingDots /> : "Let's Connect"}
+            </span>
+          </button>
+        </div>
       </div>
     );
   }

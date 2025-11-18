@@ -13,6 +13,7 @@ export interface WalletContextType {
   accountId: string | null;
   isConnected: boolean;
   isLoading: boolean;
+  isConnecting: boolean;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -24,6 +25,7 @@ const WalletContext = createContext<WalletContextType>({
   accountId: null,
   isConnected: false,
   isLoading: true,
+  isConnecting: false,
   signIn: async () => {
     // Placeholder - implemented in provider
   },
@@ -50,10 +52,12 @@ export function WalletProvider({
   const [accounts, setAccounts] = useState<{ accountId: string }[]>([]);
   const [accountId, setAccountId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isConnecting, setIsConnecting] = useState(false);
 
   const signIn = async () => {
     if (connector) {
       try {
+        setIsConnecting(true);
         console.warn('[WalletContext] Attempting to connect wallet...');
         // Wait for manifest to load before connecting
         await connector.whenManifestLoaded;
@@ -69,7 +73,9 @@ export function WalletProvider({
           setAccounts(connectedAccounts.map((acc: any) => ({ accountId: acc.accountId })));
           setAccountId(connectedAccounts[0]?.accountId ?? null);
         }
+        setIsConnecting(false);
       } catch (error) {
+        setIsConnecting(false);
         // Handle user cancellation gracefully - this is normal behavior, not an error
         if (error instanceof Error && (error.message === 'User rejected' || error.message === 'Wallet closed')) {
           console.warn('[WalletContext] User cancelled wallet connection');
@@ -128,6 +134,7 @@ export function WalletProvider({
           setWallet(connectedWallet);
           setAccounts(event.accounts.map((acc) => ({ accountId: acc.accountId })));
           setAccountId(event.accounts[0]?.accountId ?? null);
+          setIsConnecting(false);
         });
 
         // Listen for sign out events
@@ -135,6 +142,7 @@ export function WalletProvider({
           setWallet(null);
           setAccounts([]);
           setAccountId(null);
+          setIsConnecting(false);
         });
 
         setConnector(_connector);
@@ -172,6 +180,7 @@ export function WalletProvider({
     accountId,
     isConnected: !!accountId,
     isLoading,
+    isConnecting,
     signIn,
     signOut,
   };

@@ -71,8 +71,8 @@ export const SwapForm: React.FC<SwapFormProps> = ({
     <div className="relative">
       {/* Token In */}
       <div className="w-full space-y-1">
-        {accountId && tokenIn && rawBalances[tokenIn.id] && rawBalances[tokenIn.id] !== '0' && (
-          <div className="flex items-center justify-end gap-1">
+        {!!(accountId && tokenIn && rawBalances[tokenIn.id] && rawBalances[tokenIn.id] !== '0') && (
+          <div className="flex items-center justify-end gap-1 animate-in fade-in slide-in-from-top-1 duration-200">
             {[25, 50, 75].map((percent) => (
               <button
                 key={percent}
@@ -150,7 +150,7 @@ export const SwapForm: React.FC<SwapFormProps> = ({
               disabled={!accountId}
               decimalLimit={tokenIn?.decimals ?? 18}
             />
-            {amountIn && tokenIn && tokenPrices[tokenIn.id]?.price && (
+            {!!(amountIn && tokenIn && tokenPrices[tokenIn.id]?.price) && (
               <div className="absolute top-8 right-4 text-xs text-muted-foreground">
                 ≈ {formatDollarAmount(parseFloat(amountIn) * parseFloat(String(tokenPrices[tokenIn.id].price)))}
               </div>
@@ -190,7 +190,7 @@ export const SwapForm: React.FC<SwapFormProps> = ({
                   : '0.0'
               }
             />
-            {estimatedOutDisplay && tokenOut && tokenPrices[tokenOut.id]?.price && (
+            {!!(estimatedOutDisplay && tokenOut && tokenPrices[tokenOut.id]?.price) && (
               <div className="absolute top-8 right-4 text-xs text-muted-foreground">
                 ≈ {formatDollarAmount(parseFloat(estimatedOutDisplay) * parseFloat(String(tokenPrices[tokenOut.id].price)))}
               </div>

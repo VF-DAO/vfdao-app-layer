@@ -77,8 +77,8 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({
 
         {/* Token 1 Input */}
         <div className="space-y-2">
-          {accountId && rawBalances[poolInfo.token1.id] && rawBalances[poolInfo.token1.id] !== '0' && (
-            <div className="flex gap-2 justify-end">
+          {!!(accountId && rawBalances[poolInfo.token1.id] && rawBalances[poolInfo.token1.id] !== '0') && (
+            <div className="flex gap-2 justify-end animate-in fade-in slide-in-from-top-1 duration-200">
               {[25, 50, 75].map((percent) => (
                 <Button
                   key={percent}
@@ -136,7 +136,7 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({
                 disabled={!accountId}
                 decimalLimit={poolInfo.token1.decimals}
               />
-              {token1Amount && (() => {
+              {!!(token1Amount) && (() => {
                 const price = tokenPrices[poolInfo.token1.id] ?? tokenPrices.near ?? tokenPrices['wrap.near'];
                 if (!price) return null;
                 const usdValue = parseFloat(token1Amount) * price;
@@ -152,8 +152,8 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({
 
         {/* Token 2 Input */}
         <div className="space-y-2">
-          {accountId && rawBalances[poolInfo.token2.id] && rawBalances[poolInfo.token2.id] !== '0' && (
-            <div className="flex gap-2 justify-end">
+          {!!(accountId && rawBalances[poolInfo.token2.id] && rawBalances[poolInfo.token2.id] !== '0') && (
+            <div className="flex gap-2 justify-end animate-in fade-in slide-in-from-top-1 duration-200">
               {[25, 50, 75].map((percent) => (
                 <Button
                   key={percent}
@@ -211,7 +211,7 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({
                 disabled={!accountId}
                 decimalLimit={poolInfo.token2.decimals}
               />
-              {token2Amount && tokenPrices[poolInfo.token2.id] && (() => {
+              {!!(token2Amount && tokenPrices[poolInfo.token2.id]) && (() => {
                 const price = tokenPrices[poolInfo.token2.id];
                 return (
                   <div className="absolute top-8 right-4 text-xs text-muted-foreground">
@@ -224,8 +224,8 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({
         </div>
 
         {/* Preview: You will add */}
-        {token1Amount && token2Amount && parseFloat(token1Amount) > 0 && parseFloat(token2Amount) > 0 && (
-          <div className="bg-card border border-border rounded-2xl p-4 shadow-lg space-y-2 text-xs">
+        {!!(token1Amount && token2Amount && parseFloat(token1Amount) > 0 && parseFloat(token2Amount) > 0) && (
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-lg space-y-2 text-xs animate-in fade-in slide-in-from-top-2 duration-300">
             <p className="text-sm font-medium text-foreground mb-2">You will add:</p>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -371,8 +371,8 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({
         )}
 
         {/* Gas Reserve Info */}
-        {showGasReserveMessage && accountId && (
-          <div className="flex items-start gap-2 p-2 bg-primary/10 rounded-full">
+        {!!(showGasReserveMessage && accountId) && (
+          <div className="flex items-start gap-2 p-2 bg-primary/10 rounded-full animate-in fade-in slide-in-from-top-2 duration-300">
             <Info className="w-4 h-4 text-primary mt-0.5" />
             <p className="text-xs text-muted-foreground">
               Keeping 0.25 NEAR in your wallet for gas fees
@@ -384,10 +384,17 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({
         <div className="flex gap-2">
           <Button
             onClick={onCancel}
+            disabled={transactionState === 'waitingForConfirmation'}
             variant="outline"
-            className="flex-1 py-2"
+            className="flex-1 py-2 min-h-[40px]"
           >
-            Cancel
+            <span className="inline-flex items-center justify-center min-h-[20px]">
+              {transactionState === 'waitingForConfirmation' ? (
+                <LoadingDots />
+              ) : (
+                'Cancel'
+              )}
+            </span>
           </Button>
           <Button
             onClick={onAddLiquidity}
@@ -409,21 +416,23 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({
                 rawBalances.near && Big(rawBalances.near).lt(Big('250000000000000000000000')))
             }
             variant="verified"
-            className="flex-1"
+            className="flex-1 min-h-[40px]"
           >
-            {transactionState === 'waitingForConfirmation' ? (
-              <LoadingDots />
-            ) : showGasReserveInfo ? (
-              'Need 0.25N for gas'
-            ) : (poolInfo && token1Amount && rawBalances[poolInfo.token1.id] && 
-                Big(token1Amount).times(Big(10).pow(poolInfo.token1.decimals)).gt(Big(rawBalances[poolInfo.token1.id]))) ? (
-              'Insufficient Funds'
-            ) : (poolInfo && token2Amount && rawBalances[poolInfo.token2.id] && 
-                Big(token2Amount).times(Big(10).pow(poolInfo.token2.decimals)).gt(Big(rawBalances[poolInfo.token2.id]))) ? (
-              'Insufficient Funds'
-            ) : (
-              'Add Liquidity'
-            )}
+            <span className="inline-flex items-center justify-center min-h-[20px]">
+              {transactionState === 'waitingForConfirmation' ? (
+                <LoadingDots />
+              ) : showGasReserveInfo ? (
+                'Need 0.25N for gas'
+              ) : (poolInfo && token1Amount && rawBalances[poolInfo.token1.id] && 
+                  Big(token1Amount).times(Big(10).pow(poolInfo.token1.decimals)).gt(Big(rawBalances[poolInfo.token1.id]))) ? (
+                'Insufficient Funds'
+              ) : (poolInfo && token2Amount && rawBalances[poolInfo.token2.id] && 
+                  Big(token2Amount).times(Big(10).pow(poolInfo.token2.decimals)).gt(Big(rawBalances[poolInfo.token2.id]))) ? (
+                'Insufficient Funds'
+              ) : (
+                'Add Liquidity'
+              )}
+            </span>
           </Button>
         </div>
       </div>

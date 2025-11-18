@@ -345,7 +345,7 @@ export const RefFinanceSwapCard: React.FC = () => {
         />
 
         {/* Swap Info */}
-        {form.estimatedOutDisplay && !transaction.error && accountId && (
+        {!!(form.estimatedOutDisplay && !transaction.error && accountId) && (
           <>
             <SwapDetails
               tokenIn={form.tokenIn}
@@ -364,8 +364,8 @@ export const RefFinanceSwapCard: React.FC = () => {
         )}
 
         {/* Gas Reserve Info */}
-        {form.showGasReserveMessage && accountId && (
-          <div className="flex items-start gap-2 p-2 bg-primary/10 rounded-full">
+        {!!(form.showGasReserveMessage && accountId) && (
+          <div className="flex items-start gap-2 p-2 bg-primary/10 rounded-full animate-in fade-in slide-in-from-top-2 duration-300">
             <Info className="w-4 h-4 text-primary mt-0.5" />
             <p className="text-xs text-muted-foreground">
               Keeping 0.25 NEAR in your wallet for gas fees
@@ -391,9 +391,10 @@ export const RefFinanceSwapCard: React.FC = () => {
           })() || form.showGasReserveInfo}
           variant="verified"
           size="lg"
-          className="w-full font-bold"
+          className="w-full font-bold min-h-[48px]"
         >
           <span className={
+            `inline-flex items-center justify-center min-h-[24px] ${
             (() => {
               try {
                 return form.amountIn && form.tokenIn && form.isValidNumber(form.amountIn) && new Big(form.amountIn).times(new Big(10).pow(form.tokenIn.decimals)).gt(new Big(balances.rawBalances[form.tokenIn.id] ?? '0'))
@@ -407,6 +408,7 @@ export const RefFinanceSwapCard: React.FC = () => {
                 return '';
               }
             })()
+            }`
           }>
             {transaction.isSwapping ? (
               <LoadingDots />

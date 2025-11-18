@@ -22,7 +22,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         >
           <WalletProviderWrapper network="mainnet">
             <Navigation />
-            <main className="min-h-screen pt-16 md:pt-0 pb-16 md:pb-0" suppressHydrationWarning>
+            <main className="min-h-screen pb-16 md:pb-0" suppressHydrationWarning>
               {children}
             </main>
           </WalletProviderWrapper>

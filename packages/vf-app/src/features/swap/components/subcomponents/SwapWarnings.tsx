@@ -33,7 +33,7 @@ export const SwapWarnings: React.FC<SwapWarningsProps> = ({
       )}
 
       {/* High Price Impact Warning */}
-      {currentEstimate?.priceImpact && currentEstimate.priceImpact > 5 && (
+      {!!(currentEstimate?.priceImpact && currentEstimate.priceImpact > 5) && (
         <div className="flex items-start gap-2 p-3 border border-orange/30 rounded-2xl animate-in fade-in slide-in-from-top-2 duration-300">
           <AlertCircle className="w-4 h-4 text-orange mt-0.5" />
           <div className="flex-1">
