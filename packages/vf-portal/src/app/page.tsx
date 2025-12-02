@@ -4,6 +4,7 @@ import { ArrowRight, Leaf, Scan, Shield, Users } from 'lucide-react';
 import Link from 'next/link';
 import { VerificationFlow } from '@/components/verification-flow';
 import { UseCaseCarousel } from '@/components/use-case-carousel';
+import { Card } from '@/components/ui/card';
 
 export default function Home() {
   return (
@@ -213,8 +214,8 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 pt-8">
-            <div 
-              className="p-4 sm:p-6 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all hover:shadow-lg cursor-pointer group"
+            <Card 
+              className="hover:border-muted-foreground/50 transition-all hover:shadow-interactive cursor-pointer group"
               onClick={() => window.open('https://t.me/veganfriendsdao', '_blank')}
             >
               <h3 className="text-base sm:text-lg font-bold text-foreground mb-2">Early Adopter</h3>
@@ -225,10 +226,10 @@ export default function Home() {
                 Get Early Access
                 <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-verified flex-shrink-0 group-hover:translate-x-1 transition-transform" />
               </div>
-            </div>
+            </Card>
 
-            <div 
-              className="p-4 sm:p-6 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all hover:shadow-lg cursor-pointer group"
+            <Card 
+              className="hover:border-muted-foreground/50 transition-all hover:shadow-interactive cursor-pointer group"
               onClick={() => window.open('https://app.vfdao.org/vfdao.near/widget/DAO.Page?daoId=vegan-friends.sputnik-dao.near&tab=proposals', '_blank')}
             >
               <h3 className="text-base sm:text-lg font-bold text-foreground mb-2">
@@ -241,10 +242,10 @@ export default function Home() {
                 Visit DAO
                 <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-verified flex-shrink-0 group-hover:translate-x-1 transition-transform" />
               </div>
-            </div>
+            </Card>
 
-            <div 
-              className="p-4 sm:p-6 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all hover:shadow-lg cursor-pointer group"
+            <Card 
+              className="hover:border-muted-foreground/50 transition-all hover:shadow-interactive cursor-pointer group"
               onClick={() => window.open('https://t.me/veganfriendsdao', '_blank')}
             >
               <h3 className="text-base sm:text-lg font-bold text-foreground mb-2">
@@ -257,10 +258,10 @@ export default function Home() {
                 Join Telegram
                 <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-verified flex-shrink-0 group-hover:translate-x-1 transition-transform" />
               </div>
-            </div>
+            </Card>
 
-            <div 
-              className="p-4 sm:p-6 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all hover:shadow-lg cursor-pointer group"
+            <Card 
+              className="hover:border-muted-foreground/50 transition-all hover:shadow-interactive cursor-pointer group"
               onClick={() => {
                 const element = document.querySelector('#partners');
                 element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -274,7 +275,7 @@ export default function Home() {
                 Get in Touch
                 <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-verified flex-shrink-0 group-hover:translate-x-1 transition-transform" />
               </div>
-            </div>
+            </Card>
           </div>
         </div>
       </section>
@@ -310,11 +311,8 @@ function StakeholderCard({
   };
 
   return (
-    <div 
-      className="relative p-4 sm:p-6 md:p-8 rounded-2xl border border-border bg-card hover:border-primary/50 transition-all hover:shadow-lg group flex flex-col h-full cursor-pointer"
-      onClick={handleClick}
-    >
-      <div className="space-y-3 sm:space-y-4 flex-1">
+    <Card className="relative hover:border-muted-foreground/50 transition-all hover:shadow-interactive group flex flex-col h-full cursor-pointer">
+      <div className="p-4 sm:p-6 md:p-8 space-y-3 sm:space-y-4 flex-1">
         {/* Icon */}
         <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-verified bg-verified/10 text-primary shadow-md shadow-verified/20 mb-2 sm:mb-4">
           {icon}
@@ -336,13 +334,13 @@ function StakeholderCard({
       </div>
 
       {/* CTA */}
-      <div className="mt-4 sm:mt-6">
+      <div className="p-4 sm:p-6 md:p-8 pt-0 mt-4 sm:mt-6">
         <div className="inline-flex items-center gap-2 text-sm text-primary font-semibold transition-all">
           {cta}
           <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-verified flex-shrink-0 group-hover:translate-x-1 transition-transform" />
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
 

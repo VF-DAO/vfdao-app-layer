@@ -68,7 +68,7 @@ export function CardSkeleton() {
  */
 export function SwapWidgetSkeleton() {
   return (
-    <div className="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-lg">
+    <div className="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-modal">
       <div className="space-y-4">
         {/* Header */}
         <Skeleton className="h-7 w-24" />
@@ -116,7 +116,7 @@ export function SwapWidgetSkeleton() {
  */
 export function LiquidityCardSkeleton() {
   return (
-    <div className="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-lg">
+    <div className="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-modal">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">

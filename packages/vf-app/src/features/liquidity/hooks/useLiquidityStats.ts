@@ -182,7 +182,7 @@ export function useLiquidityStats(
   useEffect(() => {
     console.warn('[useLiquidityStats] Initial mount - fetching stats');
     void fetchPoolStats();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []); // Run once on mount
   
   // Re-fetch when poolInfo or tokenPrices change

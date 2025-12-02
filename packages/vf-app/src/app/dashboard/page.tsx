@@ -1,6 +1,7 @@
 'use client';
 
 import { Award, CheckCircle2, Leaf, TrendingUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function ConsumerDashboard() {
   const stats = [
@@ -44,7 +45,7 @@ export default function ConsumerDashboard() {
         {stats.map((stat, i) => (
           <div
             key={i}
-            className="p-4 sm:p-6 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all"
+            className="p-4 sm:p-6 rounded-2xl border border-border bg-card hover:border-muted-foreground/50 transition-all"
           >
             <div className={`${stat.color} mb-3 sm:mb-4`}>
               <div className="w-6 h-6 sm:w-8 sm:h-8">{stat.icon}</div>
@@ -86,12 +87,12 @@ export default function ConsumerDashboard() {
         <div className="space-y-3 sm:space-y-4">
           <div className="p-4 sm:p-6 rounded-2xl border border-border bg-card">
             <h3 className="font-bold text-foreground mb-3 sm:mb-4 text-sm sm:text-base">Quick Start</h3>
-            <button className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-semibold transition-colors mb-2 sm:mb-3 text-sm sm:text-base">
+            <Button variant="verified" className="w-full mb-2 sm:mb-3">
               📱 Scan Product
-            </button>
-            <button className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg border border-primary/30 text-primary font-semibold hover:bg-primary/10 transition-colors text-sm sm:text-base">
+            </Button>
+            <Button variant="outline" className="w-full">
               📚 Learn More
-            </button>
+            </Button>
           </div>
 
           {/* Rewards Info */}

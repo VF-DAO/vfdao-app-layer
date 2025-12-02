@@ -26,6 +26,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Big from 'big.js';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useWallet } from '@/features/wallet';
 import { getMainnetTokens } from '@/lib/swap-utils';
 import type { TokenMetadata } from '@/types';
@@ -464,7 +465,7 @@ export const LiquidityCard: React.FC = () => {
   return (
     <div className="w-full max-w-[480px] mx-auto">
       {/* Main Card */}
-      <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 space-y-4 shadow-lg relative">
+      <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 space-y-4 shadow-main-card relative">
         {/* Loading Overlay */}
         {isLoadingPool && <LoadingOverlay />}
         
@@ -479,14 +480,24 @@ export const LiquidityCard: React.FC = () => {
         />
 
         {/* Settings Panel */}
-        {form.showSettings && (
-          <SlippageSettings
-            slippage={form.slippage}
-            customSlippage={form.customSlippage}
-            onSlippageChange={handleSlippageChange}
-            onCustomSlippageChange={handleCustomSlippage}
-          />
-        )}
+        <AnimatePresence>
+          {form.showSettings && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="overflow-hidden"
+            >
+              <SlippageSettings
+                slippage={form.slippage}
+                customSlippage={form.customSlippage}
+                onSlippageChange={handleSlippageChange}
+                onCustomSlippageChange={handleCustomSlippage}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* User Liquidity Display */}
         {poolInfo && userShares && Number(userShares) > 0 && (
@@ -508,50 +519,72 @@ export const LiquidityCard: React.FC = () => {
       </div>
 
       {/* Add Liquidity Form - Separate Card */}
-      {form.liquidityState === 'add' && poolInfo && (
-        <AddLiquidityForm
-          poolInfo={poolInfo}
-          accountId={accountId}
-          token1Amount={form.token1Amount}
-          token2Amount={form.token2Amount}
-          slippage={form.slippage}
-          showGasReserveInfo={form.showGasReserveInfo}
-          showGasReserveMessage={form.showGasReserveMessage}
-          transactionState={transaction.transactionState}
-          rawBalances={rawBalances}
-          isLoadingBalances={isLoadingBalances}
-          isLoadingPool={isLoadingPool}
-          tokenPrices={tokenPrices}
-          onToken1AmountChange={handleToken1AmountChange}
-          onToken2AmountChange={handleToken2AmountChange}
-          onToken1PercentClick={handleToken1PercentClick}
-          onToken1MaxClick={handleToken1MaxClick}
-          onToken2PercentClick={handleToken2PercentClick}
-          onToken2MaxClick={handleToken2MaxClick}
-          onCancel={handleAddLiquidityCancel}
-          onAddLiquidity={() => void actions.handleAddLiquidity()}
-          formatDollarAmount={calculations.formatDollarAmount}
-        />
-      )}
+      <AnimatePresence mode="wait">
+        {form.liquidityState === 'add' && poolInfo && (
+          <motion.div
+            key="add-liquidity"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className="overflow-hidden"
+          >
+            <AddLiquidityForm
+              poolInfo={poolInfo}
+              accountId={accountId}
+              token1Amount={form.token1Amount}
+              token2Amount={form.token2Amount}
+              slippage={form.slippage}
+              showGasReserveInfo={form.showGasReserveInfo}
+              showGasReserveMessage={form.showGasReserveMessage}
+              transactionState={transaction.transactionState}
+              rawBalances={rawBalances}
+              isLoadingBalances={isLoadingBalances}
+              isLoadingPool={isLoadingPool}
+              tokenPrices={tokenPrices}
+              onToken1AmountChange={handleToken1AmountChange}
+              onToken2AmountChange={handleToken2AmountChange}
+              onToken1PercentClick={handleToken1PercentClick}
+              onToken1MaxClick={handleToken1MaxClick}
+              onToken2PercentClick={handleToken2PercentClick}
+              onToken2MaxClick={handleToken2MaxClick}
+              onCancel={handleAddLiquidityCancel}
+              onAddLiquidity={() => void actions.handleAddLiquidity()}
+              formatDollarAmount={calculations.formatDollarAmount}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Remove Liquidity Form - Separate Card */}
-      {form.liquidityState === 'remove' && poolInfo && (
-        <RemoveLiquidityForm
-          poolInfo={poolInfo}
-          accountId={accountId}
-          token1Amount={form.token1Amount}
-          userShares={userShares}
-          transactionState={transaction.transactionState}
-          tokenPrices={tokenPrices}
-          onToken1AmountChange={form.setToken1Amount}
-          onSharesPercentClick={handleSharesPercentClick}
-          onSharesMaxClick={handleSharesMaxClick}
-          onCancel={handleRemoveLiquidityCancel}
-          onRemoveLiquidity={() => void actions.handleRemoveLiquidity()}
-          calculateRemoveLiquidityAmounts={calculations.calculateRemoveLiquidityAmounts}
-          formatDollarAmount={calculations.formatDollarAmount}
-        />
-      )}
+      <AnimatePresence mode="wait">
+        {form.liquidityState === 'remove' && poolInfo && (
+          <motion.div
+            key="remove-liquidity"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className="overflow-hidden"
+          >
+            <RemoveLiquidityForm
+              poolInfo={poolInfo}
+              accountId={accountId}
+              token1Amount={form.token1Amount}
+              userShares={userShares}
+              transactionState={transaction.transactionState}
+              tokenPrices={tokenPrices}
+              onToken1AmountChange={form.setToken1Amount}
+              onSharesPercentClick={handleSharesPercentClick}
+              onSharesMaxClick={handleSharesMaxClick}
+              onCancel={handleRemoveLiquidityCancel}
+              onRemoveLiquidity={() => void actions.handleRemoveLiquidity()}
+              calculateRemoveLiquidityAmounts={calculations.calculateRemoveLiquidityAmounts}
+              formatDollarAmount={calculations.formatDollarAmount}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Transaction Modals */}
       <LiquidityModals

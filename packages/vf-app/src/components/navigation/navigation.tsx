@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRightLeft, ChevronLeft, ChevronRight, Droplets, Github, Home, Menu, Send, Vote } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -20,20 +21,21 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: 'Home', href: '#', icon: Home },
-  { label: 'Swap', href: '#tokens', icon: ArrowRightLeft },
-  { label: 'Liquidity', href: '#liquidity', icon: Droplets },
-  { label: 'DAO', href: '#dao', icon: Vote, comingSoon: true, disabled: true }
+  { label: 'Home', href: '/', icon: Home },
+  { label: 'Swap', href: '/#tokens', icon: ArrowRightLeft },
+  { label: 'Liquidity', href: '/#liquidity', icon: Droplets },
+  { label: 'DAO', href: '/dao', icon: Vote }
 ];
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   activeSection: string;
+  pathname: string;
   onNavInteraction?: () => void;
 }
 
-function Sidebar({ isOpen, onClose, activeSection, onNavInteraction }: SidebarProps) {
+function Sidebar({ isOpen, onClose, activeSection, pathname, onNavInteraction }: SidebarProps) {
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   const handleClickOutside = useCallback((event: MouseEvent) => {
@@ -56,7 +58,7 @@ function Sidebar({ isOpen, onClose, activeSection, onNavInteraction }: SidebarPr
     };
   }, [isOpen, handleClickOutside]);
 
-  const scrollToTop = () => {
+  const _scrollToTop = () => {
     window.scrollTo({
       top: 0,
       behavior: 'smooth',
@@ -86,7 +88,7 @@ function Sidebar({ isOpen, onClose, activeSection, onNavInteraction }: SidebarPr
             initial={{ x: '-100%' }}
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
-            transition={{ type: 'tween', duration: 0.3 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
             className="fixed left-0 top-0 h-full w-80 max-w-[90vw] bg-background border-r border-border shadow-xl z-50 flex flex-col"
           >
             {/* Header */}
@@ -103,7 +105,7 @@ function Sidebar({ isOpen, onClose, activeSection, onNavInteraction }: SidebarPr
 
             {/* Navigation Items */}
             <div className="flex-1 py-6">
-              <nav className="px-4 space-y-2">
+              <nav className="px-4 space-y-4">
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = activeSection === item.href;
@@ -112,58 +114,39 @@ function Sidebar({ isOpen, onClose, activeSection, onNavInteraction }: SidebarPr
                     return (
                       <div
                         key={item.label}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-full opacity-60"
+                        className="flex items-center gap-3 w-full group opacity-60"
                       >
-                        <Icon size={18} />
-                        <span className="flex-1">{item.label}</span>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">Soon</span>
+                        <div className="w-12 h-12 rounded-full border border-border bg-card flex items-center justify-center">
+                          <Icon size={20} className="text-muted-foreground" />
+                        </div>
+                        <div className="flex-1">
+                          <span className="text-sm font-medium">{item.label}</span>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground ml-2">Soon</span>
+                        </div>
                       </div>
                     );
                   }
                   
-                  if (item.href === '#') {
-                    return (
-                      <button
-                        key={item.label}
-                        onClick={() => {
-                          onClose();
-                          onNavInteraction?.();
-                          setTimeout(() => scrollToTop(), 300);
-                        }}
-                        className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-full transition-colors ${
-                          isActive
-                            ? 'bg-accent/10'
-                            : 'hover:bg-accent/10'
-                        }`}
-                      >
-                        <Icon size={18} />
-                        {item.label}
-                      </button>
-                    );
-                  }
+                  // All items are now proper links
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
-                      onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                        e.preventDefault();
+                      onClick={(e) => {
+                        // If clicking Home while already on home page, scroll to top smoothly
+                        if (item.href === '/' && pathname === '/') {
+                          e.preventDefault();
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
                         onClose();
                         onNavInteraction?.();
-                        setTimeout(() => {
-                          const element = document.querySelector(item.href);
-                          if (element) {
-                            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                          }
-                        }, 300);
                       }}
-                      className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-full transition-colors ${
-                        isActive
-                          ? 'bg-accent/10'
-                          : 'hover:bg-accent/10'
-                      }`}
+                      className="flex items-center gap-3 w-full group"
                     >
-                      <Icon size={18} />
-                      {item.label}
+                      <div className={`w-12 h-12 rounded-full border ${isActive ? 'border-verified bg-verified/10 scale-110' : 'border-border bg-card group-hover:border-muted-foreground/50'} flex items-center justify-center transition-all duration-200 ${isActive ? 'shadow-md shadow-verified/20' : ''}`}>
+                        <Icon size={20} className={`${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'} transition-colors`} />
+                      </div>
+                      <span className={`flex-1 text-sm font-medium transition-colors ${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`}>{item.label}</span>
                     </Link>
                   );
                 })}
@@ -217,9 +200,10 @@ function Sidebar({ isOpen, onClose, activeSection, onNavInteraction }: SidebarPr
 
 export function Navigation() {
   const { isConnected } = useWallet();
+  const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDesktopExpanded, setIsDesktopExpanded] = useState(false);
-  const [activeSection, setActiveSection] = useState('#');
+  const [activeSection, setActiveSection] = useState('/');
 
   // Scroll hide state for mobile
   const [isNavVisible, setIsNavVisible] = useState(true);
@@ -232,11 +216,21 @@ export function Navigation() {
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const minSwipeDistance = 50;
 
-  // Reset sidebar state when wallet connection changes
+  // Update body class for sidebar state
   useEffect(() => {
-    setIsSidebarOpen(false);
-    setIsDesktopExpanded(false);
-  }, [isConnected]);
+    if (isConnected) {
+      if (isDesktopExpanded) {
+        document.body.classList.add('sidebar-expanded');
+        document.body.classList.remove('sidebar-collapsed');
+      } else {
+        document.body.classList.add('sidebar-collapsed');
+        document.body.classList.remove('sidebar-expanded');
+      }
+    }
+    return () => {
+      document.body.classList.remove('sidebar-expanded', 'sidebar-collapsed');
+    };
+  }, [isDesktopExpanded, isConnected]);
 
   // Handle touch events for swipe gestures
   const onTouchStart = (e: React.TouchEvent) => {
@@ -326,8 +320,15 @@ export function Navigation() {
     }
   }, [sidebarInteractionTime]);
 
-  // Track active section based on scroll position
+  // Track active section based on scroll position and pathname
   useEffect(() => {
+    // If we're on a different page (not home), set that as active
+    if (pathname !== '/') {
+      setActiveSection(pathname);
+      return;
+    }
+
+    // Otherwise, track scroll position on home page
     const sectionIds = ['#tokens', '#liquidity'];
     
     const observerOptions = {
@@ -337,16 +338,16 @@ export function Navigation() {
     };
 
     const observerCallback = (entries: IntersectionObserverEntry[]) => {
-      let currentActiveSection = '#';
+      let currentActiveSection = '/';
       
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          const sectionId = entry.target.id ? `#${entry.target.id}` : '#';
+          const sectionId = entry.target.id ? `/#${entry.target.id}` : '/';
           // Prioritize sections in order: tokens, then liquidity
-          if (sectionId === '#tokens') {
-            currentActiveSection = '#tokens';
-          } else if (sectionId === '#liquidity' && currentActiveSection !== '#tokens') {
-            currentActiveSection = '#liquidity';
+          if (sectionId === '/#tokens') {
+            currentActiveSection = '/#tokens';
+          } else if (sectionId === '/#liquidity' && currentActiveSection !== '/#tokens') {
+            currentActiveSection = '/#liquidity';
           }
         }
       });
@@ -371,7 +372,7 @@ export function Navigation() {
       
       // If we're at the very top, show home as active
       if (scrollTop < windowHeight * 0.3) {
-        setActiveSection('#');
+        setActiveSection('/');
         return;
       }
       
@@ -382,7 +383,7 @@ export function Navigation() {
       if (tokensSection) {
         const tokensRect = tokensSection.getBoundingClientRect();
         if (tokensRect.top <= windowHeight * 0.5 && tokensRect.bottom >= windowHeight * 0.5) {
-          setActiveSection('#tokens');
+          setActiveSection('/#tokens');
           return;
         }
       }
@@ -390,7 +391,7 @@ export function Navigation() {
       if (liquiditySection) {
         const liquidityRect = liquiditySection.getBoundingClientRect();
         if (liquidityRect.top <= windowHeight * 0.5 && liquidityRect.bottom >= windowHeight * 0.5) {
-          setActiveSection('#liquidity');
+          setActiveSection('/#liquidity');
           return;
         }
       }
@@ -403,7 +404,7 @@ export function Navigation() {
       observer.disconnect();
       window.removeEventListener('scroll', handleScroll);
     };
-  }, []);
+  }, [pathname]);
 
   return (
     <>
@@ -432,9 +433,13 @@ export function Navigation() {
 
               <div className="flex-1 flex justify-center">
                 <button
-                  onClick={() => {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                    document.documentElement.scrollTo({ top: 0, behavior: 'smooth' });
+                  onClick={(e) => {
+                    if (pathname === '/') {
+                      e.preventDefault();
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } else {
+                      window.location.href = '/';
+                    }
                   }}
                   className="focus:outline-none border-none outline-none"
                 >
@@ -447,7 +452,7 @@ export function Navigation() {
           </div>
 
           {/* Desktop Sidebar */}
-          <div className={`hidden md:flex fixed left-0 top-0 h-full bg-background border-r border-border shadow-lg z-40 flex-col transition-all duration-300 ${
+          <div className={`hidden md:flex fixed left-0 top-0 h-full bg-background border-r border-border shadow-sidebar z-40 flex-col transition-all duration-300 ${
             isDesktopExpanded ? 'w-72' : 'w-20'
           }`}>
             {/* Header */}
@@ -481,7 +486,7 @@ export function Navigation() {
 
             {/* Navigation Items */}
             <div className="flex-1 py-6 transition-all duration-300">
-              <nav className="px-2 space-y-2 transition-all duration-300">
+              <nav className="px-2 space-y-4 transition-all duration-300">
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = activeSection === item.href;
@@ -490,16 +495,16 @@ export function Navigation() {
                     return (
                       <div
                         key={item.label}
-                        className={`flex items-center gap-3 px-3 py-3 text-sm font-medium rounded-full opacity-60 transition-all duration-300 ease-in-out ${
+                        className={`flex items-center justify-center w-full opacity-60 transition-all duration-300 ease-in-out ${
                           isDesktopExpanded ? '' : 'justify-center'
                         }`}
                       >
-                        <div className="transition-all duration-300">
-                          <Icon size={18} />
+                        <div className="w-12 h-12 rounded-full border border-border bg-card flex items-center justify-center">
+                          <Icon size={18} className="text-muted-foreground" />
                         </div>
                         {isDesktopExpanded && (
-                          <div className="flex-1 transition-all duration-300 ease-in-out">
-                            <span>{item.label}</span>
+                          <div className="flex-1 ml-3 transition-all duration-300 ease-in-out">
+                            <span className="text-sm font-medium">{item.label}</span>
                             <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground ml-2">Soon</span>
                           </div>
                         )}
@@ -511,71 +516,41 @@ export function Navigation() {
                     return (
                       <div
                         key={item.label}
-                        className={`flex items-center gap-3 px-3 py-3 text-sm font-medium rounded-full opacity-50 transition-all duration-300 ease-in-out ${
+                        className={`flex items-center justify-center w-full opacity-50 transition-all duration-300 ease-in-out ${
                           isDesktopExpanded ? '' : 'justify-center'
                         }`}
                       >
-                        <div className="transition-all duration-300">
-                          <Icon size={18} />
+                        <div className="w-12 h-12 rounded-full border border-border bg-card flex items-center justify-center">
+                          <Icon size={18} className="text-muted-foreground" />
                         </div>
                         {isDesktopExpanded && (
-                          <span className="flex-1 transition-all duration-300 ease-in-out">{item.label}</span>
+                          <span className="flex-1 ml-3 text-sm font-medium transition-all duration-300 ease-in-out">{item.label}</span>
                         )}
                       </div>
                     );
                   }
                   
-                  if (item.href === '#') {
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                          e.preventDefault();
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                          document.documentElement.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                        className={`flex items-center gap-3 px-3 py-3 text-sm font-medium rounded-full transition-all duration-300 ease-in-out ${
-                          isDesktopExpanded ? '' : 'justify-center'
-                        } ${
-                          isActive
-                            ? 'bg-accent/10'
-                            : 'hover:bg-accent/10'
-                        }`}
-                      >
-                        <div className="transition-all duration-300">
-                          <Icon size={18} />
-                        </div>
-                        {isDesktopExpanded && (
-                          <span className="flex-1 transition-all duration-300 ease-in-out">{item.label}</span>
-                        )}
-                      </Link>
-                    );
-                  }
+                  // All items are now proper links
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
-                      onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                        e.preventDefault();
-                        const element = document.querySelector(item.href);
-                        if (element) {
-                          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      onClick={(e) => {
+                        // If clicking Home while already on home page, scroll to top smoothly
+                        if (item.href === '/' && pathname === '/') {
+                          e.preventDefault();
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
                         }
                       }}
-                      className={`flex items-center gap-3 px-3 py-3 text-sm font-medium rounded-full transition-all duration-300 ease-in-out ${
+                      className={`flex items-center justify-center w-full group transition-all duration-300 ease-in-out ${
                         isDesktopExpanded ? '' : 'justify-center'
-                      } ${
-                        isActive
-                          ? 'bg-accent/10'
-                          : 'hover:bg-accent/10'
                       }`}
                     >
-                      <div className="transition-all duration-300">
-                        <Icon size={18} />
+                      <div className={`w-12 h-12 rounded-full border ${isActive ? 'border-verified bg-verified/10 scale-110' : 'border-border bg-card group-hover:border-muted-foreground/50'} flex items-center justify-center transition-all duration-200 ${isActive ? 'shadow-md shadow-verified/20' : ''}`}>
+                        <Icon size={18} className={`${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'} transition-colors`} />
                       </div>
                       {isDesktopExpanded && (
-                        <span className="flex-1 transition-all duration-300 ease-in-out">{item.label}</span>
+                        <span className={`flex-1 ml-3 text-sm font-medium transition-all duration-300 ease-in-out ${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`}>{item.label}</span>
                       )}
                     </Link>
                   );
@@ -655,6 +630,7 @@ export function Navigation() {
             isOpen={isSidebarOpen} 
             onClose={() => setIsSidebarOpen(false)} 
             activeSection={activeSection}
+            pathname={pathname}
             onNavInteraction={() => setSidebarInteractionTime(Date.now())}
           />
 
@@ -674,7 +650,7 @@ export function Navigation() {
                       className="flex flex-col items-center justify-center flex-1 py-2 px-1 group opacity-50"
                     >
                       <div className="w-10 h-10 rounded-full border border-border bg-card flex items-center justify-center">
-                        <Icon size={18} className="text-muted-foreground" />
+                        <Icon size={20} className="text-muted-foreground" />
                       </div>
                     </div>
                   );
@@ -686,49 +662,32 @@ export function Navigation() {
                       key={item.label}
                       className="flex flex-col items-center justify-center flex-1 py-2 px-1 relative group"
                     >
-                      <div className={`w-10 h-10 rounded-full border ${isActive ? 'border-verified bg-verified/10 scale-110' : 'border-border bg-card hover:border-primary/50'} flex items-center justify-center transition-all duration-200 ${isActive ? 'shadow-lg shadow-verified/20' : ''}`}>
-                        <Icon size={18} className={`${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'} transition-colors`} />
+                      <div className={`w-10 h-10 rounded-full border ${isActive ? 'border-verified bg-verified/10 scale-110' : 'border-border bg-card group-hover:border-muted-foreground/50'} flex items-center justify-center transition-all duration-200 ${isActive ? 'shadow-md shadow-verified/20' : ''}`}>
+                        <Icon size={20} className={`${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'} transition-colors`} />
                       </div>
                       <span className="absolute -top-1 -right-1 text-[8px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">Soon</span>
                     </div>
                   );
                 }
                 
-                if (item.href === '#') {
-                  return (
-                    <button
-                      key={item.label}
-                      onClick={() => {
-                        setNavInteractionTime(Date.now());
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                        document.documentElement.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                      className="flex flex-col items-center justify-center flex-1 py-2 px-1 group"
-                      aria-label={item.label}
-                    >
-                      <div className={`w-10 h-10 rounded-full border ${isActive ? 'border-verified bg-verified/10 scale-110' : 'border-border bg-card hover:border-primary/50'} flex items-center justify-center transition-all duration-200 ${isActive ? 'shadow-lg shadow-verified/20' : ''}`}>
-                        <Icon size={18} className={`${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'} transition-colors`} />
-                      </div>
-                    </button>
-                  );
-                }
+                // All items are now proper links
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                      e.preventDefault();
-                      setNavInteractionTime(Date.now());
-                      const element = document.querySelector(item.href);
-                      if (element) {
-                        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    onClick={(e) => {
+                      // If clicking Home while already on home page, scroll to top smoothly
+                      if (item.href === '/' && pathname === '/') {
+                        e.preventDefault();
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
                       }
+                      setNavInteractionTime(Date.now());
                     }}
                     className="flex flex-col items-center justify-center flex-1 py-2 px-1 group"
                     aria-label={item.label}
                   >
-                    <div className={`w-10 h-10 rounded-full border ${isActive ? 'border-verified bg-verified/10 scale-110' : 'border-border bg-card hover:border-primary/50'} flex items-center justify-center transition-all duration-200 ${isActive ? 'shadow-lg shadow-verified/20' : ''}`}>
-                      <Icon size={18} className={`${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'} transition-colors`} />
+                      <div className={`w-10 h-10 rounded-full border ${isActive ? 'border-verified bg-verified/10 scale-110' : 'border-border bg-card group-hover:border-muted-foreground/50'} flex items-center justify-center transition-all duration-200 ${isActive ? 'shadow-md shadow-verified/20' : ''}`}>
+                        <Icon size={20} className={`${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'} transition-colors`} />
                     </div>
                   </Link>
                 );

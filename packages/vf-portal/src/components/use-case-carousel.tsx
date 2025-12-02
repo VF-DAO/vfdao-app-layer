@@ -199,7 +199,7 @@ export function UseCaseCarousel() {
               onTouchEnd={isTop && dragState.isDragging ? handleDragEnd : undefined}
               onTouchCancel={isTop && dragState.isDragging ? handleDragEnd : undefined}
             >
-              <div className="w-full h-full rounded-2xl border-2 border-border bg-card shadow-2xl p-4 md:p-6 flex flex-col">
+              <div className="w-full h-full rounded-2xl border-2 border-border bg-card shadow-modal p-4 md:p-6 flex flex-col">
                 {/* Header */}
                 <div className="flex items-center gap-3 mb-6 pb-4 border-b border-border">
                   <div className="w-10 h-10 rounded-full bg-verified/10 border border-verified flex items-center justify-center flex-shrink-0 shadow-md shadow-verified/20">

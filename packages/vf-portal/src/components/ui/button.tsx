@@ -9,12 +9,12 @@ const buttonVariants = cva(
     variants: {
       variant: {
         // Primary brand button - matches vf-portal "Launch App" style
-        default: 'border border-verified bg-verified/10 text-primary hover:text-primary shadow-md shadow-verified/20 hover:shadow-lg hover:shadow-verified/30',
+        default: 'border border-verified bg-verified/10 text-primary hover:text-primary shadow-md shadow-verified/20 hover:shadow-md hover:shadow-verified/30',
         // Additional variants for future use
         secondary: 'border border-primary bg-primary/10 text-primary hover:bg-primary/20',
         destructive: 'border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500/20',
-        outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
-        ghost: 'hover:bg-accent hover:text-accent-foreground',
+        outline: 'border border-border bg-card text-muted-foreground hover:border-muted-foreground/50 hover:text-primary',
+        ghost: 'hover:text-primary',
         link: 'text-primary underline-offset-4 hover:underline',
       },
       size: {

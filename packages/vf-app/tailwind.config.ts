@@ -27,6 +27,7 @@ const config: Config = {
         secondary: {
           DEFAULT: 'hsl(var(--secondary) / <alpha-value>)',
           foreground: 'hsl(var(--secondary-foreground) / <alpha-value>)',
+          border: 'hsl(var(--secondary-border) / <alpha-value>)',
         },
         destructive: {
           DEFAULT: 'hsl(var(--destructive) / <alpha-value>)',
@@ -84,7 +85,7 @@ const config: Config = {
         'scale-in': 'scale-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
         'check-in': 'check-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.15s both',
         shake: 'shake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97)',
-        'fade-in': 'fade-in 0.3s ease-out',
+        'fade-in': 'fade-in 0.3s ease-in-out',
       },
     },
   },

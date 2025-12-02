@@ -4,7 +4,7 @@ import React, { useMemo } from 'react';
 import Big from 'big.js';
 import { toInternationalCurrencySystemLongString } from '@ref-finance/ref-sdk';
 import type { SwapEstimate, TokenMetadata } from '@/types';
-import { formatTokenAmount } from '@/lib/swap-utils';
+import { formatTokenAmountNoAbbrev } from '@/lib/swap-utils';
 
 interface SwapDetailsProps {
   tokenIn: TokenMetadata | undefined;
@@ -84,7 +84,7 @@ export const SwapDetails: React.FC<SwapDetailsProps> = ({
   }
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 shadow-lg space-y-3 text-xs animate-in fade-in slide-in-from-top-2 duration-300">
+    <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 space-y-3 text-xs shadow-main-card animate-in fade-in slide-in-from-top-2 duration-300">
       <div className="flex justify-between">
         <span className="text-muted-foreground text-xs">Rate</span>
         <button
@@ -144,7 +144,7 @@ export const SwapDetails: React.FC<SwapDetailsProps> = ({
         }`}>
           {(!currentEstimate?.minReceived
             ? '0.0'
-            : `${formatTokenAmount(currentEstimate?.minReceived ?? '0', tokenOut?.decimals ?? 18, 4)} ${tokenOut?.symbol ?? ''}`
+            : `${formatTokenAmountNoAbbrev(currentEstimate?.minReceived ?? '0', tokenOut?.decimals ?? 18, 4)} ${tokenOut?.symbol ?? ''}`
           )}
         </span>
       </div>

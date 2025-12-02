@@ -4,6 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import Big from 'big.js';
 import { ChevronLeft } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { LoadingDots } from '@/components/ui/loading-dots';
 import { toInternationalCurrencySystemLongString } from '@ref-finance/ref-sdk';
 import { TokenInput } from '@/features/swap/components/TokenInput';
@@ -43,13 +44,13 @@ export const RemoveLiquidityForm: React.FC<RemoveLiquidityFormProps> = ({
   formatDollarAmount,
 }) => {
   return (
-    <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 space-y-4 shadow-lg mt-4">
+    <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 space-y-4 shadow-main-card mt-4">
       <div className="space-y-4">
         {/* Header with Back Button */}
         <div className="flex items-center justify-between pb-3 border-b border-border">
           <button
             onClick={onCancel}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group p-2 rounded-md"
+            className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors group p-2 rounded-md"
           >
             <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
           </button>
@@ -61,28 +62,38 @@ export const RemoveLiquidityForm: React.FC<RemoveLiquidityFormProps> = ({
 
         {/* Share Amount Input */}
         <div className="space-y-2">
-          {!!(accountId && userShares && userShares !== '0') && (
-            <div className="flex gap-2 justify-end animate-in fade-in slide-in-from-top-1 duration-200">
-              {[25, 50, 75].map((percent) => (
-                <Button
-                  key={percent}
-                  onClick={() => onSharesPercentClick(percent)}
-                  variant="percentage"
-                  size="xs"
-                >
-                  {percent}%
-                </Button>
-              ))}
-              <Button
-                onClick={onSharesMaxClick}
-                variant="percentage"
-                size="xs"
+          <AnimatePresence>
+            {!!(accountId && userShares && userShares !== '0') && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                className="overflow-hidden"
               >
-                MAX
-              </Button>
-            </div>
-          )}
-          <div className="flex items-center gap-0 p-4 border border-border rounded-full transition-all hover:border-primary/50 hover:shadow-lg">
+                <div className="flex gap-2 justify-end">
+                  {[25, 50, 75].map((percent) => (
+                    <Button
+                      key={percent}
+                      onClick={() => onSharesPercentClick(percent)}
+                      variant="percentage"
+                      size="xs"
+                    >
+                      {percent}%
+                    </Button>
+                  ))}
+                  <Button
+                    onClick={onSharesMaxClick}
+                    variant="percentage"
+                    size="xs"
+                  >
+                    MAX
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <div className="flex items-center gap-0 p-4 border border-border rounded-full transition-all hover:border-muted-foreground/50 hover:shadow-interactive">
             <div className="flex flex-col items-start w-[200px]">
               <span className="font-semibold text-foreground text-sm">LP Shares</span>
               {accountId && (
@@ -130,87 +141,97 @@ export const RemoveLiquidityForm: React.FC<RemoveLiquidityFormProps> = ({
         </div>
 
         {/* Show token amounts user will receive */}
-        {!!(token1Amount && parseFloat(token1Amount) > 0) && (() => {
-          const amounts = calculateRemoveLiquidityAmounts(token1Amount);
-          return (
-            <div className="bg-card border border-border rounded-2xl p-4 shadow-lg space-y-2 text-xs animate-in fade-in slide-in-from-top-2 duration-300">
-              <p className="text-sm font-medium text-foreground mb-2">You will receive:</p>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {poolInfo.token1.icon ? (
-                    <Image 
-                      src={poolInfo.token1.icon} 
-                      alt={poolInfo.token1.symbol}
-                      width={20}
-                      height={20}
-                      className="rounded-full"
-                    />
-                  ) : (
-                    <div className="w-5 h-5 bg-gradient-to-br from-verified/20 to-verified/10 rounded-full flex items-center justify-center">
-                      <span className="text-xs font-bold text-verified">N</span>
+        <AnimatePresence>
+          {!!(token1Amount && parseFloat(token1Amount) > 0) && (() => {
+            const amounts = calculateRemoveLiquidityAmounts(token1Amount);
+            return (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                className="overflow-hidden"
+              >
+                <div className="bg-card border border-border rounded-2xl p-4 space-y-2 text-xs">
+                  <p className="text-sm font-medium text-foreground mb-2">You will receive:</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {poolInfo.token1.icon ? (
+                        <Image 
+                          src={poolInfo.token1.icon} 
+                          alt={poolInfo.token1.symbol}
+                          width={20}
+                          height={20}
+                          className="rounded-full"
+                        />
+                      ) : (
+                        <div className="w-5 h-5 bg-gradient-to-br from-verified/20 to-verified/10 rounded-full flex items-center justify-center">
+                          <span className="text-xs font-bold text-verified">N</span>
+                        </div>
+                      )}
+                      <span className="text-muted-foreground text-xs">{poolInfo.token1.symbol}</span>
                     </div>
-                  )}
-                  <span className="text-muted-foreground text-xs">{poolInfo.token1.symbol}</span>
-                </div>
-                <div className="text-right">
-                  <span className="font-medium text-xs">
-                    {(() => {
-                      const num = parseFloat(amounts.token1Amount);
-                      return num >= 1000 
-                        ? toInternationalCurrencySystemLongString(amounts.token1Amount, 2)
-                        : amounts.token1Amount;
-                    })()}
-                    {tokenPrices[poolInfo.token1.id] && (
-                      <span className="text-xs text-muted-foreground ml-1">
-                        ({formatDollarAmount(parseFloat(amounts.token1Amount) * (tokenPrices[poolInfo.token1.id] ?? tokenPrices.near ?? tokenPrices['wrap.near'] ?? 0))})
+                    <div className="text-right">
+                      <span className="font-medium text-xs">
+                        {(() => {
+                          const num = parseFloat(amounts.token1Amount);
+                          return num >= 1000 
+                            ? toInternationalCurrencySystemLongString(amounts.token1Amount, 2)
+                            : amounts.token1Amount;
+                        })()}
+                        {tokenPrices[poolInfo.token1.id] && (
+                          <span className="text-xs text-muted-foreground ml-1">
+                            ({formatDollarAmount(parseFloat(amounts.token1Amount) * (tokenPrices[poolInfo.token1.id] ?? tokenPrices.near ?? tokenPrices['wrap.near'] ?? 0))})
+                          </span>
+                        )}
                       </span>
-                    )}
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {poolInfo.token2.icon ? (
-                    <Image 
-                      src={poolInfo.token2.icon} 
-                      alt={poolInfo.token2.symbol}
-                      width={20}
-                      height={20}
-                      className="rounded-full"
-                    />
-                  ) : (
-                    <div className="w-5 h-5 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center">
-                      <span className="text-xs font-bold text-primary">V</span>
                     </div>
-                  )}
-                  <span className="text-muted-foreground text-xs">{poolInfo.token2.symbol}</span>
-                </div>
-                <div className="text-right">
-                  <span className="font-medium text-xs">
-                    {(() => {
-                      const num = parseFloat(amounts.token2Amount);
-                      return num >= 1000 
-                        ? toInternationalCurrencySystemLongString(amounts.token2Amount, 2)
-                        : amounts.token2Amount;
-                    })()}
-                    {tokenPrices[poolInfo.token2.id] && (
-                      <span className="text-xs text-muted-foreground ml-1">
-                        ({formatDollarAmount(parseFloat(amounts.token2Amount) * tokenPrices[poolInfo.token2.id])})
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {poolInfo.token2.icon ? (
+                        <Image 
+                          src={poolInfo.token2.icon} 
+                          alt={poolInfo.token2.symbol}
+                          width={20}
+                          height={20}
+                          className="rounded-full"
+                        />
+                      ) : (
+                        <div className="w-5 h-5 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center">
+                          <span className="text-xs font-bold text-primary">V</span>
+                        </div>
+                      )}
+                      <span className="text-muted-foreground text-xs">{poolInfo.token2.symbol}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-medium text-xs">
+                        {(() => {
+                          const num = parseFloat(amounts.token2Amount);
+                          return num >= 1000 
+                            ? toInternationalCurrencySystemLongString(amounts.token2Amount, 2)
+                            : amounts.token2Amount;
+                        })()}
+                        {tokenPrices[poolInfo.token2.id] && (
+                          <span className="text-xs text-muted-foreground ml-1">
+                            ({formatDollarAmount(parseFloat(amounts.token2Amount) * tokenPrices[poolInfo.token2.id])})
+                          </span>
+                        )}
                       </span>
-                    )}
-                  </span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          );
-        })()}
+              </motion.div>
+            );
+          })()}
+        </AnimatePresence>
 
         {/* Action Buttons */}
         <div className="flex gap-2">
           <Button
             onClick={onCancel}
             disabled={transactionState === 'waitingForConfirmation'}
-            variant="outline"
+            variant="muted"
             className="flex-1 py-2 min-h-[40px]"
           >
             <span className="inline-flex items-center justify-center min-h-[20px]">

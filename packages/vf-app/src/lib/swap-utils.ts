@@ -165,6 +165,26 @@ const STATIC_MAINNET_TOKENS = [
 ];
 
 /**
+ * Extended token list for DAO proposals (includes USDC, etc.)
+ */
+const STATIC_DAO_TOKENS = [
+  {
+    id: 'veganfriends.tkn.near',
+    symbol: 'VEGANFRIENDS',
+    name: 'Vegan Friends Token',
+    decimals: 18,
+    icon: undefined, // Will be fetched from contract
+  },
+  {
+    id: '17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1',
+    symbol: 'USDC',
+    name: 'USD Coin',
+    decimals: 6,
+    icon: 'https://assets.ref.finance/images/17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1.png',
+  },
+];
+
+/**
  * NEAR metadata (native NEAR token)
  */
 const NEAR_METADATA = {
@@ -200,6 +220,7 @@ export const unwrapedNear: TokenMetadata = {
 
 /**
  * Get mainnet tokens with metadata fetched from contracts
+ * Used by swap widget - only NEAR and VEGANFRIENDS
  */
 export async function getMainnetTokens(): Promise<TokenMetadata[]> {
   const tokens: TokenMetadata[] = [];
@@ -207,9 +228,30 @@ export async function getMainnetTokens(): Promise<TokenMetadata[]> {
   // Add unwrapped NEAR first (Ref Finance's approach) - this handles automatic wrapping
   tokens.push(unwrapedNear);
 
-  // Only add VEGANFRIENDS token, not wNEAR since we want only NEAR
+  // Only add VEGANFRIENDS token for swap widget
   for (const staticToken of STATIC_MAINNET_TOKENS) {
     // Skip wNEAR since we only want NEAR (which auto-wraps)
+    if (staticToken.id === 'wrap.near') continue;
+
+    const metadata = await getTokenMetadata(staticToken.id);
+    tokens.push(metadata);
+  }
+
+  return tokens;
+}
+
+/**
+ * Get extended tokens for DAO proposals (includes USDC, etc.)
+ * Used by create proposal - more token options
+ */
+export async function getDaoTokens(): Promise<TokenMetadata[]> {
+  const tokens: TokenMetadata[] = [];
+
+  // Add unwrapped NEAR first
+  tokens.push(unwrapedNear);
+
+  // Add all DAO tokens (VEGANFRIENDS, USDC, etc.)
+  for (const staticToken of STATIC_DAO_TOKENS) {
     if (staticToken.id === 'wrap.near') continue;
 
     const metadata = await getTokenMetadata(staticToken.id);

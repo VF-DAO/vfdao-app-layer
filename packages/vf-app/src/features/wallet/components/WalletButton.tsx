@@ -5,6 +5,7 @@ import { ChevronDown, ExternalLink, LogOut, RefreshCw, User, Wallet } from 'luci
 import { AnimatePresence, motion } from 'framer-motion';
 import { useWallet } from '../contexts/wallet-context';
 import { LoadingDots } from '@/components/ui/loading-dots';
+import { Button } from '@/components/ui/button';
 
 interface WalletButtonProps {
   compact?: boolean;
@@ -41,7 +42,7 @@ export function WalletButton({ compact = false, className }: WalletButtonProps) 
         setShowMenu(false);
       } catch (error) {
         // Handle user rejection gracefully - don't treat as error
-        if (error instanceof Error && (error.message === 'User rejected' || error.message === 'Wallet closed')) {
+        if (error === null || (error instanceof Error && (error.message === 'User rejected' || error.message === 'Wallet closed' || error.message.includes('cancel') || error.message.includes('reject')))) {
           console.warn('User cancelled wallet switch');
         } else {
           console.error('Failed to switch wallet:', error);
@@ -52,19 +53,18 @@ export function WalletButton({ compact = false, className }: WalletButtonProps) 
 
   if (!isConnected) {
     return (
-      <button
+      <Button
         onClick={() => void signIn()}
         disabled={!connector || isConnecting || isLoading}
-        className={`flex items-center justify-center gap-2 border border-verified bg-verified/10 text-primary hover:text-primary px-4 py-2 rounded-full font-semibold transition-all hover:shadow-md hover:shadow-verified/20 text-sm disabled:opacity-50 disabled:cursor-not-allowed min-h-[40px] ${
-          compact ? 'px-3 py-2 w-full min-w-[44px]' : ''
-  } ${className ?? ''}`}
+        variant="verified"
+        className={`min-h-[40px] ${compact ? 'px-3 py-2 w-full min-w-[44px]' : ''} ${className ?? ''}`}
       >
         <Wallet className="w-4 h-4 flex-shrink-0" />
         <span className="inline-flex items-center justify-center min-h-[20px]">
           {!compact && !isConnecting && !isLoading && <span className="hidden sm:inline whitespace-nowrap">Connect Wallet</span>}
           {(isConnecting || isLoading) && <LoadingDots />}
         </span>
-      </button>
+      </Button>
     );
   }
 
@@ -72,7 +72,7 @@ export function WalletButton({ compact = false, className }: WalletButtonProps) 
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setShowMenu(!showMenu)}
-        className={`flex items-center gap-2.5 bg-card hover:bg-card/50 border border-border hover:border-primary/50 rounded-full px-3.5 py-2 transition-all duration-150 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-primary/20 ${
+        className={`flex items-center gap-2.5 bg-card hover:bg-card/50 border border-border hover:border-muted-foreground/50 rounded-full px-3.5 py-2 transition-all duration-150 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-primary/20 ${
           compact ? 'px-3 py-2.5 w-full justify-center' : ''
   } ${className ?? ''}`}
       >
@@ -102,10 +102,10 @@ export function WalletButton({ compact = false, className }: WalletButtonProps) 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            transition={{ duration: 0.2 }}
-            className={`absolute w-64 bg-popover/95 border border-primary/20 rounded-3xl shadow-lg z-50 overflow-hidden backdrop-blur-md bottom-full left-2 mb-2`}
+            transition={{ duration: 0.2, ease: 'easeInOut' }}
+            className={`absolute w-64 bg-card border border-border rounded-2xl shadow-dropdown z-50 overflow-hidden backdrop-blur-md bottom-full left-2 mb-2`}
           >
-          <div className="p-4 border-b border-primary/10 bg-muted/30">
+          <div className="p-4 border-b border-border bg-muted/30">
             <p className="text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">
               Connected Account
             </p>
@@ -120,19 +120,19 @@ export function WalletButton({ compact = false, className }: WalletButtonProps) 
                 window.open(`https://testnet.nearblocks.io/address/${accountId}`, '_blank');
                 setShowMenu(false);
               }}
-              className="w-full px-4 py-2 flex items-center gap-3 hover:bg-accent/10 transition-all duration-150 text-left group"
+              className="w-full px-4 py-2 flex items-center gap-3 hover:bg-muted/50 transition-all duration-150 text-left group"
             >
               <User className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-150" />
-              <span className="text-sm text-foreground font-medium">View on Explorer</span>
+              <span className="text-sm text-muted-foreground group-hover:text-primary font-medium transition-colors duration-150">View on Explorer</span>
               <ExternalLink className="w-3.5 h-3.5 text-muted-foreground/50 ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-150" />
             </button>
 
             <button
               onClick={() => void handleSwitchWallet()}
-              className="w-full px-4 py-2 flex items-center gap-3 hover:bg-accent/10 transition-all duration-150 text-left group"
+              className="w-full px-4 py-2 flex items-center gap-3 hover:bg-muted/50 transition-all duration-150 text-left group"
             >
               <RefreshCw className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-150" />
-              <span className="text-sm text-foreground font-medium">Switch Wallet</span>
+              <span className="text-sm text-muted-foreground group-hover:text-primary font-medium transition-colors duration-150">Switch Wallet</span>
             </button>
 
             <div className="h-px bg-border my-2 mx-3"></div>

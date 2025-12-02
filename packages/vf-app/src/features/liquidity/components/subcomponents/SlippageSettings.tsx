@@ -25,7 +25,7 @@ export function SlippageSettings({
   presets = DEFAULT_SLIPPAGE_PRESETS,
 }: SlippageSettingsProps) {
   return (
-    <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 shadow-lg space-y-3">
+    <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 shadow-modal dark:shadow-primary/20 space-y-3">
       <div>
         <p className="text-xs sm:text-sm font-medium text-foreground mb-2">Slippage Tolerance</p>
         <div className="flex gap-2 mb-2">
@@ -46,7 +46,7 @@ export function SlippageSettings({
             value={customSlippage}
             onChange={onCustomSlippageChange}
             placeholder="Custom"
-            className="flex-1 px-3 py-2 bg-transparent border border-border rounded-full text-xs focus:outline-none focus:border-primary/50 focus:shadow-lg transition-all placeholder:text-primary placeholder:font-medium placeholder:opacity-60"
+            className="flex-1 px-3 py-2 bg-transparent border border-border rounded-full text-xs focus:outline-none focus:border-muted-foreground/50 transition-all placeholder:text-primary placeholder:font-medium placeholder:opacity-60"
             decimalLimit={2}
           />
           <span className="text-xs text-muted-foreground">%</span>

@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Search, X } from 'lucide-react';
+import { SearchInput } from '@/components/ui/search-input';
 import Image from 'next/image';
+import { X } from 'lucide-react';
 import { MAINNET_TOKENS } from '@/lib/swap-utils';
 import type { TokenMetadata } from '@/types';
 
@@ -91,7 +92,7 @@ export function TokenSelect({
           />
 
           {/* Modal */}
-          <div className="absolute top-full mt-2 left-0 w-[340px] bg-card border border-border rounded-2xl shadow-xl z-50 overflow-hidden">
+          <div className="absolute top-full mt-2 left-0 w-[340px] bg-card border border-border rounded-2xl shadow-modal z-50 overflow-hidden">
             {/* Header */}
             <div className="p-4 border-b border-border">
               <div className="flex items-center justify-between mb-3">
@@ -101,23 +102,18 @@ export function TokenSelect({
                     setIsOpen(false);
                     setSearchQuery('');
                   }}
-                  className="p-2 bg-card hover:bg-muted rounded-full text-muted-foreground hover:text-foreground transition-colors"
+                  className="p-2 bg-card hover:bg-muted rounded-full text-muted-foreground hover:text-primary transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by name or symbol"
-                  className="w-full pl-10 pr-4 py-2 bg-transparent border border-border rounded-full text-sm focus:outline-none focus:border-primary/50 focus:shadow-lg transition-all placeholder:text-primary placeholder:font-medium placeholder:opacity-60"
-                />
-              </div>
+              <SearchInput
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Search by name or symbol"
+              />
             </div>
 
             {/* Token List */}
@@ -181,7 +177,7 @@ export function TokenSelect({
                       <button
                         key={token.id}
                         onClick={() => handleSelect(token)}
-                        className="px-3 py-1 hover:bg-muted border border-border rounded-full text-xs font-medium text-foreground transition-colors"
+                        className="px-3 py-1 bg-card border border-border rounded-full text-xs font-medium text-foreground transition-colors hover:border-muted-foreground/50 hover:text-primary"
                       >
                         {symbol}
                       </button>

@@ -5,33 +5,33 @@
 @layer base {
   :root {
     /* VF DAO Light Mode - Sophisticated Monochrome with Strategic Accents */
-    --background: 0 0% 100%; /* #FFFFFF - Pure white */
+    --background: 108 5% 98%; /* Subtle green-tinted white */
     --foreground: 0 0% 0%; /* #000000 - Pure black text */
 
-    --card: 0 0% 100%;
+    --card: 108 5% 98%;
     --card-foreground: 0 0% 0%;
 
-    --popover: 0 0% 100%;
+    --popover: 108 5% 98%;
     --popover-foreground: 0 0% 0%;
 
-    /* Primary: Dark Forest Green #072E14 - VF DAO Brand Identity */
-    --primary: 146 70% 11%;
+    /* Primary: Dark Forest Green - VF DAO Brand Identity */
+    --primary: 143 39% 20%;
     --primary-foreground: 0 0% 100%;
 
     /* Secondary: Light Sage Green #9DC491 - Interactive Elements */
     --secondary: 108 34% 68%;
     --secondary-foreground: 0 0% 0%;
 
-    /* Muted: Light Gray #F5F5F5 */
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
+    /* Muted: Light Gray with subtle sage warmth */
+    --muted: 108 8% 96%;
+    --muted-foreground: 108 6% 45%;
 
     /* Accent: Golden Yellow #F6C638 - Strategic CTAs */
     --accent: 45 91% 59%;
     --accent-foreground: 0 0% 0%;
 
     /* Verified: Yellow for verification badges */
-    --verified: 45 91% 50%;
+    --verified: 45 91% 65%;
 
     /* Orange #FE8E4B - Secondary CTAs & Hover States */
     --orange: 25 99% 64%;
@@ -40,40 +40,40 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Borders: Light Gray #E5E5E5 */
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
+    /* Borders: Light Gray with subtle sage tint */
+    --border: 108 10% 90%;
+    --input: 108 10% 90%;
     --ring: 146 70% 11%; /* Dark forest green focus ring */
 
     --radius: 0.5rem;
 
     /* Scrollbar colors for light mode */
-    --scrollbar-thumb: 0 0% 60%;
-    --scrollbar-thumb-hover: 0 0% 40%;
+    --scrollbar-thumb: 108 12% 60%;
+    --scrollbar-thumb-hover: 108 12% 40%;
   }
 
   .dark {
     /* VF DAO Dark Mode - Sophisticated Monochrome with Strategic Accents */
-    --background: 0 0% 4%; /* #0A0A0A - Subtle off-black (premium) */
+    --background: 108 5% 3%; /* Fresh vibrant green tint */
     --foreground: 0 0% 100%; /* #FFFFFF - Pure white text */
 
-    --card: 0 0% 8%; /* #141414 - Slightly lighter for depth */
+    --card: 108 5% 6%; /* Fresh green dark gray */
     --card-foreground: 0 0% 100%;
 
-    --popover: 0 0% 7%;
+    --popover: 108 5% 5%;
     --popover-foreground: 0 0% 100%;
 
     /* Primary: Light Sage Green #9DC491 - Stands out on dark */
     --primary: 108 34% 68%;
     --primary-foreground: 0 0% 0%;
 
-    /* Secondary: Forest Green #0F7D2A - VF DAO Brand */
-    --secondary: 142 79% 27%;
+    /* Secondary: Light Sage Green #9DC491 - Interactive Elements */
+    --secondary: 108 34% 68%;
     --secondary-foreground: 0 0% 100%;
 
-    /* Muted: Dark Gray #374151 */
-    --muted: 210 20% 25%;
-    --muted-foreground: 0 0% 70%;
+    /* Muted: Fresh green dark gray */
+    --muted: 108 5% 12%;
+    --muted-foreground: 108 5% 70%;
 
     /* Accent: Brighter Golden Yellow #F6C638 - CTAs pop on black */
     --accent: 45 91% 65%;
@@ -89,14 +89,14 @@
     --destructive: 0 62.8% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Borders: Subtle Gray */
-    --border: 210 20% 18%;
-    --input: 210 20% 18%;
+    /* Borders: Fresh green gray */
+    --border: 108 5% 15%;
+    --input: 108 5% 15%;
     --ring: 108 34% 68%; /* Light sage focus ring */
 
     /* Scrollbar colors for dark mode */
-    --scrollbar-thumb: 210 20% 25%;
-    --scrollbar-thumb-hover: 0 0% 70%;
+    --scrollbar-thumb: 108 10% 25%;
+    --scrollbar-thumb-hover: 108 5% 70%;
   }
 }
 
@@ -158,4 +158,69 @@
 * {
   scrollbar-color: hsl(var(--scrollbar-thumb)) hsl(var(--background));
   scrollbar-width: thin;
+}
+
+/* Global Muted/Inactive State Styles - for Cancel, Expired, Archived, etc. */
+@layer components {
+  .btn-muted {
+    @apply border border-muted-foreground bg-muted/20 text-muted-foreground shadow-muted-foreground/20 hover:bg-muted/30 hover:shadow-muted-foreground/25 disabled:opacity-50;
+  }
+  
+  .badge-muted {
+    @apply border border-muted-foreground bg-muted/20 text-muted-foreground shadow-sm shadow-muted-foreground/10;
+  }
+  
+  .text-muted {
+    @apply text-muted-foreground;
+  }
+  
+  .bg-muted {
+    @apply bg-muted/30;
+  }
+  
+  .border-muted {
+    @apply border-muted-foreground/30;
+  }
+
+  /* Light mode: more subtle backgrounds for cancel buttons and expired badges */
+  :root .btn-muted {
+    @apply bg-muted-foreground/10 hover:bg-muted-foreground/20;
+  }
+  
+  :root .badge-muted {
+    @apply bg-muted-foreground/10;
+  }
+}
+
+/* VF Shadow System - Global Shadow Classes */
+@layer utilities {
+  /* Main Card Shadows - For primary containers like swap, liquidity cards */
+  .shadow-main-card {
+    @apply shadow-md shadow-primary/5;
+  }
+
+  /* Modal Shadows - For overlays like token select, slippage settings */
+  .shadow-modal {
+    @apply shadow-xl shadow-primary/10;
+  }
+
+  /* Sidebar Shadows - For fixed overlays like navigation */
+  .shadow-sidebar {
+    @apply shadow-xl shadow-primary/10;
+  }
+
+  /* Interactive Shadows - For hover states on buttons/cards */
+  .shadow-interactive {
+    @apply shadow-sm shadow-primary/5;
+  }
+
+  /* Focus Shadows - For input focus states */
+  .shadow-focus {
+    @apply shadow-sm shadow-primary/5;
+  }
+
+  /* Subtle Shadows - For secondary elements */
+  .shadow-subtle {
+    @apply shadow-sm shadow-primary/3;
+  }
 }

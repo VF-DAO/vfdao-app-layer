@@ -3,37 +3,85 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Menu, X } from 'lucide-react';
+import { Home, Users, Globe, Map, MessageCircle, Menu, X } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import Logo from '@/components/logo';
 
-const navItems = [
-  { label: 'Home', href: '#' },
-  { label: 'Who This Is For', href: '#learn-more' },
-  { label: 'Real-world scenarios', href: '#use-cases' },
-  { label: 'The Journey Ahead', href: '#timeline' },
-  { label: "Let's Connect", href: '#community' },
+interface NavItem {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+}
+
+const navItems: NavItem[] = [
+  { label: 'Home', href: '#', icon: Home },
+  { label: 'Who This Is For', href: '#learn-more', icon: Users },
+  { label: 'Real-world scenarios', href: '#use-cases', icon: Globe },
+  { label: 'The Journey Ahead', href: '#timeline', icon: Map },
+  { label: "Let's Connect", href: '#community', icon: MessageCircle },
 ];
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState('#');
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node) && isOpen) {
-        setIsOpen(false);
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const windowHeight = window.innerHeight;
+      
+      // If we're at the very top, show home as active
+      if (scrollTop < windowHeight * 0.3) {
+        if (activeSection !== '#') {
+          setActiveSection('#');
+        }
+        return;
+      }
+      
+      // Find the section closest to the top of the viewport
+      const sections = ['#learn-more', '#use-cases', '#timeline', '#community'];
+      let closestSection = '#';
+      let closestDistance = Infinity;
+      
+      for (const sectionId of sections) {
+        const element = document.querySelector(sectionId);
+        if (element) {
+          const rect = element.getBoundingClientRect();
+          // Calculate distance from top of viewport to top of section
+          const distance = Math.abs(rect.top);
+          
+          // Only consider sections that are above or at the top of viewport
+          if (rect.top <= 100 && distance < closestDistance) {
+            closestDistance = distance;
+            closestSection = sectionId;
+          }
+        }
+      }
+      
+      if (closestSection !== activeSection) {
+        setActiveSection(closestSection);
       }
     };
 
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
+    // Add scroll listener
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    // Also listen for initial load and any DOM changes
+    const handleLoad = () => handleScroll();
+    window.addEventListener('load', handleLoad);
+    
+    // Check immediately and after delays to ensure DOM is ready
+    handleScroll();
+    setTimeout(handleScroll, 100);
+    setTimeout(handleScroll, 500);
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('load', handleLoad);
     };
-  }, [isOpen]);
+  }, [activeSection]);
 
   const scrollToTop = () => {
     // Ensure we scroll on the window/document
@@ -52,16 +100,57 @@ export function Navigation() {
     e.preventDefault();
 
     if (href === '#') {
-      scrollToTop();
+      setActiveSection('#');
+      // Delay scroll to allow menu close animation to complete
+      setTimeout(() => {
+        scrollToTop();
+      }, 100);
       return;
     }
 
     if (href.startsWith('#')) {
+      // Immediately set the active section
+      setActiveSection(href);
+      
       // Use setTimeout to ensure DOM is ready and menu is closed first
       setTimeout(() => {
         const element = document.querySelector(href);
         if (element) {
           element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          
+          // Trigger scroll handler after smooth scroll completes (approximately 300ms)
+          setTimeout(() => {
+            const scrollTop = window.scrollY;
+            const windowHeight = window.innerHeight;
+            
+            // If we're at the very top, show home as active
+            if (scrollTop < windowHeight * 0.3) {
+              setActiveSection('#');
+              return;
+            }
+            
+            // Find the section closest to the top of the viewport
+            const sections = ['#learn-more', '#use-cases', '#timeline', '#community'];
+            let closestSection = '#';
+            let closestDistance = Infinity;
+            
+            for (const sectionId of sections) {
+              const element = document.querySelector(sectionId);
+              if (element) {
+                const rect = element.getBoundingClientRect();
+                // Calculate distance from top of viewport to top of section
+                const distance = Math.abs(rect.top);
+                
+                // Only consider sections that are above or at the top of viewport
+                if (rect.top <= 100 && distance < closestDistance) {
+                  closestDistance = distance;
+                  closestSection = sectionId;
+                }
+              }
+            }
+            
+            setActiveSection(closestSection);
+          }, 300);
         }
       }, 0);
     }
@@ -76,6 +165,7 @@ export function Navigation() {
             onClick={(e) => {
               e.stopPropagation();
               setIsOpen(false);
+              setActiveSection('#');
               setTimeout(() => {
                 scrollToTop();
               }, 0);
@@ -92,16 +182,22 @@ export function Navigation() {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeSection === item.href;
+              
               if (item.href === '#') {
                 return (
                   <button
                     key={item.label}
                     onClick={() => {
+                      setActiveSection('#');
                       scrollToTop();
                     }}
-                    className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+                    className="flex items-center justify-center group"
                   >
-                    {item.label}
+                    <div className={`w-12 h-12 rounded-full border ${isActive ? 'border-verified bg-verified/10 scale-110' : 'border-border bg-card group-hover:border-muted-foreground/50'} flex items-center justify-center transition-all duration-200 group-hover:scale-105 ${isActive ? 'shadow-md shadow-verified/20' : ''}`}>
+                      <Icon size={20} className={`${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'} transition-colors`} />
+                    </div>
                   </button>
                 );
               }
@@ -110,9 +206,11 @@ export function Navigation() {
                   key={item.href}
                   href={item.href}
                   onClick={(e: React.MouseEvent<HTMLAnchorElement>) => handleSmoothScroll(e, item.href)}
-                  className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+                  className="flex items-center justify-center group"
                 >
-                  {item.label}
+                  <div className={`w-12 h-12 rounded-full border ${isActive ? 'border-verified bg-verified/10 scale-110' : 'border-border bg-card group-hover:border-muted-foreground/50'} flex items-center justify-center transition-all duration-200 group-hover:scale-105 ${isActive ? 'shadow-md shadow-verified/20' : ''}`}>
+                    <Icon size={20} className={`${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'} transition-colors`} />
+                  </div>
                 </Link>
               );
             })}
@@ -147,21 +245,25 @@ export function Navigation() {
             >
               <div className="py-4 space-y-4">
                 {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeSection === item.href;
+                  
                   if (item.href === '#') {
                     return (
-                      <button
+                      <Link
                         key={item.label}
-                        onClick={() => {
+                        href={item.href}
+                        onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
                           setIsOpen(false);
-                          // Delay scroll to allow menu close animation to complete
-                          setTimeout(() => {
-                            scrollToTop();
-                          }, 100);
+                          handleSmoothScroll(e, item.href);
                         }}
-                        className="block w-full text-left px-4 py-2 text-sm font-medium hover:bg-accent/10 rounded-md transition-colors"
+                        className="flex items-center gap-3 w-full group"
                       >
-                        {item.label}
-                      </button>
+                        <div className={`w-12 h-12 rounded-full border ${isActive ? 'border-verified bg-verified/10 scale-110' : 'border-border bg-card group-hover:border-muted-foreground/50'} flex items-center justify-center transition-all duration-200 group-hover:scale-105 ${isActive ? 'shadow-md shadow-verified/20' : ''}`}>
+                          <Icon size={20} className={`${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'} transition-colors`} />
+                        </div>
+                        <span className={`flex-1 text-sm font-medium text-left transition-colors ${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`}>{item.label}</span>
+                      </Link>
                     );
                   }
                   return (
@@ -172,9 +274,12 @@ export function Navigation() {
                         setIsOpen(false);
                         handleSmoothScroll(e, item.href);
                       }}
-                      className="block px-4 py-2 text-sm font-medium hover:bg-accent/10 rounded-md transition-colors"
+                      className="flex items-center gap-3 w-full group"
                     >
-                      {item.label}
+                      <div className={`w-12 h-12 rounded-full border ${isActive ? 'border-verified bg-verified/10 scale-110' : 'border-border bg-card group-hover:border-muted-foreground/50'} flex items-center justify-center transition-all duration-200 group-hover:scale-105 ${isActive ? 'shadow-md shadow-verified/20' : ''}`}>
+                        <Icon size={20} className={`${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'} transition-colors`} />
+                      </div>
+                      <span className={`flex-1 text-sm font-medium text-left transition-colors ${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`}>{item.label}</span>
                     </Link>
                   );
                 })}

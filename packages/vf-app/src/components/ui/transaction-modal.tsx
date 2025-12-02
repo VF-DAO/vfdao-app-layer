@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Check, ExternalLink, X, XCircle } from 'lucide-react';
 import { Button } from './button';
 import type {
@@ -10,9 +10,25 @@ import type {
 /**
  * Base modal wrapper for all transaction modals
  */
-function TransactionModalWrapper({ children, onClose: _onClose }: { children: React.ReactNode; onClose: () => void }) {
+function TransactionModalWrapper({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+    <div 
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200"
+      onClick={(e) => {
+        // Close on backdrop click
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
       <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 max-w-md w-full shadow-xl animate-in zoom-in-95 duration-300">
         <div className="text-center space-y-4">{children}</div>
       </div>

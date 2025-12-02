@@ -5,19 +5,24 @@ import { RheaSwapWidget } from '@/features/swap/components/SwapWidget';
 import { PortfolioDashboard } from '@/features/portfolio';
 import { LiquidityCard } from '@/features/liquidity';
 import { useWallet } from '@/features/wallet';
+import { useProfile } from '@/hooks/use-profile';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { FaXTwitter } from 'react-icons/fa6';
 import { Github, Send } from 'lucide-react';
 import Logo from '@/components/ui/logo';
 
 export default function Home() {
-  const { accountId, isConnected } = useWallet();
+  const { accountId, isConnected, isLoading: walletLoading } = useWallet();
+  const { displayName, profile, loading: _profileLoading } = useProfile(accountId ?? undefined);
   
-  // Extract and format username from accountId (remove .near extension, capitalize first letter, truncate if too long)
+  // Extract and format username from accountId (remove .near extension, capitalize first letter, truncate if too long) - fallback
   const username = accountId ? accountId.split('.')[0] : null;
-  const formattedUsername = username 
+  const formattedUsernameFallback = username 
     ? (username.length > 15 ? username.substring(0, 15) + '...' : username.charAt(0).toUpperCase() + username.slice(1))
     : null;
+  
+  // Only use display name from social-db if profile exists and has a name, otherwise use formatted account ID
+  const displayUsername = profile?.profile?.name ? displayName : formattedUsernameFallback;
 
   return (
     <div className={`flex flex-col min-h-screen bg-background ${isConnected ? 'pt-16 md:pt-0' : ''}`}>
@@ -25,7 +30,7 @@ export default function Home() {
       {/* Hero Section */}
       <div className={`relative flex-1 flex flex-col items-center px-4 ${isConnected ? 'pt-16 sm:pt-24 md:pt-32' : 'pt-32 sm:pt-48 md:pt-56'} pb-20 sm:pb-32`}>
         {/* Logo in top left corner - Only show when not connected */}
-        {!isConnected && (
+        {!isConnected && !walletLoading && (
           <div className="absolute top-4 left-4 z-10">
             <Logo className="w-16 h-12 sm:w-20 sm:h-15 md:w-24 md:h-18 lg:w-28 lg:h-21" />
           </div>
@@ -33,7 +38,7 @@ export default function Home() {
 
         <div className="text-center max-w-5xl mb-12 w-full">
           {/* Theme Toggle - Only show when not connected */}
-          {!isConnected && (
+          {!isConnected && !walletLoading && (
             <div className="absolute top-4 right-4 z-10">
               <ThemeToggle />
             </div>
@@ -43,43 +48,78 @@ export default function Home() {
           <div className="text-center mb-12">
             <motion.div 
               className="mb-12 flex justify-center"
-              key={isConnected ? formattedUsername : 'greeting'} // Key changes trigger re-animation
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: "easeOut" }}
             >
-              {isConnected && formattedUsername ? (
+              {walletLoading ? (
+                /* Clean splash screen with logo only - no text to avoid jarring transitions */
+                <div className="flex flex-col items-center justify-center py-8">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.4, ease: "easeOut" }}
+                  >
+                    <Logo className="w-24 h-18 sm:w-32 sm:h-24 md:w-40 md:h-30" />
+                  </motion.div>
+                </div>
+              ) : isConnected ? (
                 <div className="text-center">
-                  <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-4">
-                    <span className="text-primary">Hello</span> <span className="text-verified">{formattedUsername}</span>
-                  </h1>
-                  <p className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+                  <motion.h1 
+                    className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-4"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, ease: "easeOut" }}
+                  >
+                    <span className="text-primary">Hello</span> <span className="text-verified">
+                      {displayUsername ?? ''}
+                    </span>
+                  </motion.h1>
+                  <motion.p 
+                    className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.2, ease: "easeOut" }}
+                  >
                     Your space is ready to explore.
-                  </p>
+                  </motion.p>
                 </div>
               ) : (
                 <div className="text-center">
-                  <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-4">
+                  <motion.h1 
+                    className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-4"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                  >
                     <span className="text-foreground">Welcome to</span><br />
                     <span className="text-primary">Vegan</span><span className="text-verified">Friends</span>
-                  </h1>
-                  <div className="w-24 h-1 bg-verified mx-auto rounded-full mb-8"></div>
+                  </motion.h1>
+                  <motion.div 
+                    className="w-24 h-1 bg-verified mx-auto rounded-full mb-8"
+                    initial={{ opacity: 0, scaleX: 0 }}
+                    animate={{ opacity: 1, scaleX: 1 }}
+                    transition={{ duration: 0.3, delay: 0.1, ease: "easeOut" }}
+                  />
                 </div>
               )}
             </motion.div>
 
-            <motion.div 
-              className="flex justify-center"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4, ease: "easeOut" }}
-            >
-              <PortfolioDashboard />
-            </motion.div>
+            {/* Portfolio Dashboard - appears with slight delay after hero content */}
+            {!walletLoading && (
+              <motion.div 
+                className="flex justify-center"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.3 }}
+              >
+                <PortfolioDashboard />
+              </motion.div>
+            )}
           </div>
 
           {/* Social Media Links - Only show when not connected */}
-          {!isConnected && (
+          {!isConnected && !walletLoading && (
             <motion.div 
               className="flex justify-center gap-8 mt-8 sm:mt-12 md:mt-16"
               initial={{ opacity: 0, y: 20 }}

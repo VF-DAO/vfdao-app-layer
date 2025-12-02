@@ -22,7 +22,7 @@ const Logo = React.forwardRef<SVGSVGElement, React.SVGProps<SVGSVGElement>>((pro
           filter: none !important;
         }
         .logo-outline {
-          fill: #072E14;
+          fill: #1a4728;
         }
         .logo-orange {
           fill: #d3601eff;

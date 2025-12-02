@@ -165,7 +165,7 @@ export function useSwap(): UseSwapReturn {
       setTokenPrices(prices as Record<string, { price: string; symbol?: string; decimal?: number }>);
       console.warn(`[useSwap] Token prices updated: ${Object.keys(prices).length} tokens`);
     } catch (_err) {
-      console.error('[useSwap] Failed to fetch token prices');
+      console.warn('[useSwap] Failed to fetch token prices - continuing without price data');
       // Don't set error state for prices, just log it
     }
   }, []);

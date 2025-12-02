@@ -1,8 +1,9 @@
 'use client';
 
 import { type ReactNode } from 'react';
-import { BarChart3, LogOut, Sparkles, Wallet } from 'lucide-react';
+import { BarChart3, LogOut, Sparkles, Vote, Wallet } from 'lucide-react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
 
@@ -27,6 +28,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           {/* Navigation */}
           <nav className="flex-1 space-y-2">
             <Link
+              href="/dao"
+              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors"
+            >
+              <Vote className="w-5 h-5" />
+              <span>Governance</span>
+            </Link>
+            <Link
               href="/dashboard/history"
               className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors"
             >
@@ -48,10 +56,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               <Wallet className="w-5 h-5" />
               <span className="text-sm">Wallet</span>
             </div>
-            <button className="flex items-center gap-3 px-3 py-2 w-full rounded-lg hover:bg-accent transition-colors">
+            <Button variant="ghost" className="w-full justify-start gap-3 px-3 py-2">
               <LogOut className="w-5 h-5" />
               <span className="text-sm">Logout</span>
-            </button>
+            </Button>
           </div>
         </div>
       </aside>

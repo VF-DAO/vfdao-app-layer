@@ -7,62 +7,66 @@
 
 @layer base {
   :root {
-    /* Light Mode - Same as vf-portal */
-    --background: 0 0% 100%;
+    /* Light Mode - Standardized sage green theme */
+    --background: 108 5% 98%;
     --foreground: 0 0% 0%;
-    --card: 0 0% 100%;
+    --card: 108 5% 98%;
     --card-foreground: 0 0% 0%;
-    --popover: 0 0% 100%;
+    --popover: 108 5% 98%;
     --popover-foreground: 0 0% 0%;
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
+    --muted: 108 8% 96%;
+    --muted-foreground: 108 6% 45%;
     --accent: 45 91% 59%;
     --accent-foreground: 0 0% 0%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --primary: 146 70% 11%;
+    --border: 108 10% 90%;
+    --input: 108 10% 90%;
+    --primary: 108 39% 20%; /* Standardized to sage green hue */
     --primary-foreground: 0 0% 100%;
-    --secondary: 142 76% 36%;
+    --secondary: 108 34% 68%; /* Sage green for light mode */
     --secondary-foreground: 0 0% 100%;
-    --ring: 146 70% 11%;
-    --verified: 45 91% 50%;
-    --orange: 24 70% 61%; /* #d3601eff - F logo color (darker/muted in light mode) */
+    --secondary-border: 108 39% 20% / 0.5; /* Standardized to sage green hue */
+    --secondary-bg-light: 108 34% 50%; /* Background shade for light mode badges */
+    --ring: 108 70% 11%; /* Standardized to sage green hue */
+    --verified: 45 91% 65%;
+    --orange: 17 77% 55%; /* #d3601eff - F logo color (darker orange for light mode) */
     --radius: 0.5rem;
 
     /* Scrollbar colors for light mode */
-    --scrollbar-thumb: 0 0% 60%;
-    --scrollbar-thumb-hover: 0 0% 40%;
+    --scrollbar-thumb: 108 12% 60%;
+    --scrollbar-thumb-hover: 108 12% 40%;
   }
 
   .dark {
-    /* Dark Mode - Same as vf-portal */
-    --background: 0 0% 4%;
+    /* Dark Mode - Standardized sage green theme */
+    --background: 108 5% 3%;
     --foreground: 0 0% 100%;
-    --card: 0 0% 8%;
+    --card: 108 5% 6%;
     --card-foreground: 0 0% 100%;
-    --popover: 0 0% 7%;
+    --popover: 108 5% 5%;
     --popover-foreground: 0 0% 100%;
-    --muted: 210 20% 25%;
-    --muted-foreground: 0 0% 70%;
+    --muted: 108 5% 12%;
+    --muted-foreground: 108 5% 70%;
     --accent: 45 91% 65%;
     --accent-foreground: 0 0% 0%;
     --destructive: 0 62.8% 55%;
     --destructive-foreground: 0 0% 100%;
-    --border: 210 20% 18%;
-    --input: 210 20% 18%;
+    --border: 108 5% 15%;
+    --input: 108 5% 15%;
     --primary: 108 34% 68%;
     --primary-foreground: 0 0% 0%;
-    --secondary: 142 71% 45%;
+    --secondary: 108 34% 68%; /* Sage green for dark mode */
     --secondary-foreground: 0 0% 100%;
+    --secondary-border: 108 34% 68%; /* Matches primary text (sage green) in dark mode */
+    --secondary-bg-light: 108 34% 68%; /* Same as secondary in dark mode */
     --ring: 108 34% 68%;
     --verified: 45 91% 65%;
     --orange: 25 99% 64%; /* #FE8E4B - F logo color (lighter/brighter in dark mode) */
 
     /* Scrollbar colors for dark mode */
-    --scrollbar-thumb: 210 20% 25%;
-    --scrollbar-thumb-hover: 0 0% 70%;
+    --scrollbar-thumb: 108 10% 25%;
+    --scrollbar-thumb-hover: 108 5% 70%;
   }
 }
 
@@ -76,6 +80,38 @@ html {
 
 body {
   @apply bg-background text-foreground;
+}
+
+/* Global Muted/Inactive State Styles - for Cancel, Expired, Archived, etc. */
+@layer components {
+  .btn-muted {
+    @apply border border-muted-foreground bg-muted/20 text-muted-foreground shadow-primary/20 hover:bg-muted/30 hover:shadow-primary/30 disabled:opacity-50;
+  }
+  
+  .badge-muted {
+    @apply border border-muted-foreground bg-muted/20 text-muted-foreground shadow-sm shadow-muted-foreground/10;
+  }
+  
+  .text-muted {
+    @apply text-muted-foreground;
+  }
+  
+  .bg-muted {
+    @apply bg-muted/30;
+  }
+  
+  .border-muted {
+    @apply border-muted-foreground/30;
+  }
+
+  /* Light mode: more subtle backgrounds for cancel buttons and expired badges */
+  :root .btn-muted {
+    @apply bg-muted-foreground/10 hover:bg-muted-foreground/20;
+  }
+  
+  :root .badge-muted {
+    @apply bg-muted-foreground/10;
+  }
 }
 
 /* Custom Scrollbar Styling */
@@ -112,4 +148,100 @@ input[type="number"]::-webkit-inner-spin-button {
 
 input[type="number"] {
   -moz-appearance: textfield;
+}
+
+/* VF Shadow System - Global Shadow Classes */
+@layer utilities {
+  /* Main Card Shadows - For primary containers like swap, liquidity cards */
+  .shadow-main-card {
+    @apply shadow-md shadow-primary/5;
+  }
+
+  /* Modal Shadows - For overlays like token select, slippage settings */
+  .shadow-modal {
+    @apply shadow-xl shadow-primary/10;
+  }
+
+  /* Dropdown Shadows - For inline dropdowns and menus */
+  .shadow-dropdown {
+    @apply shadow-lg shadow-primary/10;
+  }
+
+  /* Sidebar Shadows - For fixed overlays like navigation */
+  .shadow-sidebar {
+    @apply shadow-xl shadow-primary/10;
+  }
+
+  /* Interactive Shadows - For hover states on buttons/cards */
+  .shadow-interactive {
+    @apply shadow-sm shadow-primary/5;
+  }
+
+  /* Focus Shadows - For input focus states */
+  .shadow-focus {
+    @apply shadow-sm shadow-primary/5;
+  }
+
+  /* Subtle Shadows - For secondary elements */
+  .shadow-subtle {
+    @apply shadow-sm shadow-primary/3;
+  }
+}
+
+/* Sidebar Layout Adjustments - Desktop Only */
+@media (min-width: 768px) {
+  .sidebar-collapsed main {
+    margin-left: 5rem; /* 80px */
+  }
+
+  .sidebar-expanded main {
+    margin-left: 18rem; /* 288px */
+  }
+
+  main {
+    transition: margin-left 0.3s ease;
+  }
+}
+
+/* Autofill Styling Override */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+textarea:-webkit-autofill:active,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus,
+select:-webkit-autofill:active {
+  /* Light mode: use light background */
+  -webkit-box-shadow: 0 0 0px 1000px hsl(108 5% 98%) inset !important;
+  -webkit-text-fill-color: hsl(0 0% 0%) !important;
+  background-color: hsl(108 5% 98%) !important;
+  background-image: none !important;
+  transition: background-color 5000s ease-in-out 0s;
+  caret-color: hsl(0 0% 0%);
+}
+
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+.dark input:-webkit-autofill:active,
+.dark textarea:-webkit-autofill,
+.dark textarea:-webkit-autofill:hover,
+.dark textarea:-webkit-autofill:focus,
+.dark textarea:-webkit-autofill:active,
+.dark select:-webkit-autofill,
+.dark select:-webkit-autofill:hover,
+.dark select:-webkit-autofill:focus,
+.dark select:-webkit-autofill:active {
+  /* Dark mode: use dark background */
+  -webkit-box-shadow: 0 0 0px 1000px hsl(108 5% 6%) inset !important;
+  -webkit-text-fill-color: hsl(0 0% 100%) !important;
+  background-color: hsl(108 5% 6%) !important;
+  background-image: none !important;
+  transition: background-color 5000s ease-in-out 0s;
+  caret-color: hsl(0 0% 100%);
 }

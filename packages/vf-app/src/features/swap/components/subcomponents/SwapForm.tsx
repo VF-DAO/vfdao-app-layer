@@ -4,8 +4,16 @@ import React from 'react';
 import Big from 'big.js';
 import { TokenSelect } from '../TokenSelect';
 import { TokenInput } from '../TokenInput';
+import { Button } from '@/components/ui/button';
 import type { TokenMetadata } from '@/types';
 import { ArrowDownUp } from 'lucide-react';
+
+const formatWithSpaces = (value: string): string => {
+  if (!value || value === '0.0') return value;
+  const [integer, decimal] = value.split('.');
+  const formattedInteger = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return decimal !== undefined ? `${formattedInteger}.${decimal}` : formattedInteger;
+};
 
 interface SwapFormProps {
   // Tokens
@@ -57,7 +65,7 @@ export const SwapForm: React.FC<SwapFormProps> = ({
   accountId,
   balances,
   rawBalances,
-  isLoadingBalances,
+  isLoadingBalances: _isLoadingBalances,
   tokenPrices,
   onSwapTokens,
   onAmountFromBalance,
@@ -74,7 +82,7 @@ export const SwapForm: React.FC<SwapFormProps> = ({
         {!!(accountId && tokenIn && rawBalances[tokenIn.id] && rawBalances[tokenIn.id] !== '0') && (
           <div className="flex items-center justify-end gap-1 animate-in fade-in slide-in-from-top-1 duration-200">
             {[25, 50, 75].map((percent) => (
-              <button
+              <Button
                 key={percent}
                 onClick={() => {
                   const rawBalance = rawBalances[tokenIn.id];
@@ -83,12 +91,13 @@ export const SwapForm: React.FC<SwapFormProps> = ({
                     onAmountFromBalance(rawBalance, percent, tokenIn.decimals, isNear);
                   }
                 }}
-                className="px-1 py-0.5 text-xs bg-card hover:bg-muted rounded-full border border-border text-primary font-semibold opacity-70 hover:opacity-80 transition-all whitespace-nowrap"
+                variant="percentage"
+                size="xs"
               >
                 {percent}%
-              </button>
+              </Button>
             ))}
-            <button
+            <Button
               onClick={() => {
                 const rawBalance = rawBalances[tokenIn.id];
                 if (rawBalance) {
@@ -96,13 +105,14 @@ export const SwapForm: React.FC<SwapFormProps> = ({
                   onMaxAmount(rawBalance, tokenIn.decimals, isNear);
                 }
               }}
-              className="px-1 py-0.5 text-xs bg-card hover:bg-muted rounded-full border border-border text-primary font-semibold opacity-70 hover:opacity-80 transition-all whitespace-nowrap"
+              variant="percentage"
+              size="xs"
             >
               MAX
-            </button>
+            </Button>
           </div>
         )}
-        <div className="flex items-center gap-0 p-4 border border-border rounded-full transition-all hover:border-primary/50 hover:shadow-lg">
+        <div className="flex items-center gap-0 p-4 border border-border rounded-full transition-all hover:border-muted-foreground/50 hover:shadow-interactive">
           <div className="flex flex-col items-start w-[200px]">
             <TokenSelect
               selectedToken={tokenIn}
@@ -111,10 +121,10 @@ export const SwapForm: React.FC<SwapFormProps> = ({
               label="Select"
               tokens={availableTokens}
             />
-            {accountId && tokenIn && (
+            {accountId && tokenIn && balances[tokenIn.id] && (
               <div className="flex flex-col items-start mt-1 ml-3">
                 <span className="text-xs text-muted-foreground">
-                  Balance: {isLoadingBalances ? '...' : balances[tokenIn.id] ?? '0'}
+                  Balance: {formatWithSpaces(balances[tokenIn.id])}
                 </span>
               </div>
             )}
@@ -170,10 +180,10 @@ export const SwapForm: React.FC<SwapFormProps> = ({
               label="Select"
               tokens={availableTokens}
             />
-            {accountId && tokenOut && (
+            {accountId && tokenOut && balances[tokenOut.id] && (
               <div className="flex flex-col items-start mt-1 ml-3">
                 <span className="text-xs text-muted-foreground">
-                  Balance: {isLoadingBalances ? '...' : balances[tokenOut.id] ?? '0'}
+                  Balance: {formatWithSpaces(balances[tokenOut.id])}
                 </span>
               </div>
             )}
@@ -181,7 +191,7 @@ export const SwapForm: React.FC<SwapFormProps> = ({
           <div className="flex-1 relative">
             <input
               type="text"
-              value={estimatedOutDisplay || '0.0'}
+              value={formatWithSpaces(estimatedOutDisplay || '0.0')}
               readOnly
               className={`w-full text-xl font-semibold text-right bg-transparent border-none outline-none ${!estimatedOutDisplay || estimatedOutDisplay === '0.0' ? 'text-primary opacity-60' : 'text-foreground'}`}
               placeholder={

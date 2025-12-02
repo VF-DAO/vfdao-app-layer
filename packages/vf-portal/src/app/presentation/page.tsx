@@ -7,7 +7,7 @@ export default function PresentationPage() {
       <div className="max-w-4xl mx-auto space-y-12">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+          className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Home

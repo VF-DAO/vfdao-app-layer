@@ -1,14 +1,20 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Leaf, Sparkles } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Leaf, Sparkles, UserPlus } from 'lucide-react';
 import { useWallet } from '@/features/wallet';
+import { useProfile } from '@/hooks/use-profile';
 import { LoadingDots } from '@/components/ui/loading-dots';
+import { ProfileAvatar } from '@/components/ui/profile-avatar';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { providers } from 'near-api-js';
 import Big from 'big.js';
 import { formatTokenAmount } from '@/lib/swap-utils';
 import Image from 'next/image';
+import { usePersonalVotingStats } from '@/features/governance/hooks';
+import { usePolicy } from '@/features/governance/hooks';
+import { JoinDaoModal } from '@/features/governance/components/JoinDaoModal';
 
 const VF_TOKEN_CONTRACT = 'veganfriends.tkn.near';
 const VF_TOKEN_DECIMALS = 18;
@@ -17,6 +23,7 @@ const REF_FINANCE_CONTRACT = 'v2.ref-finance.near';
 
 export function PortfolioDashboard() {
   const { accountId, isConnected, signIn, isConnecting } = useWallet();
+  const { profileImageUrl, loading: profileLoading } = useProfile(accountId ?? undefined);
   const [vfBalance, setVfBalance] = useState<string>('0');
   const [vfUsdValue, setVfUsdValue] = useState<number>(0);
   const [lpShares, setLpShares] = useState<string>('0');
@@ -26,6 +33,18 @@ export function PortfolioDashboard() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [vfIcon, setVfIcon] = useState<string | undefined>(undefined);
   const [nearIcon] = useState<string>(`data:image/svg+xml;base64,${Buffer.from(`<svg width="32" height="32" viewBox="2 2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="32" height="32" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M2.84211 3.21939V12.483L7.57895 8.94375L8.05263 9.35915L4.08047 14.954C2.6046 16.308 0 15.3919 0 13.5188V2.08119C0 0.143856 2.75709 -0.738591 4.18005 0.743292L15.1579 12.1757V3.29212L10.8947 6.4513L10.4211 6.03589L13.7996 0.813295C15.2097 -0.696027 18 0.178427 18 2.12967V13.3139C18 15.2512 15.2429 16.1336 13.8199 14.6518L2.84211 3.21939Z" fill="black" transform="translate(8,8) scale(0.9, 1)"/></svg>`).toString('base64')}`);
+
+  const { stats: votingStats, isLoading: votingStatsLoading } = usePersonalVotingStats(accountId ?? undefined);
+  const { data: policy } = usePolicy();
+
+  // Calculate user groups
+  const userGroups = accountId && policy ? policy.roles.filter((r: any) =>
+    typeof r.kind === 'object' && r.kind !== null && 'Group' in r.kind && r.kind.Group.includes(accountId)
+  ).map((r: any) => r.name) : [];
+
+  // Join DAO modal state
+  const [joinModalOpen, setJoinModalOpen] = useState(false);
+  const isMember = userGroups.length > 0;
 
   // Format dollar amounts with special handling for small values
   const formatDollarAmount = useCallback((amount: number) => {
@@ -64,12 +83,12 @@ export function PortfolioDashboard() {
   // Expose refresh function globally
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+       
       (window as any).refreshPortfolioDashboard = refreshBalances;
     }
     return () => {
       if (typeof window !== 'undefined') {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+         
         delete (window as any).refreshPortfolioDashboard;
       }
     };
@@ -244,22 +263,22 @@ export function PortfolioDashboard() {
                 });
 
                 if (poolResponse.ok) {
-                  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                   
                   const poolData = await poolResponse.json();
-                  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                   
                   if (poolData.result?.result) {
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+                     
                     const pool = JSON.parse(Buffer.from(poolData.result.result).toString());
                     
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+                     
                     const nearIndex = pool.token_account_ids.indexOf('wrap.near');
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+                     
                     const veganIndex = pool.token_account_ids.indexOf('veganfriends.tkn.near');
                     
                     if (nearIndex !== -1 && veganIndex !== -1) {
-                      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                       
                       const reserveNear = new Big(String(pool.amounts[nearIndex]));
-                      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                       
                       const reserveVegan = new Big(String(pool.amounts[veganIndex]));
                       
                       if (reserveNear.gt(0) && reserveVegan.gt(0)) {
@@ -269,16 +288,16 @@ export function PortfolioDashboard() {
                         vfTokenPrice = adjustedRatio.mul(nearPrice).toNumber();
                         
                         // Calculate LP USD value
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                         
                         const token1Reserve = Big(String(pool.amounts[nearIndex])).div(Big(10).pow(24));
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                         
                         const token2Reserve = Big(String(pool.amounts[veganIndex])).div(Big(10).pow(18));
                         
                         const token1TVL = token1Reserve.mul(nearPrice);
                         const token2TVL = token2Reserve.mul(vfTokenPrice);
                         const poolTVL = token1TVL.plus(token2TVL);
                         
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                         
                         const totalShares = Big(String(pool.total_shares ?? pool.shares_total_supply ?? '0'));
                         if (totalShares.gt(0)) {
                           const readableShares = Big(userShares).div(Big(10).pow(24));
@@ -346,16 +365,17 @@ export function PortfolioDashboard() {
     return (
       <div className="w-full max-w-[800px] mx-auto">
         <div className="flex justify-center">
-          <button
+          <Button
             onClick={() => void signIn()}
             disabled={isConnecting}
-            className="inline-flex items-center justify-center gap-2 border border-verified bg-verified/10 hover:bg-verified/20 text-primary hover:text-primary px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold transition-all hover:shadow-lg hover:shadow-verified/30 group text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] sm:min-h-[56px]"
+            variant="verified"
+            className="px-6 sm:px-8 py-3 sm:py-4 h-12"
           >
             <Leaf className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
             <span className="inline-flex items-center justify-center min-h-[20px] sm:min-h-[24px]">
               {isConnecting ? <LoadingDots /> : "Let's Connect"}
             </span>
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -363,26 +383,35 @@ export function PortfolioDashboard() {
 
   return (
     <div className="w-full max-w-[800px] mx-auto">
-      <div className="bg-card/50 backdrop-blur-sm border border-verified/30 hover:border-verified/50 rounded-full px-4 sm:px-6 py-3 sm:py-4 transition-all hover:shadow-md hover:shadow-verified/10">
+      <div className="px-4 sm:px-6 py-3 sm:py-4">
         {/* Compact Grid */}
         <div className="flex items-center justify-between gap-3 sm:gap-6">
           {/* Your Holdings Icon */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-verified bg-verified/10 flex items-center justify-center">
-              <Leaf className={`w-4 h-4 sm:w-5 sm:h-5 text-primary ${isRefreshing ? 'animate-pulse' : ''}`} />
-            </div>
+            {profileLoading ? (
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-verified bg-verified/10 flex items-center justify-center flex-shrink-0">
+                <LoadingDots size="sm" />
+              </div>
+            ) : profileImageUrl ? (
+              <ProfileAvatar
+                accountId={accountId}
+                size="md"
+                profileImageUrl={profileImageUrl}
+                showFallback={false}
+                className="w-8 h-8 sm:w-10 sm:h-10 border border-verified/30"
+              />
+            ) : (
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-verified bg-verified/10 flex items-center justify-center flex-shrink-0">
+                <Leaf className={`w-4 h-4 sm:w-5 sm:h-5 text-primary ${isRefreshing ? 'animate-pulse' : ''}`} />
+              </div>
+            )}
           </div>
 
           {/* Divider */}
-          <div className="h-8 w-px bg-border flex-shrink-0"></div>
+          <div className="h-8 w-px border-l border-verified/30 flex-shrink-0"></div>
 
           {/* VF Tokens */}
-          <motion.div 
-            className="flex items-center gap-2 min-w-0"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.2 }}
-          >
+          <div className="flex items-center gap-2 min-w-0">
                 {vfIcon ? (
                   <Image 
                     src={vfIcon} 
@@ -415,18 +444,10 @@ export function PortfolioDashboard() {
                     )}
                   </div>
                 </div>
-          </motion.div>
+          </div>
 
               {/* Divider */}
-              <div className="h-8 w-px bg-border flex-shrink-0"></div>
-
-              {/* Pool Contribution */}
-              <motion.div 
-                className="flex items-center gap-2 min-w-0"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.3 }}
-              >
+              <div className="flex items-center gap-2 min-w-0">
                 <div className="flex items-center justify-center flex-shrink-0">
                   <Image 
                     src={nearIcon} 
@@ -476,18 +497,13 @@ export function PortfolioDashboard() {
                     )}
                   </div>
                 </div>
-              </motion.div>
+              </div>
 
               {/* Divider */}
-              <div className="h-8 w-px bg-border flex-shrink-0"></div>
+              <div className="h-8 w-px border-l border-verified/30 flex-shrink-0"></div>
 
               {/* Total */}
-              <motion.div 
-                className="flex items-center gap-2 min-w-0"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.4 }}
-              >
+              <div className="flex items-center gap-2 min-w-0">
                 <Sparkles className="w-4 h-4 text-primary flex-shrink-0" />
                 <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">Total</p>
@@ -503,9 +519,69 @@ export function PortfolioDashboard() {
                     )}
                   </div>
                 </div>
-              </motion.div>
+              </div>
+        </div>
+
+        {/* Bottom Row: DAO Governance */}
+        <div className="px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center justify-center pt-2 border-t border-verified/30">
+            <div className="flex flex-col items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                {votingStatsLoading ? (
+                  <LoadingDots />
+                ) : (
+                  <div className={`transition-opacity ${isRefreshing ? 'opacity-50' : 'opacity-100'} flex items-center gap-2`}>
+                    <p className="text-sm font-bold text-foreground whitespace-nowrap">VF DAO</p>
+                    <span className="text-muted-foreground">•</span>
+                    {isMember ? (
+                      <>
+                        <p className="text-sm text-primary font-semibold whitespace-nowrap">Member</p>
+                        <span className="text-muted-foreground">•</span>
+                        <p className="text-sm text-primary font-semibold whitespace-nowrap">
+                          {votingStats.totalVotes} votes cast
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-sm text-muted-foreground font-semibold whitespace-nowrap">Not a member</p>
+                    )}
+                  </div>
+                )}
+              </div>
+              {isMember ? (
+                userGroups.length > 0 && (
+                  <div className="flex flex-wrap gap-1 justify-center">
+                    {userGroups.map((group: string) => (
+                      <Badge key={group} variant="primary" className="text-[10px] sm:text-xs px-1.5 py-0 capitalize">
+                        {group}
+                      </Badge>
+                    ))}
+                  </div>
+                )
+              ) : (
+                <Button
+                  variant="verified"
+                  size="sm"
+                  onClick={() => setJoinModalOpen(true)}
+                  className="text-xs h-8 px-3"
+                >
+                  <UserPlus className="w-3 h-3 mr-1.5" />
+                  Request to Join
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Join DAO Modal */}
+      {!isMember && accountId && (
+        <JoinDaoModal
+          isOpen={joinModalOpen}
+          onClose={() => setJoinModalOpen(false)}
+          policy={policy}
+          accountId={accountId}
+        />
+      )}
     </div>
   );
 }

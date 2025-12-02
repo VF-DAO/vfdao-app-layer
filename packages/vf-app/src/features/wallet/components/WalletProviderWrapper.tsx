@@ -7,7 +7,7 @@ import { type ReactNode } from 'react';
 const WalletProviderDynamic = dynamic(
   () => import('../contexts/wallet-context').then((mod) => mod.WalletProvider),
   {
-    loading: () => <div>{/* Loading wallet provider */}</div>,
+    loading: () => null,
     ssr: false,
   }
 );

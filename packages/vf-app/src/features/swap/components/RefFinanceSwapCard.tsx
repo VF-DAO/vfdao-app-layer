@@ -15,6 +15,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Big from 'big.js';
+import { AnimatePresence, motion } from 'framer-motion';
 import { toInternationalCurrencySystemLongString } from '@ref-finance/ref-sdk';
 
 import { useWallet } from '@/features/wallet';
@@ -271,7 +272,7 @@ export const RefFinanceSwapCard: React.FC = () => {
   return (
     <div className="w-full max-w-[480px] mx-auto">
       {/* Main Card */}
-      <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 space-y-4 shadow-lg">
+      <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 space-y-4 shadow-main-card">
         {/* Header */}
         <div className="bg-gradient-to-r from-primary/5 via-verified/5 to-primary/5 rounded-t-2xl -m-4 sm:-m-6 md:-m-8 mb-4 md:mb-6 shadow-sm">
           <div className="p-4 sm:p-6 md:p-6">
@@ -280,27 +281,39 @@ export const RefFinanceSwapCard: React.FC = () => {
                 <Logo width={56} height={37} className="w-14 h-[37px]" />
               </div>
               <div className="flex items-center gap-2">
-                <button
+                <Button
                   onClick={() => form.setShowSettings(!form.showSettings)}
-                  className="p-2 bg-card/50 hover:bg-card border border-border/50 rounded-full transition-all duration-200 hover:shadow-md"
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full bg-card/50 hover:bg-card border border-border/50"
                 >
-                  <Settings className="w-5 h-5 text-muted-foreground hover:text-primary transition-colors" />
-                </button>
+                  <Settings className="w-5 h-5 text-muted-foreground" />
+                </Button>
               </div>
             </div>
           </div>
         </div>
 
         {/* Settings Panel */}
-        {form.showSettings && (
-          <SlippageSettings
-            slippage={form.slippage}
-            customSlippage={form.customSlippage}
-            onSlippageChange={form.handleSlippageChange}
-            onCustomSlippageChange={form.handleCustomSlippage}
-            presets={SLIPPAGE_PRESETS}
-          />
-        )}
+        <AnimatePresence>
+          {form.showSettings && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="overflow-hidden"
+            >
+              <SlippageSettings
+                slippage={form.slippage}
+                customSlippage={form.customSlippage}
+                onSlippageChange={form.handleSlippageChange}
+                onCustomSlippageChange={form.handleCustomSlippage}
+                presets={SLIPPAGE_PRESETS}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Swap Form */}
         <SwapForm
@@ -345,33 +358,51 @@ export const RefFinanceSwapCard: React.FC = () => {
         />
 
         {/* Swap Info */}
-        {!!(form.estimatedOutDisplay && !transaction.error && accountId) && (
-          <>
-            <SwapDetails
-              tokenIn={form.tokenIn}
-              tokenOut={form.tokenOut}
-              amountIn={form.amountIn}
-              rawEstimatedOut={form.rawEstimatedOut}
-              currentEstimate={estimate.currentEstimate}
-              slippage={form.slippage}
-              isRateReversed={form.isRateReversed}
-              onToggleRate={() => form.setIsRateReversed(!form.isRateReversed)}
-              tokenPrices={tokenPrices}
-              formatDollarAmount={formatDollarAmount}
-              accountId={accountId}
-            />
-          </>
-        )}
+        <AnimatePresence>
+          {!!(form.estimatedOutDisplay && !transaction.error && accountId) && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="overflow-hidden"
+            >
+              <SwapDetails
+                tokenIn={form.tokenIn}
+                tokenOut={form.tokenOut}
+                amountIn={form.amountIn}
+                rawEstimatedOut={form.rawEstimatedOut}
+                currentEstimate={estimate.currentEstimate}
+                slippage={form.slippage}
+                isRateReversed={form.isRateReversed}
+                onToggleRate={() => form.setIsRateReversed(!form.isRateReversed)}
+                tokenPrices={tokenPrices}
+                formatDollarAmount={formatDollarAmount}
+                accountId={accountId}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Gas Reserve Info */}
-        {!!(form.showGasReserveMessage && accountId) && (
-          <div className="flex items-start gap-2 p-2 bg-primary/10 rounded-full animate-in fade-in slide-in-from-top-2 duration-300">
-            <Info className="w-4 h-4 text-primary mt-0.5" />
-            <p className="text-xs text-muted-foreground">
-              Keeping 0.25 NEAR in your wallet for gas fees
-            </p>
-          </div>
-        )}
+        <AnimatePresence>
+          {!!(form.showGasReserveMessage && accountId) && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="overflow-hidden"
+            >
+              <div className="flex items-start gap-2 p-2 bg-primary/10 rounded-full">
+                <Info className="w-4 h-4 text-primary mt-0.5" />
+                <p className="text-xs text-muted-foreground">
+                  Keeping 0.25 NEAR in your wallet for gas fees
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Swap Button */}
         <Button
@@ -390,8 +421,7 @@ export const RefFinanceSwapCard: React.FC = () => {
             }
           })() || form.showGasReserveInfo}
           variant="verified"
-          size="lg"
-          className="w-full font-bold min-h-[48px]"
+          className="w-full font-bold h-12"
         >
           <span className={
             `inline-flex items-center justify-center min-h-[24px] ${

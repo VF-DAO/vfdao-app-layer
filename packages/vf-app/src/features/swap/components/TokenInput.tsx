@@ -8,7 +8,15 @@ interface TokenInputProps {
   className?: string;
   max?: string;
   decimalLimit?: number;
+  variant?: 'swap' | 'form';
 }
+
+const formatWithSpaces = (value: string): string => {
+  if (!value || value === '0.') return value;
+  const [integer, decimal] = value.split('.');
+  const formattedInteger = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return decimal !== undefined ? `${formattedInteger}.${decimal}` : formattedInteger;
+};
 
 export const TokenInput: React.FC<TokenInputProps> = ({
   value,
@@ -18,6 +26,7 @@ export const TokenInput: React.FC<TokenInputProps> = ({
   className = '',
   max,
   decimalLimit,
+  variant = 'swap',
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -68,8 +77,8 @@ export const TokenInput: React.FC<TokenInputProps> = ({
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     let newValue = e.target.value;
 
-    // Convert comma to dot for decimal separator
-    newValue = newValue.replace(/,/g, '.');
+    // Remove spaces and convert comma to dot for decimal separator
+    newValue = newValue.replace(/\s/g, '').replace(/,/g, '.');
 
     // Handle decimal limit
     if (decimalLimit !== undefined && newValue.includes('.')) {
@@ -121,16 +130,20 @@ export const TokenInput: React.FC<TokenInputProps> = ({
       ref={inputRef}
       type="text"
       inputMode="decimal"
-      value={value}
+      value={formatWithSpaces(value)}
       onChange={handleChange}
       onKeyDown={handleKeyDown}
       onWheel={handleWheel}
       placeholder={placeholder}
       disabled={disabled}
       max={max}
-      className={`w-full bg-transparent text-xl font-semibold outline-none text-right leading-none h-auto py-0 ${className}`}
+      className={`w-full bg-transparent outline-none ${
+        variant === 'swap' 
+          ? 'text-xl font-semibold text-right leading-none h-auto py-0' 
+          : 'text-sm text-left h-12 px-4'
+      } ${className}`}
       style={{
-        textAlign: 'right',
+        textAlign: variant === 'swap' ? 'right' : 'left',
       }}
       autoComplete="off"
       autoCorrect="off"

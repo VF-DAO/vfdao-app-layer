@@ -79,7 +79,7 @@ export function UserLiquidityDisplay({ poolInfo, userShares, tokenPrices }: User
   const amounts = calculateRemoveLiquidityAmountsFromContract(userShares, poolInfo);
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-4 shadow-lg space-y-3 text-xs">
+    <div className="bg-card border border-border rounded-2xl p-4 space-y-3 text-xs shadow-main-card">
       {/* Header with total shares and percentage */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
