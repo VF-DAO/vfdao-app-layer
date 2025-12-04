@@ -22,7 +22,7 @@ export const getTopPoolsIndexerRaw = async (): Promise<PoolView[]> => {
   const timeoutDuration = 20000; // 20 seconds
   const controller = new AbortController();
   const timeout = setTimeout(() => {
-    controller.abort();
+    controller.abort(new Error('Request timeout'));
   }, timeoutDuration);
 
   try {

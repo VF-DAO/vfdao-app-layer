@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Big from 'big.js';
 import { ChevronLeft, Info } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { expandVariants, transitions } from '@/lib/animations';
 import { LoadingDots } from '@/components/ui/loading-dots';
 import { toInternationalCurrencySystemLongString } from '@ref-finance/ref-sdk';
 import { TokenInput } from '@/features/swap/components/TokenInput';
@@ -81,10 +82,11 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({
           <AnimatePresence>
             {!!(accountId && rawBalances[poolInfo.token1.id] && rawBalances[poolInfo.token1.id] !== '0') && (
               <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                variants={expandVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                transition={transitions.slow}
                 className="overflow-hidden"
               >
                 <div className="flex gap-2 justify-end">
@@ -166,10 +168,11 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({
           <AnimatePresence>
             {!!(accountId && rawBalances[poolInfo.token2.id] && rawBalances[poolInfo.token2.id] !== '0') && (
               <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                variants={expandVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                transition={transitions.slow}
                 className="overflow-hidden"
               >
                 <div className="flex gap-2 justify-end">
@@ -248,10 +251,11 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({
         <AnimatePresence>
           {!!(token1Amount && token2Amount && parseFloat(token1Amount) > 0 && parseFloat(token2Amount) > 0) && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              variants={expandVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              transition={transitions.slow}
               className="overflow-hidden"
             >
               <div className="bg-card border border-border rounded-2xl p-4 space-y-2 text-xs">
@@ -405,10 +409,11 @@ export const AddLiquidityForm: React.FC<AddLiquidityFormProps> = ({
         <AnimatePresence>
           {!!(showGasReserveMessage && accountId) && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              variants={expandVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              transition={transitions.slow}
               className="overflow-hidden"
             >
               <div className="flex items-start gap-2 p-2 bg-primary/10 rounded-full">

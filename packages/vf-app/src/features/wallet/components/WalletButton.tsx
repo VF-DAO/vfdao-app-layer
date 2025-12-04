@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, ExternalLink, LogOut, RefreshCw, User, Wallet } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { dropdownVariants, transitions } from '@/lib/animations';
+import { dropdownStyles } from '@/components/ui/dropdown-menu';
 import { useWallet } from '../contexts/wallet-context';
 import { LoadingDots } from '@/components/ui/loading-dots';
 import { Button } from '@/components/ui/button';
@@ -99,50 +101,59 @@ export function WalletButton({ compact = false, className }: WalletButtonProps) 
       <AnimatePresence>
         {showMenu && (
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            transition={{ duration: 0.2, ease: 'easeInOut' }}
-            className={`absolute w-64 bg-card border border-border rounded-2xl shadow-dropdown z-50 overflow-hidden backdrop-blur-md bottom-full left-2 mb-2`}
+            variants={dropdownVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            transition={transitions.normal}
+            className="absolute w-64 bg-card border border-border rounded-2xl shadow-dropdown z-50 overflow-hidden backdrop-blur-md bottom-full left-2 mb-2"
           >
-          <div className="p-4 border-b border-border bg-muted/30">
-            <p className="text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">
-              Connected Account
-            </p>
-            <p className="text-foreground text-sm font-medium truncate tracking-tight">
-              {accountId}
-            </p>
+          {/* Header - matches Modal.Header gradient style, clips to parent rounded corners */}
+          <div className="bg-gradient-to-r from-primary/5 via-verified/5 to-primary/5 p-4">
+            <div className="flex items-center gap-3">
+              <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-muted/50 text-muted-foreground">
+                <Wallet className="w-5 h-5 text-primary" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                  Connected
+                </p>
+                <p className="text-foreground text-sm font-medium truncate tracking-tight">
+                  {accountId}
+                </p>
+              </div>
+            </div>
           </div>
 
-          <div className="py-2">
+          <div className="border-t border-border py-2 px-2 space-y-0.5">
             <button
               onClick={() => {
                 window.open(`https://testnet.nearblocks.io/address/${accountId}`, '_blank');
                 setShowMenu(false);
               }}
-              className="w-full px-4 py-2 flex items-center gap-3 hover:bg-muted/50 transition-all duration-150 text-left group"
+              className="w-full px-4 py-2.5 flex items-center gap-2 rounded-full hover:bg-muted/50 hover:text-primary transition-colors text-left group"
             >
-              <User className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-150" />
-              <span className="text-sm text-muted-foreground group-hover:text-primary font-medium transition-colors duration-150">View on Explorer</span>
-              <ExternalLink className="w-3.5 h-3.5 text-muted-foreground/50 ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-150" />
+              <User className="w-4 h-4 flex-shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+              <span className="text-sm text-muted-foreground group-hover:text-primary font-medium transition-colors">View on Explorer</span>
+              <ExternalLink className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground/50 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
             </button>
 
             <button
               onClick={() => void handleSwitchWallet()}
-              className="w-full px-4 py-2 flex items-center gap-3 hover:bg-muted/50 transition-all duration-150 text-left group"
+              className="w-full px-4 py-2.5 flex items-center gap-2 rounded-full hover:bg-muted/50 hover:text-primary transition-colors text-left group"
             >
-              <RefreshCw className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-150" />
-              <span className="text-sm text-muted-foreground group-hover:text-primary font-medium transition-colors duration-150">Switch Wallet</span>
+              <RefreshCw className="w-4 h-4 flex-shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+              <span className="text-sm text-muted-foreground group-hover:text-primary font-medium transition-colors">Switch Wallet</span>
             </button>
 
-            <div className="h-px bg-border my-2 mx-3"></div>
+            <div className="h-px bg-border my-2 mx-2"></div>
 
             <button
               onClick={() => void handleDisconnect()}
-              className="w-full px-4 py-2 flex items-center gap-3 hover:bg-orange/5 transition-all duration-150 text-left group"
+              className="w-full px-4 py-2.5 flex items-center gap-2 rounded-full hover:bg-orange/5 hover:text-orange transition-colors text-left group"
             >
-              <LogOut className="w-4 h-4 text-muted-foreground group-hover:text-orange transition-colors duration-150" />
-              <span className="text-sm text-muted-foreground group-hover:text-orange font-medium transition-colors duration-150">
+              <LogOut className="w-4 h-4 flex-shrink-0 text-muted-foreground group-hover:text-orange transition-colors" />
+              <span className="text-sm text-muted-foreground group-hover:text-orange font-medium transition-colors">
                 Disconnect
               </span>
             </button>

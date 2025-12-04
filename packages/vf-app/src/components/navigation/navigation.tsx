@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRightLeft, ChevronLeft, ChevronRight, Droplets, Github, Home, Menu, Send, Vote } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Coins, Github, Home, Menu, Send, Vote } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { FaXTwitter } from 'react-icons/fa6';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -22,8 +22,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: 'Home', href: '/', icon: Home },
-  { label: 'Swap', href: '/#tokens', icon: ArrowRightLeft },
-  { label: 'Liquidity', href: '/#liquidity', icon: Droplets },
+  { label: '$VF', href: '/vf', icon: Coins },
   { label: 'DAO', href: '/dao', icon: Vote }
 ];
 
@@ -216,6 +215,14 @@ export function Navigation() {
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const minSwipeDistance = 50;
 
+  // Close sidebar when user disconnects
+  useEffect(() => {
+    if (!isConnected) {
+      setIsSidebarOpen(false);
+      setIsDesktopExpanded(false);
+    }
+  }, [isConnected]);
+
   // Update body class for sidebar state
   useEffect(() => {
     if (isConnected) {
@@ -320,90 +327,18 @@ export function Navigation() {
     }
   }, [sidebarInteractionTime]);
 
-  // Track active section based on scroll position and pathname
+  // Track active section based on pathname
   useEffect(() => {
-    // If we're on a different page (not home), set that as active
-    if (pathname !== '/') {
+    // Set active section based on current pathname
+    if (pathname === '/') {
+      setActiveSection('/');
+    } else if (pathname.startsWith('/vf')) {
+      setActiveSection('/vf');
+    } else if (pathname.startsWith('/dao')) {
+      setActiveSection('/dao');
+    } else {
       setActiveSection(pathname);
-      return;
     }
-
-    // Otherwise, track scroll position on home page
-    const sectionIds = ['#tokens', '#liquidity'];
-    
-    const observerOptions = {
-      root: null,
-      rootMargin: '-50% 0px -50% 0px',
-      threshold: 0
-    };
-
-    const observerCallback = (entries: IntersectionObserverEntry[]) => {
-      let currentActiveSection = '/';
-      
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          const sectionId = entry.target.id ? `/#${entry.target.id}` : '/';
-          // Prioritize sections in order: tokens, then liquidity
-          if (sectionId === '/#tokens') {
-            currentActiveSection = '/#tokens';
-          } else if (sectionId === '/#liquidity' && currentActiveSection !== '/#tokens') {
-            currentActiveSection = '/#liquidity';
-          }
-        }
-      });
-      
-      setActiveSection(currentActiveSection);
-    };
-
-    const observer = new IntersectionObserver(observerCallback, observerOptions);
-
-    // Observe all sections
-    sectionIds.forEach((sectionId) => {
-      const element = document.querySelector(sectionId);
-      if (element) {
-        observer.observe(element);
-      }
-    });
-
-    // Handle home section when at top of page
-    const handleScroll = () => {
-      const scrollTop = window.scrollY;
-      const windowHeight = window.innerHeight;
-      
-      // If we're at the very top, show home as active
-      if (scrollTop < windowHeight * 0.3) {
-        setActiveSection('/');
-        return;
-      }
-      
-      // Check if any section is in view
-      const tokensSection = document.querySelector('#tokens');
-      const liquiditySection = document.querySelector('#liquidity');
-      
-      if (tokensSection) {
-        const tokensRect = tokensSection.getBoundingClientRect();
-        if (tokensRect.top <= windowHeight * 0.5 && tokensRect.bottom >= windowHeight * 0.5) {
-          setActiveSection('/#tokens');
-          return;
-        }
-      }
-      
-      if (liquiditySection) {
-        const liquidityRect = liquiditySection.getBoundingClientRect();
-        if (liquidityRect.top <= windowHeight * 0.5 && liquidityRect.bottom >= windowHeight * 0.5) {
-          setActiveSection('/#liquidity');
-          return;
-        }
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    handleScroll(); // Check initial state
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener('scroll', handleScroll);
-    };
   }, [pathname]);
 
   return (

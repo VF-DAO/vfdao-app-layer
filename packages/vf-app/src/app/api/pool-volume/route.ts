@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     
     // Create AbortController with 3 second timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const timeoutId = setTimeout(() => controller.abort(new Error('Request timeout')), 3000);
     
     const response = await fetch(apiUrl, {
       method: 'GET',

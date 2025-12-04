@@ -1,16 +1,18 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { Leaf, Sparkles, UserPlus } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Leaf, Pencil, Plus, Sparkles, UserPlus } from 'lucide-react';
 import { useWallet } from '@/features/wallet';
 import { useProfile } from '@/hooks/use-profile';
 import { LoadingDots } from '@/components/ui/loading-dots';
 import { ProfileAvatar } from '@/components/ui/profile-avatar';
+import { ProfileEditorModal } from '@/components/ui/profile-editor-modal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { providers } from 'near-api-js';
 import Big from 'big.js';
-import { formatTokenAmount } from '@/lib/swap-utils';
+import { formatTokenAmount, calculateVfPriceFromPool } from '@/lib/swap-utils';
 import Image from 'next/image';
 import { usePersonalVotingStats } from '@/features/governance/hooks';
 import { usePolicy } from '@/features/governance/hooks';
@@ -22,17 +24,44 @@ const POOL_ID = 5094;
 const REF_FINANCE_CONTRACT = 'v2.ref-finance.near';
 
 export function PortfolioDashboard() {
+  const router = useRouter();
   const { accountId, isConnected, signIn, isConnecting } = useWallet();
-  const { profileImageUrl, loading: profileLoading } = useProfile(accountId ?? undefined);
+  const { profileImageUrl, loading: profileLoading, refetch: refetchProfile } = useProfile(accountId ?? undefined);
+  
+  // Profile editor modal state
+  const [profileEditorOpen, setProfileEditorOpen] = useState(false);
+  
+  // Separate loading states for each data type
   const [vfBalance, setVfBalance] = useState<string>('0');
+  const [rawVfBalance, setRawVfBalance] = useState<string>('0');
   const [vfUsdValue, setVfUsdValue] = useState<number>(0);
   const [lpShares, setLpShares] = useState<string>('0');
+  const [rawLpShares, setRawLpShares] = useState<string>('0');
   const [lpUsdValue, setLpUsdValue] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // Granular loading states
+  const [isLoadingVf, setIsLoadingVf] = useState(true);
+  const [isLoadingLp, setIsLoadingLp] = useState(true);
+  const [isLoadingPrices, setIsLoadingPrices] = useState(true);
+  
+  // Refresh states (for fade effect on subsequent loads)
+  const [isRefreshingVf, setIsRefreshingVf] = useState(false);
+  const [isRefreshingLp, setIsRefreshingLp] = useState(false);
+  const [isRefreshingPrices, setIsRefreshingPrices] = useState(false);
+  
+  // Track if we've loaded once
+  const hasLoadedVf = useRef(false);
+  const hasLoadedLp = useRef(false);
+  const hasLoadedPrices = useRef(false);
+  
   const [refreshKey, setRefreshKey] = useState(0);
   const [vfIcon, setVfIcon] = useState<string | undefined>(undefined);
+  const [isLoadingVfIcon, setIsLoadingVfIcon] = useState(true);
   const [nearIcon] = useState<string>(`data:image/svg+xml;base64,${Buffer.from(`<svg width="32" height="32" viewBox="2 2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="32" height="32" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M2.84211 3.21939V12.483L7.57895 8.94375L8.05263 9.35915L4.08047 14.954C2.6046 16.308 0 15.3919 0 13.5188V2.08119C0 0.143856 2.75709 -0.738591 4.18005 0.743292L15.1579 12.1757V3.29212L10.8947 6.4513L10.4211 6.03589L13.7996 0.813295C15.2097 -0.696027 18 0.178427 18 2.12967V13.3139C18 15.2512 15.2429 16.1336 13.8199 14.6518L2.84211 3.21939Z" fill="black" transform="translate(8,8) scale(0.9, 1)"/></svg>`).toString('base64')}`);
+  
+  // Price data for USD calculations
+  const [tokenPrices, setTokenPrices] = useState<{ nearPrice: number; vfPrice: number }>({ nearPrice: 0, vfPrice: 0 });
+  const [poolData, setPoolData] = useState<{ nearReserve: string; vfReserve: string; totalShares: string } | null>(null);
 
   const { stats: votingStats, isLoading: votingStatsLoading } = usePersonalVotingStats(accountId ?? undefined);
   const { data: policy } = usePolicy();
@@ -41,6 +70,28 @@ export function PortfolioDashboard() {
   const userGroups = accountId && policy ? policy.roles.filter((r: any) =>
     typeof r.kind === 'object' && r.kind !== null && 'Group' in r.kind && r.kind.Group.includes(accountId)
   ).map((r: any) => r.name) : [];
+
+  // Check if user can create proposals (has AddProposal permission in a group, not Everyone)
+  const canAddProposal = useMemo(() => {
+    if (!accountId || !policy?.roles) return false;
+    
+    return policy.roles.some((role: any) => {
+      // Skip "Everyone" role - only group members can create proposals
+      if (role.kind === 'Everyone') return false;
+      
+      // Check if user is in this group
+      const isInRole = typeof role.kind === 'object' && 'Group' in role.kind && role.kind.Group.includes(accountId);
+      
+      if (!isInRole) return false;
+      
+      // Check if role has AddProposal permission
+      return role.permissions?.some((p: string) => 
+        p === '*:*' || 
+        p === '*:AddProposal' || 
+        p.includes(':AddProposal')
+      );
+    });
+  }, [accountId, policy]);
 
   // Join DAO modal state
   const [joinModalOpen, setJoinModalOpen] = useState(false);
@@ -55,9 +106,8 @@ export function PortfolioDashboard() {
       if (amount >= 0.01) {
         return `$${amount.toFixed(2)}`;
       } else {
-        // Format small numbers: $0.0 followed by green zeros count and significant digits
         const fixedStr = amount.toFixed(20);
-  const decimalPart = fixedStr.split('.')[1] ?? '';
+        const decimalPart = fixedStr.split('.')[1] ?? '';
         const firstNonZeroIndex = decimalPart.search(/[1-9]/);
         if (firstNonZeroIndex === -1) {
           return '$0.00';
@@ -83,12 +133,10 @@ export function PortfolioDashboard() {
   // Expose refresh function globally
   useEffect(() => {
     if (typeof window !== 'undefined') {
-       
       (window as any).refreshPortfolioDashboard = refreshBalances;
     }
     return () => {
       if (typeof window !== 'undefined') {
-         
         delete (window as any).refreshPortfolioDashboard;
       }
     };
@@ -97,7 +145,10 @@ export function PortfolioDashboard() {
   // Fetch VF icon even when disconnected (for preview)
   useEffect(() => {
     const fetchVfIcon = async () => {
-      if (vfIcon) return; // Already loaded
+      if (vfIcon) {
+        setIsLoadingVfIcon(false);
+        return;
+      }
       
       try {
         const rpcUrl = process.env.NEXT_PUBLIC_NEAR_RPC_MAINNET ?? 'https://rpc.mainnet.near.org';
@@ -111,69 +162,69 @@ export function PortfolioDashboard() {
           finality: 'final',
         })) as unknown as { result: number[] };
         
-        const metadata = JSON.parse(Buffer.from(metadataResult.result).toString()) as { 
-          icon?: string;
-        };
-        
+        const metadata = JSON.parse(Buffer.from(metadataResult.result).toString()) as { icon?: string };
         if (metadata.icon) {
           setVfIcon(metadata.icon);
         }
       } catch (error) {
         console.warn('[PortfolioDashboard] Could not fetch VF icon:', error);
+      } finally {
+        setIsLoadingVfIcon(false);
       }
     };
 
-  void fetchVfIcon();
+    void fetchVfIcon();
   }, [vfIcon]);
 
+  // Calculate USD values when we have both balances and prices
+  useEffect(() => {
+    if (tokenPrices.vfPrice > 0 && rawVfBalance !== '0') {
+      const numericVfBalance = new Big(rawVfBalance).div(new Big(10).pow(VF_TOKEN_DECIMALS));
+      const vfUsdVal = numericVfBalance.times(tokenPrices.vfPrice).toNumber();
+      setVfUsdValue(vfUsdVal);
+    }
+  }, [tokenPrices.vfPrice, rawVfBalance]);
+
+  // Calculate LP USD value when we have pool data, prices, and shares
+  useEffect(() => {
+    if (poolData && tokenPrices.nearPrice > 0 && tokenPrices.vfPrice > 0 && rawLpShares !== '0') {
+      const token1Reserve = Big(poolData.nearReserve).div(Big(10).pow(24));
+      const token2Reserve = Big(poolData.vfReserve).div(Big(10).pow(18));
+      
+      const token1TVL = token1Reserve.mul(tokenPrices.nearPrice);
+      const token2TVL = token2Reserve.mul(tokenPrices.vfPrice);
+      const poolTVL = token1TVL.plus(token2TVL);
+      
+      const totalShares = Big(poolData.totalShares);
+      if (totalShares.gt(0)) {
+        const readableShares = Big(rawLpShares).div(Big(10).pow(24));
+        const readableTotalShares = totalShares.div(Big(10).pow(24));
+        const singleLpValue = poolTVL.div(readableTotalShares);
+        const totalLpUsdValue = singleLpValue.mul(readableShares).toNumber();
+        setLpUsdValue(totalLpUsdValue);
+      }
+    }
+  }, [poolData, tokenPrices, rawLpShares]);
+
+  // Fetch VF Balance (fast - direct RPC call)
   useEffect(() => {
     if (!isConnected || !accountId) {
-      console.warn('[PortfolioDashboard] Not connected or no accountId, resetting balances');
       setVfBalance('0');
+      setRawVfBalance('0');
       setVfUsdValue(0);
-      setLpShares('0');
-      setLpUsdValue(0);
+      hasLoadedVf.current = false;
+      setIsLoadingVf(true);
       return;
     }
 
-    const fetchPortfolioData = async () => {
-      // Use isRefreshing for subsequent fetches, isLoading only for initial load
-      if (vfBalance === '0' && lpShares === '0') {
-        setIsLoading(true);
-      } else {
-        setIsRefreshing(true);
+    const fetchVfBalance = async () => {
+      if (hasLoadedVf.current) {
+        setIsRefreshingVf(true);
       }
       
       try {
-        console.warn('[PortfolioDashboard] Fetching portfolio data for:', accountId);
-        
         const rpcUrl = process.env.NEXT_PUBLIC_NEAR_RPC_MAINNET ?? 'https://rpc.mainnet.near.org';
         const provider = new providers.JsonRpcProvider({ url: rpcUrl });
-        
-        // Track decimals (will be updated from metadata if available)
-        let tokenDecimals = VF_TOKEN_DECIMALS;
-        
-        // Fetch VF token metadata (including icon)
-        try {
-          const metadataResult = (await provider.query({
-            request_type: 'call_function',
-            account_id: VF_TOKEN_CONTRACT,
-            method_name: 'ft_metadata',
-            args_base64: Buffer.from(JSON.stringify({})).toString('base64'),
-            finality: 'final',
-          })) as unknown as { result: number[] };
-          
-          const metadata = JSON.parse(Buffer.from(metadataResult.result).toString()) as { 
-            decimals: number;
-            icon?: string;
-          };
-          tokenDecimals = metadata.decimals;
-          if (metadata.icon) {
-            setVfIcon(metadata.icon);
-          }
-        } catch {
-          console.warn('[PortfolioDashboard] Could not fetch metadata, using default decimals:', VF_TOKEN_DECIMALS);
-        }
         
         const result = (await provider.query({
           request_type: 'call_function',
@@ -183,24 +234,50 @@ export function PortfolioDashboard() {
           finality: 'final',
         })) as unknown as { result: number[] };
         
-        const rawVfBalance = JSON.parse(Buffer.from(result.result).toString()) as string;
-        const vfBalanceFormatted = formatTokenAmount(rawVfBalance, tokenDecimals, 6);
-        setVfBalance(vfBalanceFormatted);
+        const rawBalance = JSON.parse(Buffer.from(result.result).toString()) as string;
+        setRawVfBalance(rawBalance);
+        setVfBalance(formatTokenAmount(rawBalance, VF_TOKEN_DECIMALS, 6));
+        hasLoadedVf.current = true;
+      } catch (error) {
+        console.warn('[PortfolioDashboard] Could not fetch VF balance:', error);
+      } finally {
+        setIsLoadingVf(false);
+        setIsRefreshingVf(false);
+      }
+    };
+
+    void fetchVfBalance();
+  }, [accountId, isConnected, refreshKey]);
+
+  // Fetch LP Shares (fast - direct RPC call)
+  useEffect(() => {
+    if (!isConnected || !accountId) {
+      setLpShares('0');
+      setRawLpShares('0');
+      setLpUsdValue(0);
+      hasLoadedLp.current = false;
+      setIsLoadingLp(true);
+      return;
+    }
+
+    const fetchLpShares = async () => {
+      if (hasLoadedLp.current) {
+        setIsRefreshingLp(true);
+      }
+      
+      try {
+        const rpcUrl = process.env.NEXT_PUBLIC_NEAR_RPC_MAINNET ?? 'https://rpc.mainnet.near.org';
+        const provider = new providers.JsonRpcProvider({ url: rpcUrl });
         
-        // Fetch LP shares
         let userShares = '0';
         try {
           const sharesResult = (await provider.query({
             request_type: 'call_function',
             account_id: REF_FINANCE_CONTRACT,
             method_name: 'get_pool_shares',
-            args_base64: Buffer.from(JSON.stringify({
-              pool_id: POOL_ID,
-              account_id: accountId
-            })).toString('base64'),
+            args_base64: Buffer.from(JSON.stringify({ pool_id: POOL_ID, account_id: accountId })).toString('base64'),
             finality: 'final',
-          }) as unknown) as { result: number[] };
-
+          })) as unknown as { result: number[] };
           userShares = JSON.parse(Buffer.from(sharesResult.result).toString()) as string;
         } catch {
           // Fallback to mft_balance_of
@@ -209,141 +286,121 @@ export function PortfolioDashboard() {
               request_type: 'call_function',
               account_id: REF_FINANCE_CONTRACT,
               method_name: 'mft_balance_of',
-              args_base64: Buffer.from(JSON.stringify({
-                token_id: `:${POOL_ID}`,
-                account_id: accountId
-              })).toString('base64'),
+              args_base64: Buffer.from(JSON.stringify({ token_id: `:${POOL_ID}`, account_id: accountId })).toString('base64'),
               finality: 'final',
-            }) as unknown) as { result: number[] };
-
+            })) as unknown as { result: number[] };
             userShares = JSON.parse(Buffer.from(mftResult.result).toString()) as string;
           } catch (mftError) {
             console.warn('[PortfolioDashboard] Could not fetch LP shares:', mftError);
           }
         }
         
-        const lpSharesFormatted = formatTokenAmount(userShares, 24, 6);
-        setLpShares(lpSharesFormatted);
-        
-        // Fetch token prices
-        let vfTokenPrice = 0;
-        let nearPrice = 0;
-        
-        try {
-          const priceResponse = await fetch('https://mainnet-indexer.ref-finance.com/list-token-price');
-          if (priceResponse.ok) {
-            const prices = await priceResponse.json() as Record<string, { price: string }>;
-            
-            // Get NEAR price
-            if (prices['wrap.near']) {
-              nearPrice = parseFloat(prices['wrap.near'].price);
-            }
-            
-            // Get VEGANFRIENDS price or calculate from pool
-            if (prices[VF_TOKEN_CONTRACT]) {
-              vfTokenPrice = parseFloat(prices[VF_TOKEN_CONTRACT].price);
-            } else if (nearPrice > 0) {
-              // Calculate from pool 5094
-              try {
-                const poolResponse = await fetch(rpcUrl, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    jsonrpc: '2.0',
-                    id: '1',
-                    method: 'query',
-                    params: {
-                      request_type: 'call_function',
-                      account_id: REF_FINANCE_CONTRACT,
-                      method_name: 'get_pool',
-                      args_base64: Buffer.from(JSON.stringify({ pool_id: POOL_ID })).toString('base64'),
-                      finality: 'final'
-                    }
-                  })
-                });
-
-                if (poolResponse.ok) {
-                   
-                  const poolData = await poolResponse.json();
-                   
-                  if (poolData.result?.result) {
-                     
-                    const pool = JSON.parse(Buffer.from(poolData.result.result).toString());
-                    
-                     
-                    const nearIndex = pool.token_account_ids.indexOf('wrap.near');
-                     
-                    const veganIndex = pool.token_account_ids.indexOf('veganfriends.tkn.near');
-                    
-                    if (nearIndex !== -1 && veganIndex !== -1) {
-                       
-                      const reserveNear = new Big(String(pool.amounts[nearIndex]));
-                       
-                      const reserveVegan = new Big(String(pool.amounts[veganIndex]));
-                      
-                      if (reserveNear.gt(0) && reserveVegan.gt(0)) {
-                        const rawRatio = reserveNear.div(reserveVegan);
-                        const decimalAdjustment = new Big(10).pow(18 - 24);
-                        const adjustedRatio = rawRatio.mul(decimalAdjustment);
-                        vfTokenPrice = adjustedRatio.mul(nearPrice).toNumber();
-                        
-                        // Calculate LP USD value
-                         
-                        const token1Reserve = Big(String(pool.amounts[nearIndex])).div(Big(10).pow(24));
-                         
-                        const token2Reserve = Big(String(pool.amounts[veganIndex])).div(Big(10).pow(18));
-                        
-                        const token1TVL = token1Reserve.mul(nearPrice);
-                        const token2TVL = token2Reserve.mul(vfTokenPrice);
-                        const poolTVL = token1TVL.plus(token2TVL);
-                        
-                         
-                        const totalShares = Big(String(pool.total_shares ?? pool.shares_total_supply ?? '0'));
-                        if (totalShares.gt(0)) {
-                          const readableShares = Big(userShares).div(Big(10).pow(24));
-                          const readableTotalShares = totalShares.div(Big(10).pow(24));
-                          const singleLpValue = poolTVL.div(readableTotalShares);
-                          const totalLpUsdValue = singleLpValue.mul(readableShares).toNumber();
-                          setLpUsdValue(totalLpUsdValue);
-                        }
-                      }
-                    }
-                  }
-                }
-              } catch (poolError) {
-                console.warn('[PortfolioDashboard] Could not calculate price from pool:', poolError);
-              }
-            }
-          }
-        } catch (priceError) {
-          console.warn('[PortfolioDashboard] Could not fetch token prices:', priceError);
-        }
-        
-        // Calculate VF USD value
-  const numericVfBalance = new Big(rawVfBalance ?? '0').div(new Big(10).pow(tokenDecimals));
-        const vfUsdVal = numericVfBalance.times(vfTokenPrice).toNumber();
-        setVfUsdValue(vfUsdVal);
-        
-        console.warn('[PortfolioDashboard] Portfolio data:', {
-          vfBalance: vfBalanceFormatted,
-          vfUsd: vfUsdVal,
-          lpShares: lpSharesFormatted,
-          lpUsd: lpUsdValue
-        });
+        setRawLpShares(userShares);
+        setLpShares(formatTokenAmount(userShares, 24, 6));
+        hasLoadedLp.current = true;
       } catch (error) {
-        console.error('[PortfolioDashboard] Error fetching portfolio data:', error);
-        setVfBalance('0');
-        setVfUsdValue(0);
-        setLpShares('0');
-        setLpUsdValue(0);
+        console.warn('[PortfolioDashboard] Could not fetch LP shares:', error);
       } finally {
-        setIsLoading(false);
-        setIsRefreshing(false);
+        setIsLoadingLp(false);
+        setIsRefreshingLp(false);
       }
     };
 
-  void fetchPortfolioData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    void fetchLpShares();
+  }, [accountId, isConnected, refreshKey]);
+
+  // Fetch Token Prices + Pool Data (slower - external API + RPC)
+  useEffect(() => {
+    if (!isConnected || !accountId) {
+      hasLoadedPrices.current = false;
+      setIsLoadingPrices(true);
+      return;
+    }
+
+    const fetchPricesAndPool = async () => {
+      if (hasLoadedPrices.current) {
+        setIsRefreshingPrices(true);
+      }
+      
+      try {
+        const rpcUrl = process.env.NEXT_PUBLIC_NEAR_RPC_MAINNET ?? 'https://rpc.mainnet.near.org';
+        let nearPrice = 0;
+        let vfPrice = 0;
+        
+        // Fetch prices from API
+        try {
+          const priceResponse = await fetch('https://indexer.ref.finance/list-token-price');
+          if (priceResponse.ok) {
+            const prices = await priceResponse.json() as Record<string, { price: string }>;
+            if (prices['wrap.near']) {
+              nearPrice = parseFloat(prices['wrap.near'].price);
+            }
+            if (prices[VF_TOKEN_CONTRACT]) {
+              vfPrice = parseFloat(prices[VF_TOKEN_CONTRACT].price);
+            }
+          }
+        } catch {
+          console.warn('[PortfolioDashboard] Could not fetch prices from API');
+        }
+        
+        // If no VF price from API, calculate from pool
+        if (nearPrice > 0 && vfPrice === 0) {
+          try {
+            const poolResponse = await fetch(rpcUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                jsonrpc: '2.0',
+                id: '1',
+                method: 'query',
+                params: {
+                  request_type: 'call_function',
+                  account_id: REF_FINANCE_CONTRACT,
+                  method_name: 'get_pool',
+                  args_base64: Buffer.from(JSON.stringify({ pool_id: POOL_ID })).toString('base64'),
+                  finality: 'final'
+                }
+              })
+            });
+
+            if (poolResponse.ok) {
+              const poolResult = await poolResponse.json();
+              if (poolResult.result?.result) {
+                const pool = JSON.parse(Buffer.from(poolResult.result.result).toString());
+                const nearIndex = pool.token_account_ids.indexOf('wrap.near');
+                const veganIndex = pool.token_account_ids.indexOf('veganfriends.tkn.near');
+                
+                if (nearIndex !== -1 && veganIndex !== -1) {
+                  const nearReserve = String(pool.amounts[nearIndex]);
+                  const vfReserve = String(pool.amounts[veganIndex]);
+                  
+                  vfPrice = calculateVfPriceFromPool(nearReserve, vfReserve, nearPrice);
+                  
+                  // Store pool data for LP value calculation
+                  setPoolData({
+                    nearReserve,
+                    vfReserve,
+                    totalShares: String(pool.total_shares ?? pool.shares_total_supply ?? '0')
+                  });
+                }
+              }
+            }
+          } catch (poolError) {
+            console.warn('[PortfolioDashboard] Could not fetch pool data:', poolError);
+          }
+        }
+        
+        setTokenPrices({ nearPrice, vfPrice });
+        hasLoadedPrices.current = true;
+      } catch (error) {
+        console.warn('[PortfolioDashboard] Could not fetch prices:', error);
+      } finally {
+        setIsLoadingPrices(false);
+        setIsRefreshingPrices(false);
+      }
+    };
+
+    void fetchPricesAndPool();
   }, [accountId, isConnected, refreshKey]);
 
   // Auto-refresh every 30 seconds when connected
@@ -351,14 +408,19 @@ export function PortfolioDashboard() {
     if (!isConnected || !accountId) return;
 
     const interval = setInterval(() => {
-      console.warn('[PortfolioDashboard] Auto-refreshing portfolio');
       setRefreshKey(prev => prev + 1);
-    }, 30000); // 30 seconds
+    }, 30000);
 
     return () => clearInterval(interval);
   }, [isConnected, accountId]);
 
   const totalValue = vfUsdValue + lpUsdValue;
+  
+  // Check if we have valid price data (not just loading state false, but actual prices)
+  const hasValidPrices = tokenPrices.vfPrice > 0;
+  
+  // Show loading dots for USD values until we have valid prices
+  const showPriceLoading = isLoadingPrices || !hasValidPrices;
 
   // Show compact connect button when disconnected
   if (!isConnected) {
@@ -386,67 +448,70 @@ export function PortfolioDashboard() {
       <div className="px-4 sm:px-6 py-3 sm:py-4">
         {/* Compact Grid */}
         <div className="flex items-center justify-between gap-3 sm:gap-6">
-          {/* Your Holdings Icon */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Your Holdings Icon - Clickable to edit profile */}
+          <button
+            onClick={() => setProfileEditorOpen(true)}
+            className="relative group flex items-center gap-2 flex-shrink-0"
+            title="Edit profile"
+          >
             {profileLoading ? (
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-verified bg-verified/10 flex items-center justify-center flex-shrink-0">
-                <LoadingDots size="sm" />
-              </div>
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-verified bg-verified/10 animate-pulse flex-shrink-0" />
             ) : profileImageUrl ? (
               <ProfileAvatar
                 accountId={accountId}
                 size="md"
                 profileImageUrl={profileImageUrl}
                 showFallback={false}
-                className="w-8 h-8 sm:w-10 sm:h-10 border border-verified/30"
+                className="w-8 h-8 sm:w-10 sm:h-10 border border-verified/30 group-hover:border-primary/50 transition-colors"
               />
             ) : (
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-verified bg-verified/10 flex items-center justify-center flex-shrink-0">
-                <Leaf className={`w-4 h-4 sm:w-5 sm:h-5 text-primary ${isRefreshing ? 'animate-pulse' : ''}`} />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-verified bg-verified/10 flex items-center justify-center flex-shrink-0 group-hover:border-primary/50 transition-colors">
+                <Leaf className={`w-4 h-4 sm:w-5 sm:h-5 text-primary ${(isRefreshingVf || isRefreshingLp || isRefreshingPrices) ? 'animate-pulse' : ''}`} />
               </div>
             )}
-          </div>
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+              <Pencil className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+            </div>
+          </button>
 
           {/* Divider */}
           <div className="h-8 w-px border-l border-verified/30 flex-shrink-0"></div>
 
           {/* VF Tokens */}
           <div className="flex items-center gap-2 min-w-0">
-                {vfIcon ? (
+                {isLoadingVfIcon ? (
+                  <div className="w-6 h-6 rounded-full bg-verified/20 animate-pulse flex-shrink-0" />
+                ) : vfIcon ? (
                   <Image 
                     src={vfIcon} 
                     alt="VF"
                     width={24}
                     height={24}
                     className="rounded-full flex-shrink-0"
-                    onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                      e.currentTarget.style.display = 'none';
-                      const fallback = e.currentTarget.nextElementSibling;
-                      if (fallback instanceof HTMLElement) fallback.style.display = 'flex';
-                    }}
                   />
-                ) : null}
-                <div className={`w-6 h-6 rounded-full bg-verified/20 flex items-center justify-center flex-shrink-0 ${vfIcon ? 'hidden' : ''}`}>
-                  <span className="text-verified font-bold text-xs">V</span>
-                </div>
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-verified/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-verified font-bold text-xs">V</span>
+                  </div>
+                )}
                 <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">VF</p>
                   <div className="h-[32px] flex flex-col justify-center">
-                    {isLoading ? (
+                    {isLoadingVf ? (
                       <LoadingDots />
                     ) : (
-                      <div className={`transition-opacity ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
-                        <p className="text-sm sm:text-base font-bold text-foreground truncate">{vfBalance}</p>
-                        <p className="text-[10px] sm:text-xs text-primary font-semibold truncate">
-                          {formatDollarAmount(vfUsdValue)}
-                        </p>
-                      </div>
+                      <>
+                        <span className={`text-sm sm:text-base font-bold text-foreground truncate block transition-opacity ${isRefreshingVf ? 'opacity-50 animate-pulse' : 'opacity-100'}`}>{vfBalance}</span>
+                        <span className={`text-[10px] sm:text-xs text-primary font-semibold truncate block transition-opacity ${isRefreshingPrices ? 'opacity-50 animate-pulse' : 'opacity-100'}`}>
+                          {showPriceLoading ? <LoadingDots size="xs" /> : formatDollarAmount(vfUsdValue)}
+                        </span>
+                      </>
                     )}
                   </div>
                 </div>
           </div>
 
-              {/* Divider */}
+              {/* Pool icons */}
               <div className="flex items-center gap-2 min-w-0">
                 <div className="flex items-center justify-center flex-shrink-0">
                   <Image 
@@ -455,45 +520,35 @@ export function PortfolioDashboard() {
                     width={20}
                     height={20}
                     className="rounded-full relative z-10"
-                    onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                      e.currentTarget.style.display = 'none';
-                      const fallback = e.currentTarget.parentElement?.querySelector('.fallback-near');
-                      if (fallback instanceof HTMLElement) fallback.style.display = 'flex';
-                    }}
                   />
-                  <div className="fallback-near w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center relative z-10" style={{ display: 'none' }}>
-                    <span className="text-primary font-bold text-xs">N</span>
-                  </div>
-                  {vfIcon ? (
+                  {isLoadingVfIcon ? (
+                    <div className="w-5 h-5 rounded-full bg-verified/20 animate-pulse -ml-1" />
+                  ) : vfIcon ? (
                     <Image 
                       src={vfIcon} 
                       alt="VF"
                       width={20}
                       height={20}
                       className="rounded-full -ml-1"
-                      onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                        e.currentTarget.style.display = 'none';
-                        const fallback = e.currentTarget.nextElementSibling;
-                        if (fallback instanceof HTMLElement) fallback.style.display = 'flex';
-                      }}
                     />
-                  ) : null}
-                  <div className={`w-5 h-5 rounded-full bg-verified/20 flex items-center justify-center -ml-1 ${vfIcon ? 'hidden' : ''}`}>
-                    <span className="text-verified font-bold text-xs">V</span>
-                  </div>
+                  ) : (
+                    <div className="w-5 h-5 rounded-full bg-verified/20 flex items-center justify-center -ml-1">
+                      <span className="text-verified font-bold text-xs">V</span>
+                    </div>
+                  )}
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">Pool</p>
                   <div className="h-[32px] flex flex-col justify-center">
-                    {isLoading ? (
+                    {isLoadingLp ? (
                       <LoadingDots />
                     ) : (
-                      <div className={`transition-opacity ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
-                        <p className="text-sm sm:text-base font-bold text-foreground truncate">{lpShares}</p>
-                        <p className="text-[10px] sm:text-xs text-primary font-semibold truncate">
-                          {formatDollarAmount(lpUsdValue)}
-                        </p>
-                      </div>
+                      <>
+                        <span className={`text-sm sm:text-base font-bold text-foreground truncate block transition-opacity ${isRefreshingLp ? 'opacity-50 animate-pulse' : 'opacity-100'}`}>{lpShares}</span>
+                        <span className={`text-[10px] sm:text-xs text-primary font-semibold truncate block transition-opacity ${isRefreshingPrices ? 'opacity-50 animate-pulse' : 'opacity-100'}`}>
+                          {showPriceLoading ? <LoadingDots size="xs" /> : formatDollarAmount(lpUsdValue)}
+                        </span>
+                      </>
                     )}
                   </div>
                 </div>
@@ -508,10 +563,10 @@ export function PortfolioDashboard() {
                 <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">Total</p>
                   <div className="h-[18px] flex items-center">
-                    {isLoading ? (
+                    {showPriceLoading ? (
                       <LoadingDots />
                     ) : (
-                      <div className={`transition-opacity ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
+                      <div className={`transition-opacity ${isRefreshingPrices ? 'opacity-50 animate-pulse' : 'opacity-100'}`}>
                         <p className="text-sm sm:text-base font-bold text-primary truncate">
                           {formatDollarAmount(totalValue)}
                         </p>
@@ -526,11 +581,12 @@ export function PortfolioDashboard() {
         <div className="px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-center pt-2 border-t border-verified/30">
             <div className="flex flex-col items-center gap-2">
-              <div className="flex items-center gap-2 flex-wrap">
+              {/* Row 1: VF DAO • Member • votes cast */}
+              <div className="flex items-center gap-2 flex-wrap justify-center">
                 {votingStatsLoading ? (
                   <LoadingDots />
                 ) : (
-                  <div className={`transition-opacity ${isRefreshing ? 'opacity-50' : 'opacity-100'} flex items-center gap-2`}>
+                  <div className="flex items-center gap-2">
                     <p className="text-sm font-bold text-foreground whitespace-nowrap">VF DAO</p>
                     <span className="text-muted-foreground">•</span>
                     {isMember ? (
@@ -547,16 +603,33 @@ export function PortfolioDashboard() {
                   </div>
                 )}
               </div>
+              
               {isMember ? (
-                userGroups.length > 0 && (
-                  <div className="flex flex-wrap gap-1 justify-center">
+                <>
+                  {/* Row 2: Groups • badges */}
+                  <div className="flex flex-wrap items-center gap-2 justify-center">
+                    <span className="text-xs text-muted-foreground">Groups</span>
+                    <span className="text-muted-foreground">•</span>
                     {userGroups.map((group: string) => (
                       <Badge key={group} variant="primary" className="text-[10px] sm:text-xs px-1.5 py-0 capitalize">
                         {group}
                       </Badge>
                     ))}
                   </div>
-                )
+                  
+                  {/* Row 3: Create Proposal button */}
+                  {canAddProposal && (
+                    <Button
+                      onClick={() => router.push('/dao/create')}
+                      variant="verified"
+                      size="sm"
+                      className="text-xs h-7 px-3"
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Create Proposal
+                    </Button>
+                  )}
+                </>
               ) : (
                 <Button
                   variant="verified"
@@ -582,6 +655,13 @@ export function PortfolioDashboard() {
           accountId={accountId}
         />
       )}
+
+      {/* Profile Editor Modal */}
+      <ProfileEditorModal
+        isOpen={profileEditorOpen}
+        onClose={() => setProfileEditorOpen(false)}
+        onSuccess={() => refetchProfile()}
+      />
     </div>
   );
 }

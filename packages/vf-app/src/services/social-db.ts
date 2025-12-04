@@ -1,9 +1,42 @@
 // src/services/social-db.ts
 import { connect, Contract, keyStores } from 'near-api-js';
 import { getPrioritizedEndpoints } from '../lib/rpc-config';
-import type { NearSocialProfileData } from '../types/profile';
+import type { NearSocialProfile, NearSocialProfileData } from '../types/profile';
 
 const SOCIAL_DB_CONTRACT_ID = 'social.near';
+
+// Social DB uses null to delete fields
+// String values are added/updated, null values are deleted
+export interface ProfileUpdateData {
+  name?: string | null;
+  description?: string | null;
+  image?: {
+    url?: string;
+    ipfs_cid?: string;
+  } | null;
+  backgroundImage?: {
+    url?: string;
+    ipfs_cid?: string;
+  } | null;
+  linktree?: Record<string, string | null>;
+  tags?: Record<string, string> | null;
+  website?: string | null;
+  tagline?: string | null;
+  location?: string | null;
+}
+
+export interface SetProfileTransactionParams {
+  receiverId: string;
+  actions: {
+    type: 'FunctionCall';
+    params: {
+      methodName: string;
+      args: Record<string, unknown>;
+      gas: string;
+      deposit: string;
+    };
+  }[];
+}
 
 class SocialDBService {
   private contract: Contract | null = null;
@@ -212,6 +245,108 @@ class SocialDBService {
 
     // Strip emojis from the description
     return this.stripEmojis(profileData.profile.description);
+  }
+
+  /**
+   * Build a transaction to update profile data on Social DB
+   * This returns the transaction params that can be signed by the wallet
+   */
+  buildSetProfileTransaction(
+    accountId: string,
+    profileData: ProfileUpdateData
+  ): SetProfileTransactionParams {
+    // Build the profile object, only including non-undefined values
+    const profile: Record<string, unknown> = {};
+    
+    if (profileData.name !== undefined) {
+      profile.name = profileData.name;
+    }
+    if (profileData.description !== undefined) {
+      profile.description = profileData.description;
+    }
+    if (profileData.image !== undefined) {
+      profile.image = profileData.image;
+    }
+    if (profileData.backgroundImage !== undefined) {
+      profile.backgroundImage = profileData.backgroundImage;
+    }
+    if (profileData.linktree !== undefined) {
+      profile.linktree = profileData.linktree;
+    }
+    if (profileData.tags !== undefined) {
+      profile.tags = profileData.tags;
+    }
+    if (profileData.website !== undefined) {
+      profile.website = profileData.website;
+    }
+    if (profileData.tagline !== undefined) {
+      profile.tagline = profileData.tagline;
+    }
+    if (profileData.location !== undefined) {
+      profile.location = profileData.location;
+    }
+
+    // Build the data structure for Social DB
+    const data = {
+      [accountId]: {
+        profile,
+      },
+    };
+
+    // Calculate approximate storage needed
+    // We add extra deposit to be safe (0.05 NEAR is typically enough for profile updates)
+    const deposit = '50000000000000000000000'; // 0.05 NEAR
+
+    return {
+      receiverId: SOCIAL_DB_CONTRACT_ID,
+      actions: [
+        {
+          type: 'FunctionCall',
+          params: {
+            methodName: 'set',
+            args: { data },
+            gas: '100000000000000', // 100 TGas
+            deposit,
+          },
+        },
+      ],
+    };
+  }
+
+  /**
+   * Build a transaction to delete specific profile fields
+   * Pass null as the value to delete a field
+   */
+  buildDeleteProfileFieldsTransaction(
+    accountId: string,
+    fieldsToDelete: (keyof NearSocialProfile)[]
+  ): SetProfileTransactionParams {
+    const profile: Record<string, null> = {};
+    
+    for (const field of fieldsToDelete) {
+      profile[field] = null;
+    }
+
+    const data = {
+      [accountId]: {
+        profile,
+      },
+    };
+
+    return {
+      receiverId: SOCIAL_DB_CONTRACT_ID,
+      actions: [
+        {
+          type: 'FunctionCall',
+          params: {
+            methodName: 'set',
+            args: { data },
+            gas: '100000000000000', // 100 TGas
+            deposit: '1', // Minimal deposit for deletion
+          },
+        },
+      ],
+    };
   }
 }
 

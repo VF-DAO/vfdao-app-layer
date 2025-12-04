@@ -15,6 +15,7 @@ export interface NearSocialProfile {
     ipfs_cid?: string;
   };
   linktree?: Record<string, string>;
+  tags?: Record<string, string>; // Interest/skill tags (e.g., { "developer": "", "near": "" })
   website?: string;
   tagline?: string;
   location?: string;

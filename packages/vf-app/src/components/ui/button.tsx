@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
+import { LoadingDots } from './loading-dots';
 
 const buttonVariants = cva(
   'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:cursor-not-allowed shadow-sm hover:shadow-md disabled:shadow-none',
@@ -104,6 +105,68 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 Button.displayName = 'Button';
 
 export { Button, buttonVariants };
+
+// LoadingButton - Button with built-in loading state
+export interface LoadingButtonProps extends ButtonProps {
+  /** Whether the button is in a loading state */
+  isLoading?: boolean;
+  /** Text to show when loading (if omitted, only dots are shown) */
+  loadingText?: string;
+  /** Size of loading dots (defaults to 'sm' for buttons) */
+  dotSize?: 'xs' | 'sm' | 'md' | 'lg';
+}
+
+/**
+ * A button component with built-in loading state support.
+ * Shows LoadingDots when isLoading is true.
+ * 
+ * @example
+ * // Just dots when loading
+ * <LoadingButton isLoading={isSaving}>Save Profile</LoadingButton>
+ * 
+ * @example
+ * // With loading text
+ * <LoadingButton isLoading={isSubmitting} loadingText="Processing...">Submit</LoadingButton>
+ */
+const LoadingButton = React.forwardRef<HTMLButtonElement, LoadingButtonProps>(
+  ({ 
+    children, 
+    isLoading = false, 
+    loadingText,
+    dotSize = 'sm',
+    disabled,
+    className,
+    ...props 
+  }, ref) => {
+    return (
+      <Button
+        ref={ref}
+        disabled={disabled || isLoading}
+        className={cn(className)}
+        {...props}
+      >
+        <span className="inline-flex items-center justify-center min-h-[20px]">
+          {isLoading ? (
+            loadingText ? (
+              <span className="flex items-center gap-2">
+                <LoadingDots size={dotSize} />
+                <span>{loadingText}</span>
+              </span>
+            ) : (
+              <LoadingDots size={dotSize} />
+            )
+          ) : (
+            children
+          )}
+        </span>
+      </Button>
+    );
+  }
+);
+
+LoadingButton.displayName = 'LoadingButton';
+
+export { LoadingButton };
 
 /**
  * Usage Examples:

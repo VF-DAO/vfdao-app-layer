@@ -246,6 +246,7 @@ export function ProposalCard({ proposal, hasPermission, id }: ProposalCardProps)
                   accountId={proposal.proposer}
                   size="sm"
                   profileImageUrl={proposerProfileImageUrl}
+                  isLoading={proposerProfileLoading}
                   className="w-7 h-7"
                 />
                 <div className="flex flex-col">

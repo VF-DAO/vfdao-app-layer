@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { AlertTriangle, Check, ChevronDown, Loader2, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { dropdownStyles } from '@/components/ui/dropdown-menu';
 import { TokenInput } from '@/features/swap/components/TokenInput';
 import { useSwapPairs } from '../../hooks/useSwapPairs';
 import Big from 'big.js';
@@ -200,7 +201,7 @@ export function TokenSwapProposal({
 
               {/* Dropdown */}
               {tokenInDropdownOpen && (
-                <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-2xl shadow-dropdown p-3 z-10 min-w-[200px] animate-in fade-in slide-in-from-top-1 duration-150 max-h-48 overflow-y-auto">
+                <div className={`absolute top-full left-0 mt-1 ${dropdownStyles.base} min-w-[200px] max-h-48 overflow-y-auto p-2 space-y-0.5`}>
                   {isLoadingPairs ? (
                     <div className="flex items-center justify-center py-4">
                       <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
@@ -211,40 +212,33 @@ export function TokenSwapProposal({
                       No swappable tokens found
                     </div>
                   ) : (
-                    <div className="space-y-1">
-                      {tokensWithPairs.map((token) => (
-                        <Button
-                          key={token.contractId}
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            onFormDataChange({ tokenIn: token.contractId });
-                            setTokenInDropdownOpen(false);
-                          }}
-                          className="w-full justify-between text-sm h-10 px-4 hover:text-primary transition-colors"
-                        >
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            {token.icon ? (
-                              <Image
-                                src={token.icon}
-                                alt={token.symbol}
-                                width={20}
-                                height={20}
-                                className="rounded-full flex-shrink-0"
-                              />
-                            ) : (
-                              <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                                <span className="text-[10px] font-bold">{token.symbol.slice(0, 2)}</span>
-                              </div>
-                            )}
-                            <span className="truncate">{token.symbol}</span>
+                    tokensWithPairs.map((token) => (
+                      <button
+                        key={token.contractId}
+                        type="button"
+                        onClick={() => {
+                          onFormDataChange({ tokenIn: token.contractId });
+                          setTokenInDropdownOpen(false);
+                        }}
+                        className={dropdownStyles.item}
+                      >
+                        {token.icon ? (
+                          <Image
+                            src={token.icon}
+                            alt={token.symbol}
+                            width={20}
+                            height={20}
+                            className="rounded-full flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                            <span className="text-[10px] font-bold">{token.symbol.slice(0, 2)}</span>
                           </div>
-                          {formData.tokenIn === token.contractId && (
-                            <Check className="w-4 h-4 text-verified flex-shrink-0 ml-2" />
-                          )}
-                        </Button>
-                      ))}
-                    </div>
+                        )}
+                        <span className={dropdownStyles.itemText}>{token.symbol}</span>
+                        <Check className={dropdownStyles.check(formData.tokenIn === token.contractId)} />
+                      </button>
+                    ))
                   )}
                 </div>
               )}
@@ -302,46 +296,39 @@ export function TokenSwapProposal({
 
               {/* Dropdown */}
               {tokenOutDropdownOpen && (
-                <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-2xl shadow-dropdown p-3 z-10 min-w-[200px] animate-in fade-in slide-in-from-top-1 duration-150 max-h-48 overflow-y-auto">
+                <div className={`absolute top-full left-0 mt-1 ${dropdownStyles.base} min-w-[200px] max-h-48 overflow-y-auto p-2 space-y-0.5`}>
                   {availableOutputTokens.length === 0 ? (
                     <div className="py-4 text-center text-sm text-muted-foreground">
                       No pairs available for {selectedTokenIn?.symbol ?? 'selected token'}
                     </div>
                   ) : (
-                    <div className="space-y-1">
-                      {availableOutputTokens.map((token) => (
-                        <Button
-                          key={token.contractId}
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            onFormDataChange({ tokenOut: token.contractId });
-                            setTokenOutDropdownOpen(false);
-                          }}
-                          className="w-full justify-between text-sm h-10 px-4 hover:text-primary transition-colors"
-                        >
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            {token.icon ? (
-                              <Image
-                                src={token.icon}
-                                alt={token.symbol}
-                                width={20}
-                                height={20}
-                                className="rounded-full flex-shrink-0"
-                              />
-                            ) : (
-                              <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                                <span className="text-[10px] font-bold">{token.symbol.slice(0, 2)}</span>
-                              </div>
-                            )}
-                            <span className="truncate">{token.symbol}</span>
+                    availableOutputTokens.map((token) => (
+                      <button
+                        key={token.contractId}
+                        type="button"
+                        onClick={() => {
+                          onFormDataChange({ tokenOut: token.contractId });
+                          setTokenOutDropdownOpen(false);
+                        }}
+                        className={dropdownStyles.item}
+                      >
+                        {token.icon ? (
+                          <Image
+                            src={token.icon}
+                            alt={token.symbol}
+                            width={20}
+                            height={20}
+                            className="rounded-full flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                            <span className="text-[10px] font-bold">{token.symbol.slice(0, 2)}</span>
                           </div>
-                          {formData.tokenOut === token.contractId && (
-                            <Check className="w-4 h-4 text-verified flex-shrink-0 ml-2" />
-                          )}
-                        </Button>
-                      ))}
-                    </div>
+                        )}
+                        <span className={dropdownStyles.itemText}>{token.symbol}</span>
+                        <Check className={dropdownStyles.check(formData.tokenOut === token.contractId)} />
+                      </button>
+                    ))
                   )}
                 </div>
               )}

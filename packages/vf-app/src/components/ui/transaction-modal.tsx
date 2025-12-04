@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import { Check, ExternalLink, X, XCircle } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Button } from './button';
+import { backdropVariants, modalVariants, scaleVariants, fadeVariants, transitions } from '@/lib/animations';
 import type {
   TransactionCancelledModalProps,
   TransactionFailureModalProps,
@@ -20,19 +22,33 @@ function TransactionModalWrapper({ children, onClose }: { children: React.ReactN
   }, []);
 
   return (
-    <div 
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200"
-      onClick={(e) => {
-        // Close on backdrop click
-        if (e.target === e.currentTarget) {
-          onClose();
-        }
-      }}
-    >
-      <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 max-w-md w-full shadow-xl animate-in zoom-in-95 duration-300">
-        <div className="text-center space-y-4">{children}</div>
-      </div>
-    </div>
+    <AnimatePresence>
+      <motion.div 
+        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+        variants={backdropVariants}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        transition={transitions.normal}
+        onClick={(e) => {
+          // Close on backdrop click
+          if (e.target === e.currentTarget) {
+            onClose();
+          }
+        }}
+      >
+        <motion.div 
+          className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 max-w-md w-full shadow-xl"
+          variants={modalVariants}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          transition={transitions.spring}
+        >
+          <div className="text-center space-y-4">{children}</div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
@@ -42,11 +58,23 @@ function TransactionModalWrapper({ children, onClose }: { children: React.ReactN
 export function TransactionSuccessModal({ title, details, tx, onClose, children }: TransactionSuccessModalProps) {
   return (
     <TransactionModalWrapper onClose={onClose}>
-      <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto animate-scale-in">
-        <Check className="w-8 h-8 sm:w-10 sm:h-10 text-primary animate-check-in" />
-      </div>
+      <motion.div 
+        className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto"
+        variants={scaleVariants}
+        initial="hidden"
+        animate="visible"
+        transition={transitions.springBouncy}
+      >
+        <Check className="w-8 h-8 sm:w-10 sm:h-10 text-primary" />
+      </motion.div>
       
-      <h3 className="text-base sm:text-lg font-bold animate-fade-in">{title}</h3>
+      <motion.h3 
+        className="text-base sm:text-lg font-bold"
+        variants={fadeVariants}
+        initial="hidden"
+        animate="visible"
+        transition={{ ...transitions.normal, delay: 0.1 }}
+      >{title}</motion.h3>
 
       {details && details.length > 0 && (
         <div className="space-y-2 text-xs sm:text-sm animate-fade-in">
@@ -88,13 +116,33 @@ export function TransactionSuccessModal({ title, details, tx, onClose, children 
 export function TransactionFailureModal({ error, onClose }: TransactionFailureModalProps) {
   return (
     <TransactionModalWrapper onClose={onClose}>
-      <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto animate-scale-in">
-        <XCircle className="w-8 h-8 sm:w-10 sm:h-10 text-orange animate-fade-in" />
-      </div>
+      <motion.div 
+        className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto"
+        variants={scaleVariants}
+        initial="hidden"
+        animate="visible"
+        transition={transitions.springBouncy}
+      >
+        <XCircle className="w-8 h-8 sm:w-10 sm:h-10 text-orange" />
+      </motion.div>
       
-      <h3 className="text-base sm:text-lg font-bold animate-fade-in">Transaction Failed</h3>
+      <motion.h3 
+        className="text-base sm:text-lg font-bold"
+        variants={fadeVariants}
+        initial="hidden"
+        animate="visible"
+        transition={{ ...transitions.normal, delay: 0.1 }}
+      >Transaction Failed</motion.h3>
       
-      {error && <p className="text-xs sm:text-sm text-muted-foreground animate-fade-in">{error}</p>}
+      {error && (
+        <motion.p 
+          className="text-xs sm:text-sm text-muted-foreground"
+          variants={fadeVariants}
+          initial="hidden"
+          animate="visible"
+          transition={{ ...transitions.normal, delay: 0.15 }}
+        >{error}</motion.p>
+      )}
 
       <Button onClick={onClose} variant="destructive" className="w-full py-2 sm:py-3">
         Close
@@ -113,13 +161,31 @@ export function TransactionCancelledModal({
 }: TransactionCancelledModalProps) {
   return (
     <TransactionModalWrapper onClose={onClose}>
-      <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto animate-scale-in">
-        <X className="w-8 h-8 sm:w-10 sm:h-10 text-verified animate-fade-in" />
-      </div>
+      <motion.div 
+        className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto"
+        variants={scaleVariants}
+        initial="hidden"
+        animate="visible"
+        transition={transitions.springBouncy}
+      >
+        <X className="w-8 h-8 sm:w-10 sm:h-10 text-verified" />
+      </motion.div>
       
-      <h3 className="text-base sm:text-lg font-bold animate-fade-in">{title}</h3>
+      <motion.h3 
+        className="text-base sm:text-lg font-bold"
+        variants={fadeVariants}
+        initial="hidden"
+        animate="visible"
+        transition={{ ...transitions.normal, delay: 0.1 }}
+      >{title}</motion.h3>
       
-      <p className="text-xs sm:text-sm text-muted-foreground animate-fade-in">{message}</p>
+      <motion.p 
+        className="text-xs sm:text-sm text-muted-foreground"
+        variants={fadeVariants}
+        initial="hidden"
+        animate="visible"
+        transition={{ ...transitions.normal, delay: 0.15 }}
+      >{message}</motion.p>
 
       <Button onClick={onClose} variant="verified" className="w-full py-2 sm:py-3 font-bold">
         Close

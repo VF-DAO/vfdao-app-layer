@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { expandVariants, transitions } from '@/lib/animations';
 import { Button } from '@/components/ui/button';
 import type { Proposal } from '../types';
 
@@ -34,36 +36,63 @@ export function ActionLog({ proposal }: ActionLogProps) {
         size="sm"
         className="h-auto p-0 text-xs font-medium text-muted-foreground hover:text-primary"
       >
-        <span className="text-base">{expanded ? '▼' : '▶'}</span>
+        <motion.span
+          animate={{ rotate: expanded ? 90 : 0 }}
+          transition={transitions.fast}
+          className="text-base"
+        >
+          ▶
+        </motion.span>
         <span>Activity Log ({logs.length})</span>
       </Button>
 
-      {expanded && (
-        <div className="space-y-2 pl-4">
-          {displayLogs.map((log, idx) => (
-            <div
-              key={idx}
-              className="flex items-start gap-2 text-xs text-muted-foreground"
-            >
-              <span className="mt-1 w-1 h-1 rounded-full bg-primary flex-shrink-0" />
-              <div className="flex-1">
-                <span className="font-mono">{formatBlockTime(log.block_height)}</span>
-              </div>
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            variants={expandVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            transition={transitions.expand}
+            className="overflow-hidden"
+          >
+            <div className="space-y-2 pl-4">
+              {displayLogs.map((log, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-start gap-2 text-xs text-muted-foreground"
+                >
+                  <span className="mt-1 w-1 h-1 rounded-full bg-primary flex-shrink-0" />
+                  <div className="flex-1">
+                    <span className="font-mono">{formatBlockTime(log.block_height)}</span>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {!expanded && logs.length > 3 && (
-        <Button
-          onClick={() => setExpanded(true)}
-          variant="link"
-          size="sm"
-          className="h-auto p-0 text-xs text-primary hover:text-primary/80 pl-6"
-        >
-          Show {logs.length - 3} more...
-        </Button>
-      )}
+      <AnimatePresence>
+        {!expanded && logs.length > 3 && (
+          <motion.div
+            variants={expandVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            transition={transitions.fast}
+          >
+            <Button
+              onClick={() => setExpanded(true)}
+              variant="link"
+              size="sm"
+              className="h-auto p-0 text-xs text-primary hover:text-primary/80 pl-6"
+            >
+              Show {logs.length - 3} more...
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

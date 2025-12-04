@@ -20,7 +20,7 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
-    "@hot-labs/near-connect": "^0.6.9",
+    "@hot-labs/near-connect": "^0.6.11",
     "@monaco-editor/react": "^4.7.0",
     "@near-js/keystores-node": "^2.5.1",
     "@radix-ui/react-label": "^2.1.8",

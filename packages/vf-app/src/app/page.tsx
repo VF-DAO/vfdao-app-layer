@@ -1,14 +1,13 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { RheaSwapWidget } from '@/features/swap/components/SwapWidget';
+import Link from 'next/link';
 import { PortfolioDashboard } from '@/features/portfolio';
-import { LiquidityCard } from '@/features/liquidity';
 import { useWallet } from '@/features/wallet';
 import { useProfile } from '@/hooks/use-profile';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { FaXTwitter } from 'react-icons/fa6';
-import { Github, Send } from 'lucide-react';
+import { Coins, Github, Send, Vote } from 'lucide-react';
 import Logo from '@/components/ui/logo';
 
 export default function Home() {
@@ -158,59 +157,47 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Token Acquisition Section - Only show when connected */}
+      {/* Quick Actions - Only show when connected */}
       {isConnected && (
-        <section id="tokens" className="relative py-16 sm:py-24 px-4 border-t border-border bg-muted/30">
-          <div className="max-w-5xl mx-auto">
+        <section className="relative py-12 sm:py-16 px-4">
+          <div className="max-w-3xl mx-auto">
             <motion.div 
-              className="text-center space-y-3 sm:space-y-4 mb-10 sm:mb-16"
+              className="grid grid-cols-2 gap-4 sm:gap-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
+              transition={{ duration: 0.4, delay: 0.4 }}
             >
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground tracking-tight">
-                <span className="text-primary">V</span><span className="text-verified">F</span> Token Swap
-              </h2>
-              <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-                VeganFriends tokens enable full ecosystem participation.
-              </p>
-            </motion.div>
-            <motion.div 
-              className="flex justify-center"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-            >
-              <RheaSwapWidget />
-            </motion.div>
-          </div>
-        </section>
-      )}
+              {/* $VF Token Card */}
+              <Link
+                href="/vf"
+                className="group p-6 sm:p-8 rounded-2xl border border-border bg-card hover:border-primary/50 hover:bg-gradient-to-br hover:from-primary/5 hover:to-transparent transition-all duration-300"
+              >
+                <div className="flex flex-col items-center text-center gap-3 sm:gap-4">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                    <Coins className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg sm:text-xl font-bold text-foreground group-hover:text-primary transition-colors">$VF Token</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">Exchange & Pool</p>
+                  </div>
+                </div>
+              </Link>
 
-      {/* Liquidity Section - Only show when connected */}
-      {isConnected && (
-        <section id="liquidity" className="relative py-16 sm:py-24 px-4 border-t border-border bg-background">
-          <div className="max-w-5xl mx-auto">
-            <motion.div 
-              className="text-center space-y-3 sm:space-y-4 mb-10 sm:mb-16"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-            >
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground tracking-tight">
-                <span className="text-primary">V</span><span className="text-verified">F</span> Pool
-              </h2>
-              <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-                Liquidity providers strengthen the ecosystem and earn rewards.
-              </p>
-            </motion.div>
-            <motion.div 
-              className="flex justify-center"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-            >
-              <LiquidityCard />
+              {/* DAO Card */}
+              <Link
+                href="/dao"
+                className="group p-6 sm:p-8 rounded-2xl border border-border bg-card hover:border-verified/50 hover:bg-gradient-to-br hover:from-verified/5 hover:to-transparent transition-all duration-300"
+              >
+                <div className="flex flex-col items-center text-center gap-3 sm:gap-4">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-verified/10 flex items-center justify-center group-hover:bg-verified/20 transition-colors">
+                    <Vote className="w-6 h-6 sm:w-7 sm:h-7 text-verified" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg sm:text-xl font-bold text-foreground group-hover:text-verified transition-colors">DAO</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">Vote & Propose</p>
+                  </div>
+                </div>
+              </Link>
             </motion.div>
           </div>
         </section>

@@ -1,11 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, ChevronDown, FileText, Zap } from 'lucide-react';
+import { ChevronDown, FileText, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { LoadingDots } from '@/components/ui/loading-dots';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { TransactionCancelledModal, TransactionFailureModal, TransactionSuccessModal } from '@/components/ui/transaction-modal';
 import { useAllowedProposalTypes, useCreateProposal, usePolicy } from '../hooks';
 import { useWallet } from '@/features/wallet';
@@ -36,7 +37,6 @@ interface FormData {
 
 export function CreateProposal() {
   const router = useRouter();
-  const proposalTypeRef = useRef<HTMLDivElement>(null);
   const { wallet, accountId } = useWallet();
   const createProposal = useCreateProposal(wallet);
   const { tokens, balance: nearBalance } = useTreasuryBalance();
@@ -79,23 +79,6 @@ export function CreateProposal() {
       setProposalType(availableProposalTypes[0].type);
     }
   }, [availableProposalTypes, proposalType, canCreateProposal]);
-
-  // Dropdown state
-  const [proposalTypeDropdownOpen, setProposalTypeDropdownOpen] = useState(false);
-
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (proposalTypeRef.current && !proposalTypeRef.current.contains(event.target as Node)) {
-        setProposalTypeDropdownOpen(false);
-      }
-    };
-
-    if (proposalTypeDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [proposalTypeDropdownOpen]);
 
   // Available tokens for transfer (NEAR + treasury tokens)
   const availableTokens = useMemo(() => [
@@ -320,10 +303,8 @@ export function CreateProposal() {
           {/* Proposal Type */}
           <div className="space-y-2">
             <Label htmlFor="proposal-type" className="text-sm font-medium">Proposal Type</Label>
-            <div className="relative flex items-center" ref={proposalTypeRef}>
-              <button
-                type="button"
-                onClick={() => setProposalTypeDropdownOpen(!proposalTypeDropdownOpen)}
+            <DropdownMenu>
+              <DropdownMenuTrigger
                 disabled={availableProposalTypes.length === 0}
                 className="w-full h-12 bg-transparent border border-border rounded-full text-sm focus:outline-none focus:border-muted-foreground/50 px-4 flex items-center justify-between hover:border-muted-foreground/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -332,31 +313,20 @@ export function CreateProposal() {
                    (availableProposalTypes.length === 0 ? 'No proposal types available' : 'Select proposal type')}
                 </span>
                 <ChevronDown className="w-4 h-4 text-muted-foreground" />
-              </button>
+              </DropdownMenuTrigger>
 
-              {/* Dropdown Menu */}
-              {proposalTypeDropdownOpen && availableProposalTypes.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-2xl shadow-dropdown p-3 z-10 min-w-[140px] animate-in fade-in slide-in-from-top-1 duration-150">
-                  <div className="space-y-1">
-                    {availableProposalTypes.map((pt) => (
-                      <Button
-                        key={pt.type}
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setProposalType(pt.type);
-                          setProposalTypeDropdownOpen(false);
-                        }}
-                        className="w-full justify-start text-sm h-10 px-4 hover:text-primary transition-colors"
-                      >
-                        {pt.label}
-                        {proposalType === pt.type && <Check className="w-4 h-4 ml-auto text-verified" />}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+              <DropdownMenuContent className="w-full min-w-[200px]">
+                {availableProposalTypes.map((pt) => (
+                  <DropdownMenuItem
+                    key={pt.type}
+                    selected={proposalType === pt.type}
+                    onClick={() => setProposalType(pt.type)}
+                  >
+                    {pt.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             {availableProposalTypes.length === 0 && policy && (
               <p className="text-sm text-orange">
                 Your role doesn&apos;t have permission to create proposals. Contact a council member to request access.
@@ -469,16 +439,6 @@ export function CreateProposal() {
           </div>
         </form>
       </div>
-
-      {/* Click outside to close dropdowns */}
-      {proposalTypeDropdownOpen && (
-        <div
-          className="fixed inset-0 z-0"
-          onClick={() => {
-            setProposalTypeDropdownOpen(false);
-          }}
-        />
-      )}
 
       {/* Transaction Modals */}
       {modal.type === 'success' && (

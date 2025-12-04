@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, ChevronDown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { ProfileAvatar } from '@/components/ui/profile-avatar';
 import { SearchInput } from '@/components/ui/search-input';
+import { dropdownStyles } from '@/components/ui/dropdown-menu';
 import { useMultipleProfiles } from '@/hooks/use-profile';
 import { AddressInput } from '../shared/AddressInput';
 import type { ProposalComponentProps } from '../shared/types';
@@ -111,42 +111,37 @@ export function MemberRoleProposal({
               className="w-full h-12 bg-transparent border border-border rounded-full text-sm focus:outline-none focus:border-muted-foreground/50 px-4 flex items-center justify-between hover:border-muted-foreground/50 transition-colors"
             >
               <span className={formData.role ? 'text-foreground' : 'text-primary font-medium opacity-60'}>
-                {formData.role ?? 'Select role...'}
+                {formData.role || 'Select role...'}
               </span>
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
             </button>
 
             {roleDropdownOpen && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-2xl shadow-dropdown p-3 z-10 min-w-[140px] animate-in fade-in slide-in-from-top-1 duration-150 max-h-48 overflow-y-auto">
-                <div className="space-y-1">
-                  {policy?.roles.filter(role => {
-                    // Only show roles that have members (Group type with members)
-                    if (typeof role.kind === 'string') return false;
-                    const kind = role.kind as { Group?: string[] };
-                    return kind.Group && kind.Group.length > 0;
-                  }).map((role) => {
-                    const kind = role.kind as { Group?: string[] };
-                    const memberCount = kind.Group?.length ?? 0;
-                    return (
-                      <Button
-                        key={role.name}
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          onFormDataChange({ role: role.name, memberId: '' });
-                          setRoleDropdownOpen(false);
-                        }}
-                        className="w-full justify-between text-sm h-10 px-4 hover:text-primary transition-colors"
-                      >
-                        <span className="truncate">{role.name}</span>
-                        <span className="flex items-center gap-2 flex-shrink-0">
-                          <span className="text-xs text-muted-foreground">{memberCount} member{memberCount !== 1 ? 's' : ''}</span>
-                          <Check className={`w-4 h-4 flex-shrink-0 ${formData.role === role.name ? 'text-verified' : 'text-transparent'}`} />
-                        </span>
-                      </Button>
-                    );
-                  })}
-                </div>
+              <div className={`absolute top-full left-0 right-0 mt-1 ${dropdownStyles.base} max-h-48 overflow-y-auto p-2 space-y-0.5`}>
+                {policy?.roles.filter(role => {
+                  // Only show roles that have members (Group type with members)
+                  if (typeof role.kind === 'string') return false;
+                  const kind = role.kind as { Group?: string[] };
+                  return kind.Group && kind.Group.length > 0;
+                }).map((role) => {
+                  const kind = role.kind as { Group?: string[] };
+                  const memberCount = kind.Group?.length ?? 0;
+                  return (
+                    <button
+                      key={role.name}
+                      type="button"
+                      onClick={() => {
+                        onFormDataChange({ role: role.name, memberId: '' });
+                        setRoleDropdownOpen(false);
+                      }}
+                      className={dropdownStyles.item}
+                    >
+                      <span className={dropdownStyles.itemText}>{role.name}</span>
+                      <span className="text-xs text-muted-foreground flex-shrink-0">{memberCount} member{memberCount !== 1 ? 's' : ''}</span>
+                      <Check className={dropdownStyles.check(formData.role === role.name)} />
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -188,7 +183,7 @@ export function MemberRoleProposal({
             </button>
 
             {memberDropdownOpen && roleMembers.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-2xl shadow-dropdown p-3 z-10 min-w-[140px] animate-in fade-in slide-in-from-top-1 duration-150 max-h-64 overflow-hidden flex flex-col">
+              <div className={`absolute top-full left-0 right-0 mt-1 ${dropdownStyles.base} max-h-64 overflow-hidden flex flex-col p-2`}>
                 {/* Search input for large member lists */}
                 {roleMembers.length > 5 && (
                   <div className="mb-2">
@@ -202,31 +197,28 @@ export function MemberRoleProposal({
                   </div>
                 )}
                 
-                <div className="space-y-1 overflow-y-auto">
+                <div className="space-y-0.5 overflow-y-auto">
                   {filteredMembers.length > 0 ? (
                     filteredMembers.map((member) => (
-                        <Button
-                          key={member}
-                          variant="ghost"
+                      <button
+                        key={member}
+                        type="button"
+                        onClick={() => {
+                          onFormDataChange({ memberId: member });
+                          setMemberDropdownOpen(false);
+                          setMemberSearch('');
+                        }}
+                        className={dropdownStyles.item}
+                      >
+                        <ProfileAvatar
+                          accountId={member}
                           size="sm"
-                          onClick={() => {
-                            onFormDataChange({ memberId: member });
-                            setMemberDropdownOpen(false);
-                            setMemberSearch('');
-                          }}
-                          className="w-full justify-between text-sm h-10 px-4 hover:text-primary transition-colors"
-                        >
-                          <span className="flex items-center gap-2">
-                            <ProfileAvatar
-                              accountId={member}
-                              size="sm"
-                              profileImageUrl={getProfileImageUrl(member)}
-                            />
-                            <span className="text-sm truncate max-w-[200px]">{member}</span>
-                          </span>
-                          <Check className={`w-5 h-5 flex-shrink-0 ${formData.memberId === member ? 'text-verified' : 'text-transparent'}`} strokeWidth={2.5} />
-                        </Button>
-                      ))
+                          profileImageUrl={getProfileImageUrl(member)}
+                        />
+                        <span className={dropdownStyles.itemText}>{member}</span>
+                        <Check className={dropdownStyles.check(formData.memberId === member)} />
+                      </button>
+                    ))
                   ) : (
                     <p className="text-xs text-muted-foreground text-center py-2">
                       No members found
@@ -237,7 +229,7 @@ export function MemberRoleProposal({
             )}
 
             {memberDropdownOpen && roleMembers.length === 0 && formData.role && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-2xl shadow-dropdown p-4 z-10 animate-in fade-in slide-in-from-top-1 duration-150">
+              <div className={`absolute top-full left-0 right-0 mt-1 ${dropdownStyles.base} p-4`}>
                 <p className="text-xs text-muted-foreground text-center">
                   No members in this role
                 </p>
@@ -272,30 +264,27 @@ export function MemberRoleProposal({
               className="w-full h-12 bg-transparent border border-border rounded-full text-sm focus:outline-none focus:border-muted-foreground/50 px-4 flex items-center justify-between hover:border-muted-foreground/50 transition-colors"
             >
               <span className={formData.role ? 'text-foreground' : 'text-primary font-medium opacity-60'}>
-                {formData.role ?? 'Select role...'}
+                {formData.role || 'Select role...'}
               </span>
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
             </button>
 
             {roleDropdownOpen && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-2xl shadow-dropdown p-3 z-10 min-w-[140px] animate-in fade-in slide-in-from-top-1 duration-150 max-h-48 overflow-y-auto">
-                <div className="space-y-1">
-                  {policy?.roles.filter(role => role.kind !== 'Everyone').map((role) => (
-                    <Button
-                      key={role.name}
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        onFormDataChange({ role: role.name });
-                        setRoleDropdownOpen(false);
-                      }}
-                      className="w-full justify-between text-sm h-10 px-4 hover:text-primary transition-colors"
-                    >
-                      <span className="truncate">{role.name}</span>
-                      <Check className={`w-4 h-4 flex-shrink-0 ${formData.role === role.name ? 'text-verified' : 'text-transparent'}`} />
-                    </Button>
-                  ))}
-                </div>
+              <div className={`absolute top-full left-0 right-0 mt-1 ${dropdownStyles.base} max-h-48 overflow-y-auto p-2 space-y-0.5`}>
+                {policy?.roles.filter(role => role.kind !== 'Everyone').map((role) => (
+                  <button
+                    key={role.name}
+                    type="button"
+                    onClick={() => {
+                      onFormDataChange({ role: role.name });
+                      setRoleDropdownOpen(false);
+                    }}
+                    className={dropdownStyles.item}
+                  >
+                    <span className={dropdownStyles.itemText}>{role.name}</span>
+                    <Check className={dropdownStyles.check(formData.role === role.name)} />
+                  </button>
+                ))}
               </div>
             )}
           </div>

@@ -470,3 +470,37 @@ export function validateSwapPair(
 
   return { valid: true };
 }
+
+/**
+ * Calculate VF token price from pool reserves ratio
+ * 
+ * @param nearReserve - Raw NEAR reserve amount (24 decimals)
+ * @param vfReserve - Raw VF reserve amount (18 decimals)
+ * @param nearPrice - Current NEAR price in USD
+ * @returns VF price in USD
+ */
+export function calculateVfPriceFromPool(
+  nearReserve: string,
+  vfReserve: string,
+  nearPrice: number
+): number {
+  try {
+    const reserveNear = Big(nearReserve);
+    const reserveVf = Big(vfReserve);
+    
+    if (reserveNear.lte(0) || reserveVf.lte(0) || nearPrice <= 0) {
+      return 0;
+    }
+    
+    // Calculate price ratio with decimal adjustment
+    // NEAR has 24 decimals, VF has 18 decimals
+    const rawRatio = reserveNear.div(reserveVf);
+    const decimalAdjustment = Big(10).pow(18 - 24); // VF decimals - NEAR decimals
+    const adjustedRatio = rawRatio.mul(decimalAdjustment);
+    
+    return adjustedRatio.mul(nearPrice).toNumber();
+  } catch (error) {
+    console.warn('[calculateVfPriceFromPool] Error calculating price:', error);
+    return 0;
+  }
+}

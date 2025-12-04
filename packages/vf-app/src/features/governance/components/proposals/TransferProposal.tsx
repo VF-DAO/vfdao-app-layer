@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { Check, ChevronDown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { dropdownStyles } from '@/components/ui/dropdown-menu';
 import { TokenInput } from '@/features/swap/components/TokenInput';
 import { AddressInput } from '../shared/AddressInput';
 import type { ProposalComponentProps } from '../shared/types';
@@ -101,41 +101,34 @@ export function TransferProposal({
 
             {/* Dropdown Menu */}
             {tokenDropdownOpen && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-2xl shadow-dropdown p-3 z-10 min-w-[140px] animate-in fade-in slide-in-from-top-1 duration-150 max-h-48 overflow-y-auto">
-                <div className="space-y-1">
-                  {availableTokens.map((token) => (
-                    <Button
-                      key={token.contractId}
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        onFormDataChange({ tokenId: token.contractId });
-                        setTokenDropdownOpen(false);
-                      }}
-                      className="w-full justify-between text-sm h-10 px-4 hover:text-primary transition-colors"
-                    >
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        {token.icon ? (
-                          <Image
-                            src={token.icon}
-                            alt={token.symbol}
-                            width={20}
-                            height={20}
-                            className="rounded-full flex-shrink-0"
-                          />
-                        ) : (
-                          <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                            <span className="text-[10px] font-bold">{token.symbol.slice(0, 2)}</span>
-                          </div>
-                        )}
-                        <span className="truncate">{token.symbol}</span>
+              <div className={`absolute top-full left-0 right-0 mt-1 ${dropdownStyles.base} max-h-48 overflow-y-auto p-2 space-y-0.5`}>
+                {availableTokens.map((token) => (
+                  <button
+                    key={token.contractId}
+                    type="button"
+                    onClick={() => {
+                      onFormDataChange({ tokenId: token.contractId });
+                      setTokenDropdownOpen(false);
+                    }}
+                    className={dropdownStyles.item}
+                  >
+                    {token.icon ? (
+                      <Image
+                        src={token.icon}
+                        alt={token.symbol}
+                        width={20}
+                        height={20}
+                        className="rounded-full flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                        <span className="text-[10px] font-bold">{token.symbol.slice(0, 2)}</span>
                       </div>
-                      {formData.tokenId === token.contractId && (
-                        <Check className="w-5 h-5 text-verified flex-shrink-0 ml-2" />
-                      )}
-                    </Button>
-                  ))}
-                </div>
+                    )}
+                    <span className={dropdownStyles.itemText}>{token.symbol}</span>
+                    <Check className={dropdownStyles.check(formData.tokenId === token.contractId)} />
+                  </button>
+                ))}
               </div>
             )}
           </div>

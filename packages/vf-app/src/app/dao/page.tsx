@@ -4,13 +4,15 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { AnimatePresence, motion } from 'framer-motion';
+import { expandVariants, transitions } from '@/lib/animations';
 import { ProposalList } from '@/features/governance/components/ProposalList';
 import { JoinDaoModal } from '@/features/governance/components/JoinDaoModal';
 import { useGovernanceStats, usePersonalVotingStats, usePolicy, useTotalProposals, useTreasuryBalance } from '@/features/governance/hooks';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ProfileAvatar } from '@/components/ui/profile-avatar';
-import { ChevronLeft, ChevronRight, Leaf, Plus, UserPlus, Users, Vault, Vote } from 'lucide-react';
+import { ProfileEditorModal } from '@/components/ui/profile-editor-modal';
+import { ChevronLeft, ChevronRight, Leaf, Pencil, Plus, UserPlus, Users, Vault, Vote } from 'lucide-react';
 import { SearchInput } from '@/components/ui/search-input';
 import { LoadingDots } from '@/components/ui/loading-dots';
 import { useMultipleProfiles, useProfile } from '@/hooks/use-profile';
@@ -30,6 +32,7 @@ export default function GovernancePage() {
   const [treasuryHovered, setTreasuryHovered] = useState(false);
   const [groupsHovered, setGroupsHovered] = useState(false);
   const [joinModalOpen, setJoinModalOpen] = useState(false);
+  const [profileEditorOpen, setProfileEditorOpen] = useState(false);
   const treasuryHoverRotationRef = useRef<number>(0);
   const groupsHoverRotationRef = useRef<number>(0);
   const proposalsSectionRef = useRef<HTMLDivElement>(null);
@@ -41,7 +44,7 @@ export default function GovernancePage() {
   const treasuryData = useTreasuryBalance();
   const { balance: treasuryBalance, balanceUsd: treasuryBalanceUsd, tokens, isLoading: isLoadingBalance } = treasuryData;
   const { stats: personalStats, isLoading: isLoadingPersonalStats } = usePersonalVotingStats(accountId ?? undefined);
-  const { displayName, profileImageUrl, loading: profileLoading } = useProfile(accountId);
+  const { displayName, profileImageUrl, loading: profileLoading, refetch: refetchProfile } = useProfile(accountId);
   const { displayName: daoDisplayName, profileImageUrl: daoProfileImageUrl, description: daoDescription, loading: daoProfileLoading } = useProfile('vegan-friends.sputnik-dao.near');
   
   // Scroll to proposals section (with small delay to ensure DOM is updated)
@@ -140,21 +143,15 @@ export default function GovernancePage() {
             {/* Header Row - Icon, Title, Settings */}
             <div className="flex items-center justify-between mb-3 md:mb-4">
               <div className="flex items-center gap-3 md:gap-4">
-                <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full bg-muted/50 text-muted-foreground overflow-hidden">
-                  {daoProfileLoading ? (
-                    <Vote className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
-                  ) : daoProfileImageUrl ? (
-                    <ProfileAvatar
-                      accountId="vegan-friends.sputnik-dao.near"
-                      size="xl"
-                      profileImageUrl={daoProfileImageUrl}
-                      showFallback={false}
-                      className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14"
-                    />
-                  ) : (
-                    <Vote className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
-                  )}
-                </div>
+              <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full bg-muted/50 text-muted-foreground overflow-hidden">
+                  <ProfileAvatar
+                    accountId="vegan-friends.sputnik-dao.near"
+                    size="xl"
+                    profileImageUrl={daoProfileImageUrl}
+                    isLoading={daoProfileLoading}
+                    className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14"
+                  />
+              </div>
                 <div>
                   <h1 className="text-lg sm:text-xl md:text-3xl lg:text-4xl font-bold text-foreground">
                     {daoProfileLoading ? <LoadingDots size="sm" /> : (daoDisplayName ?? 'VF DAO Governance')}
@@ -167,9 +164,13 @@ export default function GovernancePage() {
 
             {/* Description - Inspiring, Natural, High-Level */}
             <div className="py-4 md:py-6">
-              <p className="text-muted-foreground text-sm md:text-base leading-relaxed max-w-2xl text-center mx-auto">
-                {daoDescription ?? "A community of advocates working together to protect animals and our planet through collaborative decision-making and positive impact initiatives."}
-              </p>
+              <div className="text-muted-foreground text-sm md:text-base leading-relaxed max-w-2xl text-center mx-auto">
+                {daoProfileLoading ? (
+                  <LoadingDots size="sm" />
+                ) : (
+                  daoDescription ?? "A community of advocates working together to protect animals and our planet through collaborative decision-making and positive impact initiatives."
+                )}
+              </div>
             </div>
 
             {/* Compact Stats Grid - Similar to Liquidity Widget */}
@@ -250,12 +251,22 @@ export default function GovernancePage() {
             <div className="bg-gradient-to-r from-primary/5 via-verified/5 to-primary/5 rounded-xl p-4 md:p-5">
               <div className={`flex ${userGroups.length > 0 ? 'flex-col sm:flex-row sm:items-center sm:justify-between' : 'flex-row items-center justify-between'} gap-3`}>
                 <div className="flex items-center gap-3">
-                  <ProfileAvatar
-                    accountId={accountId}
-                    size="lg"
-                    profileImageUrl={profileImageUrl}
-                    className="w-10 h-10 md:w-12 md:h-12 border border-border shadow-sm"
-                  />
+                  <button
+                    onClick={() => setProfileEditorOpen(true)}
+                    className="relative group"
+                    title="Edit profile"
+                  >
+                    <ProfileAvatar
+                      accountId={accountId}
+                      size="lg"
+                      profileImageUrl={profileImageUrl}
+                      isLoading={profileLoading}
+                      className="w-10 h-10 md:w-12 md:h-12 border border-border shadow-sm group-hover:border-primary/50 transition-colors"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Pencil className="w-4 h-4 text-white" />
+                    </div>
+                  </button>
                   <div className="min-w-0 flex-1">
                     <div className="text-base md:text-lg font-semibold text-foreground truncate">
                       {profileLoading ? <LoadingDots size="xs" /> : displayName}
@@ -415,10 +426,11 @@ export default function GovernancePage() {
           <AnimatePresence>
             {treasuryExpanded && (
               <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                variants={expandVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                transition={transitions.expand}
                 className="overflow-hidden"
               >
                 <div className="mt-2 md:mt-3 space-y-1.5 md:space-y-2 pl-3 md:pl-4 border-l-2 border-primary/20">
@@ -533,10 +545,11 @@ export default function GovernancePage() {
               <AnimatePresence>
                 {groupsExpanded && (
                   <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: 'easeInOut' }}
+                    variants={expandVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    transition={transitions.expand}
                     className="overflow-hidden"
                   >
                     <div className="mt-2 md:mt-3 space-y-2 md:space-y-3 pl-3 md:pl-4 border-l-2 border-primary/20">
@@ -710,6 +723,13 @@ export default function GovernancePage() {
         onClose={() => setJoinModalOpen(false)}
         policy={policy}
         accountId={accountId ?? ''}
+      />
+
+      {/* Profile Editor Modal */}
+      <ProfileEditorModal
+        isOpen={profileEditorOpen}
+        onClose={() => setProfileEditorOpen(false)}
+        onSuccess={() => refetchProfile()}
       />
     </div>
   );

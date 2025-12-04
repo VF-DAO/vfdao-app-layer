@@ -17,6 +17,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Big from 'big.js';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toInternationalCurrencySystemLongString } from '@ref-finance/ref-sdk';
+import { expandVariants, transitions } from '@/lib/animations';
 
 import { useWallet } from '@/features/wallet';
 import { 
@@ -298,10 +299,11 @@ export const RefFinanceSwapCard: React.FC = () => {
         <AnimatePresence>
           {form.showSettings && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              variants={expandVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              transition={transitions.slow}
               className="overflow-hidden"
             >
               <SlippageSettings
@@ -361,10 +363,11 @@ export const RefFinanceSwapCard: React.FC = () => {
         <AnimatePresence>
           {!!(form.estimatedOutDisplay && !transaction.error && accountId) && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              variants={expandVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              transition={transitions.slow}
               className="overflow-hidden"
             >
               <SwapDetails
@@ -388,10 +391,11 @@ export const RefFinanceSwapCard: React.FC = () => {
         <AnimatePresence>
           {!!(form.showGasReserveMessage && accountId) && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              variants={expandVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              transition={transitions.slow}
               className="overflow-hidden"
             >
               <div className="flex items-start gap-2 p-2 bg-primary/10 rounded-full">

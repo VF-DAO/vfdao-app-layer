@@ -1,13 +1,15 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Check, ChevronDown, Info, UserPlus, Users, Vote, X, Zap } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Check, ChevronDown, Info, UserPlus, Users, Vote, Zap } from 'lucide-react';
 import Big from 'big.js';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { LoadingDots } from '@/components/ui/loading-dots';
+import { Modal } from '@/components/ui/modal';
 import { ProfileAvatar } from '@/components/ui/profile-avatar';
+import { dropdownStyles } from '@/components/ui/dropdown-menu';
 import { TransactionCancelledModal, TransactionFailureModal, TransactionSuccessModal } from '@/components/ui/transaction-modal';
 import { useProfile } from '@/hooks/use-profile';
 import { useWallet } from '@/features/wallet';
@@ -27,18 +29,6 @@ export function JoinDaoModal({ isOpen, onClose, policy, accountId }: JoinDaoModa
   const roleRef = useRef<HTMLDivElement>(null);
   const { wallet } = useWallet();
   const { displayName, profileImageUrl } = useProfile(accountId);
-
-  // Lock body scroll when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -192,234 +182,196 @@ export function JoinDaoModal({ isOpen, onClose, policy, accountId }: JoinDaoModa
 
   if (!isOpen) return null;
 
+  // Header icon with avatar and badge
+  const headerIcon = (
+    <div className="relative">
+      <ProfileAvatar
+        accountId={accountId}
+        size="lg"
+        profileImageUrl={profileImageUrl}
+        className="w-10 h-10 sm:w-12 sm:h-12"
+      />
+      {/* Small UserPlus badge */}
+      <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-muted/50 flex items-center justify-center border-2 border-card">
+        <UserPlus className="w-3 h-3 text-primary" />
+      </div>
+    </div>
+  );
+
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
-          />
+    <>
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        maxWidth="max-w-md"
+        disableClose={isSubmitting}
+        closeOnBackdrop={!isSubmitting}
+      >
+        <Modal.Header
+          icon={headerIcon}
+          title="Join DAO"
+          subtitle={displayName || accountId}
+          onClose={onClose}
+          disableClose={isSubmitting}
+        />
 
-          {/* Modal */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          >
-            <div className="bg-card border border-border rounded-2xl shadow-main-card w-full max-w-md">
-              {/* Header - matching CreateProposal gradient style */}
-              <div className="bg-gradient-to-r from-primary/5 via-verified/5 to-primary/5 p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="relative">
-                      <ProfileAvatar
-                        accountId={accountId}
-                        size="lg"
-                        profileImageUrl={profileImageUrl}
-                        className="w-10 h-10 sm:w-12 sm:h-12"
-                      />
-                      {/* Small UserPlus badge */}
-                      <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-verified flex items-center justify-center border-2 border-card">
-                        <UserPlus className="w-3 h-3 text-card" />
-                      </div>
-                    </div>
-                    <div>
-                      <h2 className="text-lg sm:text-xl font-bold text-foreground">Join DAO</h2>
-                      <p className="text-sm text-muted-foreground truncate max-w-[200px]">
-                        {displayName || accountId}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={onClose}
-                    className="p-2 rounded-full hover:bg-muted/50 transition-colors"
-                  >
-                    <X className="w-5 h-5 text-muted-foreground" />
-                  </button>
-                </div>
-              </div>
+        <Modal.Content className="space-y-4" minHeight="min-h-[200px]">
+          {/* Role Selection */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Select Group</Label>
+            <div className="relative" ref={roleRef}>
+              <button
+                type="button"
+                onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
+                className="w-full h-12 bg-transparent border border-border rounded-full text-sm focus:outline-none focus:border-muted-foreground/50 px-4 flex items-center justify-between hover:border-muted-foreground/50 transition-colors"
+              >
+                <span className={selectedRole ? 'text-foreground capitalize' : 'text-primary font-medium opacity-60'}>
+                  {selectedRole || 'Select a group...'}
+                </span>
+                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${roleDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
 
-              {/* Content */}
-              <div className="p-4 sm:p-6 space-y-4 min-h-[280px]">
-                {/* Role Selection - matching CreateProposal dropdown style */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Select Group</Label>
-                  <div className="relative" ref={roleRef}>
+              {/* Dropdown Menu with smooth expand animation */}
+              <Modal.ExpandableSection isOpen={roleDropdownOpen} className="mt-1">
+                <div className={`${dropdownStyles.container} max-h-64 overflow-y-auto p-2 space-y-0.5`}>
+                  {availableRoles.map((role: any) => (
                     <button
+                      key={role.name}
                       type="button"
-                      onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
-                      className="w-full h-12 bg-transparent border border-border rounded-full text-sm focus:outline-none focus:border-muted-foreground/50 px-4 flex items-center justify-between hover:border-muted-foreground/50 transition-colors"
+                      onClick={() => {
+                        setSelectedRole(role.name);
+                        setRoleDropdownOpen(false);
+                      }}
+                      className={`${dropdownStyles.item} capitalize`}
                     >
-                      <span className={selectedRole ? 'text-foreground capitalize' : 'text-muted-foreground'}>
-                        {selectedRole || 'Select a group...'}
+                      <span className={dropdownStyles.itemText}>{role.name}</span>
+                      <span className="text-xs text-muted-foreground flex-shrink-0">
+                        ({role.kind?.Group?.length ?? 0} members)
                       </span>
-                      <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${roleDropdownOpen ? 'rotate-180' : ''}`} />
+                      <Check className={dropdownStyles.check(selectedRole === role.name)} />
                     </button>
+                  ))}
+                </div>
+              </Modal.ExpandableSection>
+            </div>
+          </div>
 
-                    {/* Dropdown Menu - matching CreateProposal style */}
-                    {roleDropdownOpen && (
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-2xl shadow-dropdown p-3 z-[60] max-h-64 overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150">
-                        <div className="space-y-1">
-                          {availableRoles.map((role: any) => (
-                            <Button
-                              key={role.name}
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedRole(role.name);
-                                setRoleDropdownOpen(false);
-                              }}
-                              className="w-full justify-between text-sm h-10 px-4 hover:text-primary transition-colors capitalize"
-                            >
-                              <span className="flex items-center gap-2">
-                                {role.name}
-                                <span className="text-xs text-muted-foreground">
-                                  ({role.kind?.Group?.length ?? 0} members)
-                                </span>
-                              </span>
-                              {selectedRole === role.name && (
-                                <Check className="w-4 h-4 text-verified flex-shrink-0 ml-2" />
-                              )}
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+          {/* Voting Info Card - show when role is selected */}
+          {selectedRole && votingInfo && votingInfo.totalVoters > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="bg-muted/30 rounded-xl p-4 space-y-3 border border-border/50"
+            >
+              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                <Vote className="w-4 h-4 text-verified" />
+                How your request will be decided
+              </div>
+              
+              <div className="space-y-2 text-sm">
+                {/* Who votes */}
+                <div className="flex items-start gap-2">
+                  <Users className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div>
+                    <span className="text-muted-foreground">Voted by: </span>
+                    <span className="text-foreground">
+                      {votingInfo.roleNames.map((name: string, i: number) => (
+                        <span key={name}>
+                          <span className="capitalize font-medium">{name}</span>
+                          {i < votingInfo.roleNames.length - 1 && ', '}
+                        </span>
+                      ))}
+                    </span>
+                    <span className="text-muted-foreground"> ({votingInfo.totalVoters} members)</span>
                   </div>
                 </div>
-
-                {/* Voting Info Card - show when role is selected */}
-                {selectedRole && votingInfo && votingInfo.totalVoters > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    className="bg-muted/30 rounded-xl p-4 space-y-3 border border-border/50"
-                  >
-                    <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                      <Vote className="w-4 h-4 text-verified" />
-                      How your request will be decided
-                    </div>
-                    
-                    <div className="space-y-2 text-sm">
-                      {/* Who votes */}
-                      <div className="flex items-start gap-2">
-                        <Users className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                        <div>
-                          <span className="text-muted-foreground">Voted by: </span>
-                          <span className="text-foreground">
-                            {votingInfo.roleNames.map((name: string, i: number) => (
-                              <span key={name}>
-                                <span className="capitalize font-medium">{name}</span>
-                                {i < votingInfo.roleNames.length - 1 && ', '}
-                              </span>
-                            ))}
-                          </span>
-                          <span className="text-muted-foreground"> ({votingInfo.totalVoters} members)</span>
-                        </div>
-                      </div>
-                      
-                      {/* Approval threshold */}
-                      <div className="flex items-start gap-2">
-                        <Check className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                        <div>
-                          <span className="text-muted-foreground">Approval: </span>
-                          <span className="text-foreground font-medium">{votingInfo.requiredVotes} of {votingInfo.totalVoters}</span>
-                          <span className="text-muted-foreground"> votes needed (&gt;{votingInfo.percentage}%)</span>
-                        </div>
-                      </div>
-                      
-                      {/* Time limit */}
-                      <div className="flex items-start gap-2">
-                        <Info className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                        <div>
-                          <span className="text-muted-foreground">Expires in: </span>
-                          <span className="text-foreground font-medium">{proposalPeriodDays} days</span>
-                          <span className="text-muted-foreground"> if not decided</span>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Action Buttons - matching CreateProposal style */}
-                <div className="flex gap-3 pt-2">
-                  <Button
-                    variant="muted"
-                    onClick={onClose}
-                    className="flex-1 h-12"
-                    disabled={isSubmitting}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="verified"
-                    onClick={() => void handleSubmit()}
-                    className="flex-1 font-bold h-12"
-                    disabled={!selectedRole || isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      <LoadingDots />
-                    ) : (
-                      <>
-                        <Zap className="w-4 h-4 mr-2" />
-                        Join ({proposalBondNear} NEAR)
-                      </>
-                    )}
-                  </Button>
+                
+                {/* Approval threshold */}
+                <div className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div>
+                    <span className="text-muted-foreground">Approval: </span>
+                    <span className="text-foreground font-medium">{votingInfo.requiredVotes} of {votingInfo.totalVoters}</span>
+                    <span className="text-muted-foreground"> votes needed (&gt;{votingInfo.percentage}%)</span>
+                  </div>
                 </div>
-
-                {/* Bond Info - matching CreateProposal style */}
-                <div className="text-center text-xs text-muted-foreground bg-muted/20 rounded-lg p-2">
-                  Joining requires a {proposalBondNear} NEAR bond. Refunded if approved, lost if rejected or removed.
+                
+                {/* Time limit */}
+                <div className="flex items-start gap-2">
+                  <Info className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div>
+                    <span className="text-muted-foreground">Expires in: </span>
+                    <span className="text-foreground font-medium">{proposalPeriodDays} days</span>
+                    <span className="text-muted-foreground"> if not decided</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          </motion.div>
-
-          {/* Click outside to close dropdown */}
-          {roleDropdownOpen && (
-            <div
-              className="fixed inset-0 z-40"
-              onClick={() => setRoleDropdownOpen(false)}
-            />
+            </motion.div>
           )}
+        </Modal.Content>
 
-          {/* Transaction Modals */}
-          {modal.type === 'success' && (
-            <TransactionSuccessModal
-              title="Join Request Submitted! 🎉"
-              details={[
-                { label: 'Group', value: selectedRole },
-                { label: 'Member', value: accountId.slice(0, 20) + (accountId.length > 20 ? '...' : '') },
-              ]}
-              tx={modal.txHash}
-              onClose={closeModal}
-            />
-          )}
+        <Modal.Footer className="border-t border-border space-y-3">
+          {/* Action Buttons */}
+          <div className="flex gap-3">
+            <Button
+              variant="muted"
+              onClick={onClose}
+              className="flex-1 h-12"
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="verified"
+              onClick={() => void handleSubmit()}
+              className="flex-1 font-bold h-12"
+              disabled={!selectedRole || isSubmitting}
+            >
+              {isSubmitting ? (
+                <LoadingDots />
+              ) : (
+                <>
+                  <Zap className="w-4 h-4 mr-2" />
+                  Join ({proposalBondNear} NEAR)
+                </>
+              )}
+            </Button>
+          </div>
 
-          {modal.type === 'failure' && (
-            <TransactionFailureModal
-              error={modal.error}
-              onClose={closeModal}
-            />
-          )}
+          {/* Bond Info */}
+          <div className="text-center text-xs text-muted-foreground bg-muted/20 rounded-lg p-2">
+            Joining requires a {proposalBondNear} NEAR bond. Refunded if approved, lost if rejected or removed.
+          </div>
+        </Modal.Footer>
+      </Modal>
 
-          {modal.type === 'cancelled' && (
-            <TransactionCancelledModal
-              title="Join Request Cancelled"
-              message="You cancelled the join request. No changes were made."
-              onClose={closeModal}
-            />
-          )}
-        </>
+      {/* Transaction Modals */}
+      {modal.type === 'success' && (
+        <TransactionSuccessModal
+          title="Join Request Submitted! 🎉"
+          details={[
+            { label: 'Group', value: selectedRole },
+            { label: 'Member', value: accountId.slice(0, 20) + (accountId.length > 20 ? '...' : '') },
+          ]}
+          tx={modal.txHash}
+          onClose={closeModal}
+        />
       )}
-    </AnimatePresence>
+
+      {modal.type === 'failure' && (
+        <TransactionFailureModal
+          error={modal.error}
+          onClose={closeModal}
+        />
+      )}
+
+      {modal.type === 'cancelled' && (
+        <TransactionCancelledModal
+          title="Join Request Cancelled"
+          message="You cancelled the join request. No changes were made."
+          onClose={closeModal}
+        />
+      )}
+    </>
   );
 }

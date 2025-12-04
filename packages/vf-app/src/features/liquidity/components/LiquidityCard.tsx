@@ -24,11 +24,12 @@
  * for reuse in other components.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Big from 'big.js';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useWallet } from '@/features/wallet';
 import { getMainnetTokens } from '@/lib/swap-utils';
+import { expandVariants, transitions } from '@/lib/animations';
 import type { TokenMetadata } from '@/types';
 
 // === REFACTORED IMPORTS: Our modular hooks, utilities, and components ===
@@ -40,6 +41,7 @@ import {
   useLiquidityStats,
   useLiquidityTransaction,
   useRefBalances,
+  useTokenPrices,
   useUserShares,
   useWalletBalances,
 } from '../hooks';
@@ -72,6 +74,10 @@ export const LiquidityCard: React.FC = () => {
   // Ref to prevent duplicate balance fetches
   const balancesFetchedRef = useRef(false);
   
+  // Refs for scroll-into-view when forms open
+  const addFormRef = useRef<HTMLDivElement>(null);
+  const removeFormRef = useRef<HTMLDivElement>(null);
+  
   // Snapshot state to prevent modal values from flickering
   const [finalToken1Amount, setFinalToken1Amount] = useState<string | null>(null);
   const [finalToken2Amount, setFinalToken2Amount] = useState<string | null>(null);
@@ -95,8 +101,9 @@ export const LiquidityCard: React.FC = () => {
     VF_TOKEN
   );
 
-  // Token Prices
-  const [tokenPrices, setTokenPrices] = useState<Record<string, number>>({});
+  // Token Prices - using hook for clean price fetching
+  // isLoading: initial load (dots), isRefreshing: subsequent refreshes (fade)
+  const { tokenPrices, isLoading: isLoadingPrices, isRefreshing: isRefreshingPrices } = useTokenPrices(poolInfo);
 
   // Pool Stats (Volume, Fee, APY) - using hook instead of manual state/fetch
   const { poolStats, hasLoadedPoolStats } = useLiquidityStats(
@@ -159,70 +166,9 @@ export const LiquidityCard: React.FC = () => {
     void fetchTokens();
   }, []);
 
-  // Fetch token prices from Ref Finance API - start immediately, don't wait for poolInfo
-  useEffect(() => {
-    const fetchTokenPrices = async () => {
-      try {
-        // Create AbortController with 3 second timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
-        
-        const response = await fetch('https://indexer.ref.finance/list-token-price', {
-          signal: controller.signal,
-        });
-        
-        clearTimeout(timeoutId);
-        
-        const prices = await response.json() as Record<string, { price: string }>;
-        
-        const priceMap: Record<string, number> = {};
-        
-        // Get NEAR price (wrap.near in the API)
-        if (prices['wrap.near']) {
-          priceMap.near = parseFloat(prices['wrap.near'].price);
-          priceMap['wrap.near'] = parseFloat(prices['wrap.near'].price);
-          console.warn('[LiquidityCard] NEAR price loaded:', priceMap['wrap.near']);
-        }
-        
-        // Get VF token price - from API if available, otherwise calculate from pool ratio
-        if (prices['veganfriends.tkn.near']) {
-          priceMap['veganfriends.tkn.near'] = parseFloat(prices['veganfriends.tkn.near'].price);
-          console.warn('[LiquidityCard] VF price from API:', priceMap['veganfriends.tkn.near']);
-        } else if (poolInfo && priceMap['wrap.near']) {
-          // Calculate VF price from pool ratio (exact same method as TokenBalance component)
-          const reserveNear = Big(poolInfo.reserves[poolInfo.token1.id]); // wrap.near reserve (24 decimals)
-          const reserveVegan = Big(poolInfo.reserves[poolInfo.token2.id]); // veganfriends.tkn.near reserve (18 decimals)
-          const nearPrice = priceMap['wrap.near'];
-          
-          const rawRatio = reserveNear.div(reserveVegan);
-          const decimalAdjustment = Big(10).pow(18 - 24); // VEGAN has 18, NEAR has 24
-          const adjustedRatio = rawRatio.mul(decimalAdjustment);
-          const vfPrice = adjustedRatio.mul(nearPrice).toNumber();
-          
-          priceMap['veganfriends.tkn.near'] = vfPrice;
-          console.warn('[LiquidityCard] VF price calculated from pool:', vfPrice);
-        }
-        
-        console.warn('[LiquidityCard] All prices loaded:', priceMap);
-        setTokenPrices(priceMap);
-      } catch (error) {
-        console.error('[fetchTokenPrices] Failed to fetch token prices:', error);
-      }
-    };
-    
-    // Start fetching prices immediately, don't wait for poolInfo
-    void fetchTokenPrices();
-    // Refresh prices every 60 seconds
-    const interval = setInterval(() => void fetchTokenPrices(), 60000);
-    return () => clearInterval(interval);
-  }, [poolInfo]);
-
-  // Fetch pool stats (Volume, Fee, APY)
+  // Note: Token prices now fetched by useTokenPrices hook
   // Note: fetchPoolStats removed - using useLiquidityStats hook instead
-  // The hook handles auto-fetching when poolInfo/prices change and auto-refresh every 60s
-
   // Note: fetchPoolInfo removed - using useLiquidityPool hook instead
-
   // Note: fetchBalances removed - using useWalletBalances hook instead
   // Note: fetchUserShares removed - using useUserShares hook instead
   // Note: fetchRefInternalBalances and getRefDepositedBalances removed - using useRefBalances hook instead
@@ -462,6 +408,23 @@ export const LiquidityCard: React.FC = () => {
     form.setShowGasReserveMessage(false);
   };
 
+  // Scroll form into view when it opens
+  const scrollFormIntoView = useCallback((ref: React.RefObject<HTMLDivElement | null>) => {
+    // Wait for animation to start, then scroll
+    setTimeout(() => {
+      ref.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  }, []);
+
+  // Effect to scroll when liquidity state changes to add/remove
+  useEffect(() => {
+    if (form.liquidityState === 'add') {
+      scrollFormIntoView(addFormRef);
+    } else if (form.liquidityState === 'remove') {
+      scrollFormIntoView(removeFormRef);
+    }
+  }, [form.liquidityState, scrollFormIntoView]);
+
   return (
     <div className="w-full max-w-[480px] mx-auto">
       {/* Main Card */}
@@ -476,6 +439,8 @@ export const LiquidityCard: React.FC = () => {
           poolStats={poolStats}
           tokenPrices={tokenPrices}
           hasLoadedPoolStats={hasLoadedPoolStats}
+          isLoadingPrices={isLoadingPrices}
+          isRefreshingPrices={isRefreshingPrices}
           onSettingsToggle={() => form.setShowSettings(!form.showSettings)}
         />
 
@@ -483,10 +448,11 @@ export const LiquidityCard: React.FC = () => {
         <AnimatePresence>
           {form.showSettings && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              variants={expandVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              transition={transitions.slow}
               className="overflow-hidden"
             >
               <SlippageSettings
@@ -522,11 +488,13 @@ export const LiquidityCard: React.FC = () => {
       <AnimatePresence mode="wait">
         {form.liquidityState === 'add' && poolInfo && (
           <motion.div
+            ref={addFormRef}
             key="add-liquidity"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            variants={expandVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            transition={transitions.expand}
             className="overflow-hidden"
           >
             <AddLiquidityForm
@@ -560,11 +528,13 @@ export const LiquidityCard: React.FC = () => {
       <AnimatePresence mode="wait">
         {form.liquidityState === 'remove' && poolInfo && (
           <motion.div
+            ref={removeFormRef}
             key="remove-liquidity"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            variants={expandVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            transition={transitions.expand}
             className="overflow-hidden"
           >
             <RemoveLiquidityForm

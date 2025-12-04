@@ -13,6 +13,8 @@ interface PoolStatsDisplayProps {
   poolStats: PoolStats;
   tokenPrices: Record<string, number>;
   hasLoadedPoolStats: boolean;
+  isLoadingPrices: boolean;      // True only on initial load (no data yet)
+  isRefreshingPrices?: boolean;  // True when refreshing (has data, updating)
   onSettingsToggle: () => void;
 }
 
@@ -22,14 +24,21 @@ export function PoolStatsDisplay({
   poolStats,
   tokenPrices,
   hasLoadedPoolStats,
+  isLoadingPrices,
+  isRefreshingPrices = false,
   onSettingsToggle,
 }: PoolStatsDisplayProps) {
-  console.warn('[PoolStatsDisplay] Rendering:', { 
-    hasLoadedPoolStats, 
-    volume24h: poolStats.volume24h,
-    fee24h: poolStats.fee24h,
-    apy: poolStats.apy
-  });
+  // Check if we have valid price data (not just empty object or zero prices)
+  const hasValidPrices = tokenPrices['wrap.near'] !== undefined && tokenPrices['wrap.near'] > 0;
+  
+  // Data is ready when:
+  // 1. Pool stats have been loaded
+  // 2. Prices are not in initial loading state  
+  // 3. We actually have valid price data
+  const isDataReady = hasLoadedPoolStats && !isLoadingPrices && hasValidPrices;
+  
+  // When refreshing, show fade effect on data values
+  const refreshingClass = isRefreshingPrices ? 'opacity-50 animate-pulse' : '';
   
   return (
     <div className="bg-gradient-to-r from-primary/5 via-verified/5 to-primary/5 rounded-t-2xl -m-4 sm:-m-6 md:-m-8 mb-4 md:mb-6 shadow-sm">
@@ -47,9 +56,7 @@ export function PoolStatsDisplay({
                   className="rounded-full relative z-10"
                 />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center relative z-10">
-                  <span className="text-primary font-bold text-sm">N</span>
-                </div>
+                <div className="w-8 h-8 rounded-full bg-muted/50 relative z-10" />
               )}
               {poolInfo?.token2.icon ? (
                 <Image
@@ -60,14 +67,12 @@ export function PoolStatsDisplay({
                   className="rounded-full -ml-1"
                 />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-verified/20 flex items-center justify-center -ml-1">
-                  <span className="text-verified font-bold text-sm">V</span>
-                </div>
+                <div className="w-8 h-8 rounded-full bg-muted/50 -ml-1" />
               )}
             </div>
             <div>
               <h3 className="text-base sm:text-lg font-bold">
-                {poolInfo ? `${poolInfo.token1.symbol} / ${poolInfo.token2.symbol}` : 'NEAR / VEGANFRIENDS'}
+                {poolInfo ? `${poolInfo.token1.symbol} / ${poolInfo.token2.symbol}` : <span className="opacity-0">NEAR / VF</span>}
               </h3>
               <p className="text-muted-foreground text-xs">Pool #{poolId}</p>
             </div>
@@ -87,8 +92,8 @@ export function PoolStatsDisplay({
             <div className="flex items-center justify-center gap-4 text-sm pb-3 border-b border-border/30">
               <div className="flex items-center gap-1.5">
                 <span className="text-muted-foreground">NEAR:</span>
-                <span className="font-semibold text-primary">
-                  {hasLoadedPoolStats
+                <span className={`font-semibold text-primary transition-opacity ${refreshingClass}`}>
+                  {isDataReady
                     ? formatTokenAmount(poolInfo.reserves[poolInfo.token1.id], poolInfo.token1.decimals, 2)
                     : <LoadingDots size="xs" />}
                 </span>
@@ -96,8 +101,8 @@ export function PoolStatsDisplay({
               <span className="text-muted-foreground">•</span>
               <div className="flex items-center gap-1.5">
                 <span className="text-muted-foreground">VF:</span>
-                <span className="font-semibold text-primary">
-                  {hasLoadedPoolStats
+                <span className={`font-semibold text-primary transition-opacity ${refreshingClass}`}>
+                  {isDataReady
                     ? formatTokenAmount(poolInfo.reserves[poolInfo.token2.id], poolInfo.token2.decimals, 2)
                     : <LoadingDots size="xs" />}
                 </span>
@@ -109,8 +114,8 @@ export function PoolStatsDisplay({
               {/* TVL */}
               <div className="text-center">
                 <p className="text-muted-foreground mb-0.5">TVL</p>
-                <div className="font-semibold text-primary">
-                  {hasLoadedPoolStats
+                <div className={`font-semibold text-primary transition-opacity ${refreshingClass}`}>
+                  {isDataReady
                     ? (() => {
                         const token1Price =
                           tokenPrices[poolInfo.token1.id] ?? tokenPrices.near ?? tokenPrices['wrap.near'] ?? 0;
@@ -138,8 +143,8 @@ export function PoolStatsDisplay({
               {/* Volume (24h) */}
               <div className="text-center">
                 <p className="text-muted-foreground mb-0.5">Volume</p>
-                <div className="font-semibold text-primary">
-                  {hasLoadedPoolStats
+                <div className={`font-semibold text-primary transition-opacity ${refreshingClass}`}>
+                  {isDataReady
                     ? (() => {
                         const vol = Number(poolStats.volume24h);
                         if (vol === 0) return '$0';
@@ -153,8 +158,8 @@ export function PoolStatsDisplay({
               {/* Fee (24h) */}
               <div className="text-center">
                 <p className="text-muted-foreground mb-0.5">Fee(24h)</p>
-                <div className="font-semibold text-primary">
-                  {hasLoadedPoolStats
+                <div className={`font-semibold text-primary transition-opacity ${refreshingClass}`}>
+                  {isDataReady
                     ? (() => {
                         const fee = Number(poolStats.fee24h);
                         if (fee === 0) return '$0';
@@ -168,8 +173,8 @@ export function PoolStatsDisplay({
               {/* APY */}
               <div className="text-center">
                 <p className="text-muted-foreground mb-0.5">APY</p>
-                <div className="font-semibold text-primary">
-                  {hasLoadedPoolStats
+                <div className={`font-semibold text-primary transition-opacity ${refreshingClass}`}>
+                  {isDataReady
                     ? (() => {
                         if (poolStats.apy === 0) return '0%';
                         if (poolStats.apy < 0.01) return '<0.01%';

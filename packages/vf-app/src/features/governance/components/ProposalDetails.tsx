@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, Globe, GraduationCap, Heart, Leaf, Palette, Shield, Store } from 'lucide-react';
+import { expandVariants, transitions } from '@/lib/animations';
 import { Button } from '@/components/ui/button';
 import { TokenAmount } from '@/components/ui/token-amount';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -136,14 +137,21 @@ export function ProposalDetails({ proposal, description }: ProposalDetailsProps)
   const shouldCollapse = (content: any) => {
     if (!content) return false;
 
-    // Function calls with multiple actions
+    // Transfer proposals - only collapse if there's a message
+    if (type === 'Transfer' && content.msg) return true;
+
+    // Function calls with multiple actions (more than 2)
     if (type === 'FunctionCall' && content.actions && content.actions.length > 2) return true;
 
     // Policy changes with many permissions
     if (type === 'ChangePolicyAddOrUpdateRole' && content.role?.permissions?.length > 3) return true;
 
-    // Large JSON fallback
-    if (typeof content === 'object') {
+    // ChangeConfig with metadata
+    if (type === 'ChangeConfig' && content.config?.metadata) return true;
+
+    // For unknown types, check JSON length (fallback case only)
+    const knownTypes = ['Transfer', 'AddMemberToRole', 'RemoveMemberFromRole', 'FunctionCall', 'ChangeConfig', 'AddBounty', 'ChangePolicyAddOrUpdateRole'];
+    if (!knownTypes.includes(type) && typeof content === 'object') {
       const jsonString = JSON.stringify(content);
       return jsonString.length > 200;
     }
@@ -180,13 +188,13 @@ export function ProposalDetails({ proposal, description }: ProposalDetailsProps)
             </div>
           )}
           {transfer.msg && (
-            <AnimatePresence>
+            <AnimatePresence initial={false}>
               {(!isLargeContent || expanded) && (
                 <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.3, ease: 'easeInOut' }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={transitions.fast}
                   className="overflow-hidden"
                 >
                   <div className="pt-2 border-t border-border">
@@ -229,13 +237,13 @@ export function ProposalDetails({ proposal, description }: ProposalDetailsProps)
               <div><span className="font-medium">Name:</span> {config.name}</div>
               <div><span className="font-medium">Purpose:</span> {config.purpose}</div>
               {config.metadata && (
-                <AnimatePresence>
+                <AnimatePresence initial={false}>
                   {(!isLargeContent || expanded) && (
                     <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: 'easeInOut' }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={transitions.fast}
                       className="overflow-hidden"
                     >
                       <div><span className="font-medium">Metadata:</span> {config.metadata}</div>
@@ -264,13 +272,13 @@ export function ProposalDetails({ proposal, description }: ProposalDetailsProps)
             <div className="text-muted-foreground">
               Actions ({call.actions.length}){isLargeContent && !expanded && ' - showing first 2'}:
             </div>
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="wait" initial={false}>
               <motion.div
                 key={expanded ? 'expanded' : 'collapsed'}
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={transitions.fast}
                 className="overflow-hidden"
               >
                 <div className="pl-3 space-y-2">
@@ -342,13 +350,13 @@ export function ProposalDetails({ proposal, description }: ProposalDetailsProps)
       return (
         <div className="text-sm">
           <div className="text-muted-foreground mb-2">Proposal Data:</div>
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={expanded ? 'expanded' : 'collapsed'}
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={transitions.fast}
               className="overflow-hidden"
             >
               <SyntaxHighlighter
@@ -385,13 +393,13 @@ export function ProposalDetails({ proposal, description }: ProposalDetailsProps)
       {/* Description section */}
       {description && (
         <div>
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="wait" initial={false}>
             <motion.p
               key={expanded ? 'expanded' : 'truncated'}
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={transitions.fast}
               className={`text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap overflow-hidden break-words ${
                 shouldTruncateDesc && !expanded ? 'line-clamp-4' : ''
               }`}

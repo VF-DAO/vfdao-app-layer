@@ -19,6 +19,8 @@ interface ProfileAvatarProps {
   fallbackClassName?: string;
   /** Pre-fetched profile image URL (skip fetching if provided) */
   profileImageUrl?: string | null;
+  /** Whether the profile is currently loading (show pulse animation) */
+  isLoading?: boolean;
 }
 
 const sizeClasses: Record<ProfileAvatarSize, { container: string; icon: string }> = {
@@ -54,13 +56,15 @@ export function ProfileAvatar({
   showFallback = true,
   fallbackClassName,
   profileImageUrl: preloadedImageUrl,
+  isLoading: externalLoading,
 }: ProfileAvatarProps) {
   // Only fetch if we don't have a pre-loaded URL
-  const { profileImageUrl: fetchedImageUrl } = useProfile(
+  const { profileImageUrl: fetchedImageUrl, loading: internalLoading } = useProfile(
     preloadedImageUrl === undefined ? accountId : null
   );
 
   const imageUrl = preloadedImageUrl ?? fetchedImageUrl;
+  const isLoading = externalLoading ?? (preloadedImageUrl === undefined && internalLoading);
   const { container, icon } = sizeClasses[size];
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -73,12 +77,19 @@ export function ProfileAvatar({
     }
   };
 
-  if (!showFallback && !imageUrl) {
+  if (!showFallback && !imageUrl && !isLoading) {
     return null;
   }
 
+  // Show pulsing placeholder while loading
+  if (isLoading) {
+    return (
+      <div className={cn('relative flex-shrink-0 rounded-full bg-muted/50 animate-pulse', container, className)} />
+    );
+  }
+
   return (
-    <div className={cn('relative flex-shrink-0 rounded-full overflow-hidden', container, className)}>
+    <div className={cn('relative flex-shrink-0 rounded-full overflow-hidden flex items-center justify-center', container, className)}>
       {imageUrl ? (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}

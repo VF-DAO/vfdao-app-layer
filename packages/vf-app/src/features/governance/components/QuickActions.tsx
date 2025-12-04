@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Check, Copy, ExternalLink, Linkedin, Share2 } from 'lucide-react';
 import { FaXTwitter } from 'react-icons/fa6';
 import { Button } from '@/components/ui/button';
+import { dropdownStyles } from '@/components/ui/dropdown-menu';
 import type { Proposal } from '../types';
 
 interface QuickActionsProps {
@@ -121,42 +122,36 @@ export function QuickActions({ proposal }: QuickActionsProps) {
 
               {/* Desktop Share Dropdown */}
               {shareExpanded && (
-                <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-dropdown p-2 z-10 min-w-[140px] animate-in fade-in slide-in-from-top-1 duration-150">
-                  <div className="space-y-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => { void handleCopyLink(); setTimeout(() => setShareExpanded(false), 1500); }}
-                      className="w-full justify-start text-xs h-8 px-2 hover:text-primary transition-colors"
-                    >
-                      {copySuccess ? (
-                        <Check className="w-3 h-3 mr-2 text-verified" />
-                      ) : (
-                        <Copy className="w-3 h-3 mr-2 text-primary hover:text-primary transition-colors" />
-                      )}
+                <div className={`absolute right-0 top-full mt-1 ${dropdownStyles.container} min-w-[160px] sm:min-w-[140px] p-2 space-y-0.5`}>
+                  <button
+                    onClick={() => { void handleCopyLink(); setTimeout(() => setShareExpanded(false), 1500); }}
+                    className="w-full px-4 py-2.5 flex items-center gap-2 rounded-full hover:bg-muted/50 hover:text-primary transition-colors text-left group"
+                  >
+                    {copySuccess ? (
+                      <Check className="w-4 h-4 flex-shrink-0 text-verified" />
+                    ) : (
+                      <Copy className="w-4 h-4 flex-shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+                    )}
+                    <span className="text-sm text-muted-foreground group-hover:text-primary font-medium transition-colors whitespace-nowrap">
                       {copySuccess ? 'Copied!' : 'Copy Link'}
-                    </Button>
+                    </span>
+                  </button>
 
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => { handleShareOnTwitter(); setShareExpanded(false); }}
-                      className="w-full justify-start text-xs h-8 px-2 hover:text-primary transition-colors"
-                    >
-                      <FaXTwitter className="w-3 h-3 mr-2 text-primary hover:text-primary transition-colors" />
-                      Twitter
-                    </Button>
+                  <button
+                    onClick={() => { handleShareOnTwitter(); setShareExpanded(false); }}
+                    className="w-full px-4 py-2.5 flex items-center gap-2 rounded-full hover:bg-muted/50 hover:text-primary transition-colors text-left group"
+                  >
+                    <FaXTwitter className="w-4 h-4 flex-shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+                    <span className="text-sm text-muted-foreground group-hover:text-primary font-medium transition-colors">Twitter</span>
+                  </button>
 
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => { handleShareOnLinkedIn(); setShareExpanded(false); }}
-                      className="w-full justify-start text-xs h-8 px-2 hover:text-primary transition-colors"
-                    >
-                      <Linkedin className="w-3 h-3 mr-2 text-primary hover:text-primary transition-colors" />
-                      LinkedIn
-                    </Button>
-                  </div>
+                  <button
+                    onClick={() => { handleShareOnLinkedIn(); setShareExpanded(false); }}
+                    className="w-full px-4 py-2.5 flex items-center gap-2 rounded-full hover:bg-muted/50 hover:text-primary transition-colors text-left group"
+                  >
+                    <Linkedin className="w-4 h-4 flex-shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+                    <span className="text-sm text-muted-foreground group-hover:text-primary font-medium transition-colors">LinkedIn</span>
+                  </button>
                 </div>
               )}
             </>
