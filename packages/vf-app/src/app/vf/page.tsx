@@ -6,6 +6,8 @@ import { motion } from 'framer-motion';
 import { RheaSwapWidget } from '@/features/swap/components/SwapWidget';
 import { LiquidityCard } from '@/features/liquidity';
 import { useWallet } from '@/features/wallet';
+import { FloatingHeader } from '@/components/ui/floating-header';
+import { Button } from '@/components/ui/button';
 import { ArrowRightLeft, Droplets } from 'lucide-react';
 
 type Tab = 'exchange' | 'pool';
@@ -28,7 +30,35 @@ export default function VFTokenPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pt-16 md:pt-0">
+    <>
+      <FloatingHeader
+        displayName={activeTab === 'exchange' ? 'Exchange' : 'Pool'}
+        displayIcon={activeTab === 'exchange' ? <ArrowRightLeft className="w-4 h-4" /> : <Droplets className="w-4 h-4" />}
+        showCollapsedProfile={true}
+        fadeCollapsedProfile={true}
+        fadeActions={true}
+        actions={
+          <div className="inline-flex bg-muted/50 rounded-full p-0.5 border border-border">
+            <Button
+              variant={activeTab === 'exchange' ? 'filterActive' : 'filter'}
+              size="sm"
+              onClick={() => setActiveTab('exchange')}
+              className="rounded-full px-2 py-1 h-7"
+            >
+              <ArrowRightLeft className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              variant={activeTab === 'pool' ? 'filterActive' : 'filter'}
+              size="sm"
+              onClick={() => setActiveTab('pool')}
+              className="rounded-full px-2 py-1 h-7"
+            >
+              <Droplets className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        }
+      />
+      <div className="min-h-screen bg-background pt-16 md:pt-0">
       <div className="max-w-5xl mx-auto px-4 py-8 sm:py-12 md:py-16">
         {/* Header */}
         <motion.div 
@@ -98,5 +128,6 @@ export default function VFTokenPage() {
         </motion.div>
       </div>
     </div>
+    </>
   );
 }

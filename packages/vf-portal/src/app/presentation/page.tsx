@@ -18,7 +18,7 @@ export default function PresentationPage() {
             Full Vision Document
           </div>
 
-          <h1 className="text-5xl md:text-6xl font-bold text-foreground">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground">
             VeganFriends DAO Presentation
           </h1>
 
@@ -32,7 +32,7 @@ export default function PresentationPage() {
             <div className="flex items-center gap-4 mb-6">
               <FileText className="w-8 h-8 text-primary" />
               <div>
-                <h2 className="text-2xl font-bold text-foreground mb-2">PRESENTATION.md</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">PRESENTATION.md</h2>
                 <p className="text-muted-foreground">
                   Complete presentation document with animation specifications
                 </p>
@@ -77,7 +77,7 @@ export default function PresentationPage() {
 
         {/* Quick Preview Sections */}
         <div className="space-y-8">
-          <h2 className="text-3xl font-bold text-foreground">Document Sections</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-foreground">Document Sections</h2>
 
           <div className="grid md:grid-cols-2 gap-6">
             <SectionCard

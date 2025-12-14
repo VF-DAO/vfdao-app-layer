@@ -55,8 +55,8 @@ export function WalletProvider({
   const [isLoading, setIsLoading] = useState(true);
   const [isConnecting, setIsConnecting] = useState(false);
 
-  const signIn = async () => {
-    console.warn('[WalletContext] signIn called, connector:', !!connector);
+  const signIn = async (retryCount = 0) => {
+    console.warn('[WalletContext] signIn called, connector initialized:', !!connector);
     if (!connector) {
       console.error('[WalletContext] Connector not initialized');
       return;
@@ -70,6 +70,11 @@ export function WalletProvider({
       await connector.whenManifestLoaded;
       console.warn('[WalletContext] Manifest loaded, showing wallet selector...');
       
+      // Add a longer delay to ensure iframe initialization completes
+      // This is especially important for reconnections when iframe needs to reinitialize
+      // Meteor Wallet and other iframe-based wallets need extra time on subsequent connections
+      await new Promise(resolve => setTimeout(resolve, 600));
+      
       // Connect wallet - state will be updated via event listeners
       await connector.connect();
       
@@ -81,6 +86,18 @@ export function WalletProvider({
       // Handle user cancellation gracefully - this is normal behavior, not an error
       if (error instanceof Error && (error.message === 'User rejected' || error.message === 'Wallet closed')) {
         console.warn('[WalletContext] User cancelled wallet connection');
+      } else if (error instanceof Error && error.message === 'Iframe not loaded') {
+        // Iframe loading issue - can happen with MyNearWallet or other iframe-based wallets
+        // Auto-retry once if this is the first attempt
+        if (retryCount === 0) {
+          console.warn('[WalletContext] Wallet iframe failed to load. Retrying automatically...');
+          // Wait longer before retrying to allow iframe to fully initialize
+          // This is critical for reconnections where iframe cleanup may be in progress
+          await new Promise(resolve => setTimeout(resolve, 800));
+          return signIn(1); // Retry once
+        } else {
+          console.warn('[WalletContext] Wallet iframe failed to load after retry. Please try connecting again.');
+        }
       } else if (error === null || error === undefined) {
         // User cancelled without throwing a specific error - this is normal
         console.warn('[WalletContext] Wallet connection cancelled');
@@ -116,23 +133,13 @@ export function WalletProvider({
         
         const _connector = new NearConnector({
           network: network === 'testnet' ? 'testnet' : 'mainnet',
-          
-          // Optional: WalletConnect configuration
-          walletConnect: {
-            projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? '1292473190ce7eb75c9de67e15aaad99',
-            metadata: {
-              name: 'VF DAO',
-              description: 'Decentralized infrastructure for the vegan community. Built on NEAR Protocol.',
-              url: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001',
-              icons: ['https://vfdao.org/icon.png'],
-            },
-          },
         });
         console.warn('[WalletContext] NearConnector created successfully');
 
         // Listen for sign in events
         _connector.on('wallet:signIn', async (event: { accounts: { accountId: string }[] }) => {
-          console.warn('[WalletContext] wallet:signIn event received:', event);
+          const accountIds = event.accounts.map((acc) => acc.accountId);
+          console.warn('[WalletContext] wallet:signIn event received, accounts:', accountIds);
           const connectedWallet = await _connector.wallet();
           setWallet(connectedWallet);
           setAccounts(event.accounts.map((acc) => ({ accountId: acc.accountId })));

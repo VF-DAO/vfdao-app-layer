@@ -34,7 +34,7 @@ export default function ConsumerDashboard() {
   return (
     <div className="p-4 sm:p-6 md:p-8">
       <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-2">Welcome to VeganFriends</h1>
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-2">Welcome to VeganFriends</h1>
         <p className="text-muted-foreground text-sm sm:text-base">
           Connect your wallet to start verifying products and earning rewards.
         </p>
@@ -60,7 +60,7 @@ export default function ConsumerDashboard() {
       <div className="grid lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
         {/* Product History */}
         <div className="lg:col-span-2 p-4 sm:p-6 rounded-2xl border border-border bg-card">
-          <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-foreground mb-3 sm:mb-4">Recent Verifications</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-3 sm:mb-4">Recent Verifications</h2>
           <div className="space-y-3 sm:space-y-4">
             {[1, 2, 3].map((i) => (
               <div

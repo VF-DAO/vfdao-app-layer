@@ -35,6 +35,7 @@ import type { TokenMetadata } from '@/types';
 // === REFACTORED IMPORTS: Our modular hooks, utilities, and components ===
 import {
   useLiquidityActions,
+  useLiquidityCache,
   useLiquidityCalculations,
   useLiquidityForm,
   useLiquidityPool,
@@ -116,6 +117,16 @@ export const LiquidityCard: React.FC = () => {
   // Calculation utilities hook
   const calculations = useLiquidityCalculations(poolInfo);
 
+  // Preload/cache liquidity data to avoid popup blocker
+  const liquidityCache = useLiquidityCache(
+    POOL_ID,
+    poolInfo,
+    form.token1Amount,
+    form.token2Amount,
+    accountId,
+    getRefDepositedBalances
+  );
+
   // Transaction actions hook - handles add/remove liquidity operations
   const actions = useLiquidityActions({
     poolId: POOL_ID,
@@ -125,6 +136,8 @@ export const LiquidityCard: React.FC = () => {
     slippage: form.slippage,
     userShares,
     getRefDepositedBalances,
+    // Pass cached data to avoid RPC calls on button click
+    cachedData: liquidityCache.isCached ? liquidityCache.cache : undefined,
     onTransactionStart: () => {
       transaction.setTransactionState('waitingForConfirmation');
       transaction.setError(null);

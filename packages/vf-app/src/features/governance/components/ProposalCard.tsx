@@ -13,6 +13,7 @@ import { useWallet } from '@/features/wallet';
 import { useProfile } from '@/hooks/use-profile';
 import { ProposalDetails } from './ProposalDetails';
 import { VoteProgress } from './VoteProgress';
+import { Divider } from '@/components/ui/divider';
 import { ActionLog } from './ActionLog';
 import { QuickActions } from './QuickActions';
 import type { Proposal, Role } from '../types';
@@ -302,7 +303,7 @@ export function ProposalCard({ proposal, hasPermission, id }: ProposalCardProps)
         <h3 className="text-base leading-snug font-semibold text-foreground line-clamp-2">{title}</h3>
         
         {/* Visual separator for content sections */}
-        <div className="border-t border-border/50" />
+        <Divider />
         
         <ProposalDetails proposal={proposal} description={description} />
         <VoteProgress proposal={proposal} effectiveStatus={effectiveStatus} />

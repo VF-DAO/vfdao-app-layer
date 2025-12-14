@@ -2,7 +2,7 @@ import React from 'react';
 
 interface LoadingDotsProps {
   /** Size of each dot. Default: 'sm' (1.5 = 6px) */
-  size?: 'xs' | 'sm' | 'md';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   /** Color of dots. Default: 'primary' */
   color?: 'primary' | 'muted' | 'current';
   /** Animation delay between dots in ms. Default: 150 */
@@ -39,6 +39,7 @@ export function LoadingDots({
     xs: 'w-1 h-1',
     sm: 'w-1.5 h-1.5',
     md: 'w-2 h-2',
+    lg: 'w-2.5 h-2.5',
   };
 
   const colorClasses = {

@@ -29,6 +29,19 @@ const nextConfig = {
 
     return config;
   },
+  // Turbopack config (Next.js 16 default bundler)
+  turbopack: {
+    resolveAlias: {
+      // Stub out Node.js modules for client-side
+      fs: { browser: './src/lib/empty-module.js' },
+      path: { browser: './src/lib/empty-module.js' },
+      os: { browser: './src/lib/empty-module.js' },
+      crypto: { browser: './src/lib/empty-module.js' },
+      stream: { browser: './src/lib/empty-module.js' },
+      http: { browser: './src/lib/empty-module.js' },
+      tls: { browser: './src/lib/empty-module.js' },
+    },
+  },
 };
 
 export default nextConfig;

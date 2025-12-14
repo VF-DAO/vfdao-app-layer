@@ -11,6 +11,7 @@ import type {
 
 /**
  * Base modal wrapper for all transaction modals
+ * Accounts for sidebar on desktop: modals are offset to align with main content area
  */
 function TransactionModalWrapper({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   // Lock body scroll when modal is open
@@ -24,7 +25,7 @@ function TransactionModalWrapper({ children, onClose }: { children: React.ReactN
   return (
     <AnimatePresence>
       <motion.div 
-        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 md:left-20"
         variants={backdropVariants}
         initial="hidden"
         animate="visible"

@@ -4,27 +4,50 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Coins, Github, Home, Menu, Send, Vote } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Coins, Compass, Github, Home, Menu, Send, ShoppingBag, User, Vote } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { FaXTwitter } from 'react-icons/fa6';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { WalletButton } from '@/features/wallet';
 import { useWallet } from '@/features/wallet';
 import Logo from '@/components/ui/logo';
+import { Badge } from '@/components/ui/badge';
+import { Divider } from '@/components/ui/divider';
+import { ProfileAvatar } from '@/components/ui/profile-avatar';
+import { iconContainerVariants, iconVariants } from '@/components/ui/icon-container';
+
+// Admin accounts that can access coming soon features
+const ADMIN_ACCOUNTS = ['greenghost.near'];
 
 interface NavItem {
   label: string;
   href: string;
   icon: LucideIcon;
   comingSoon?: boolean;
-  disabled?: boolean;
+  adminOnly?: boolean; // Only admins can click when comingSoon
 }
 
 const navItems: NavItem[] = [
   { label: 'Home', href: '/', icon: Home },
+  { label: 'Explore', href: '/explore', icon: Compass },
   { label: '$VF', href: '/vf', icon: Coins },
-  { label: 'DAO', href: '/dao', icon: Vote }
+  { label: 'DAO', href: '/dao', icon: Vote },
+  { label: 'Marketplace', href: '/marketplace', icon: ShoppingBag, comingSoon: true, adminOnly: true },
+  { label: 'Profile', href: '/profile', icon: User }
 ];
+
+// Helper functions for nav icon styling
+const getNavIconContainerClasses = (isActive: boolean, size: 'sm' | 'md' | 'lg' = 'lg') => {
+  return iconContainerVariants({ variant: isActive ? 'active' : 'inactive', size });
+};
+
+const getNavIconClasses = (isActive: boolean) => {
+  return iconVariants({ variant: isActive ? 'active' : 'inactive' });
+};
+
+// Static variants for disabled items
+const inactiveIconContainerClasses = iconContainerVariants({ variant: 'inactiveStatic', size: 'lg' });
+const inactiveIconClasses = iconVariants({ variant: 'inactiveStatic' });
 
 interface SidebarProps {
   isOpen: boolean;
@@ -32,9 +55,11 @@ interface SidebarProps {
   activeSection: string;
   pathname: string;
   onNavInteraction?: () => void;
+  isAdmin?: boolean;
+  accountId?: string | null;
 }
 
-function Sidebar({ isOpen, onClose, activeSection, pathname, onNavInteraction }: SidebarProps) {
+function Sidebar({ isOpen, onClose, activeSection, pathname, onNavInteraction, isAdmin = false, accountId }: SidebarProps) {
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   const handleClickOutside = useCallback((event: MouseEvent) => {
@@ -90,9 +115,18 @@ function Sidebar({ isOpen, onClose, activeSection, pathname, onNavInteraction }:
             transition={{ duration: 0.3, ease: 'easeInOut' }}
             className="fixed left-0 top-0 h-full w-80 max-w-[90vw] bg-background border-r border-border shadow-xl z-50 flex flex-col"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-border">
-              <Logo width={80} height={54} className="w-20 h-14" />
+            {/* Header - Profile */}
+            <div className="flex items-center justify-between p-6">
+              <Link href="/profile" onClick={onClose} className="flex items-center gap-3 group">
+                <ProfileAvatar
+                  accountId={accountId || ''}
+                  size="md"
+                  className="w-10 h-10 ring-2 ring-background"
+                />
+                <span className="font-semibold text-sm truncate max-w-[160px] group-hover:text-primary transition-colors">
+                  {accountId?.replace('.near', '') || 'Profile'}
+                </span>
+              </Link>
               <button
                 onClick={onClose}
                 className="p-2 rounded-md transition-colors group"
@@ -101,32 +135,61 @@ function Sidebar({ isOpen, onClose, activeSection, pathname, onNavInteraction }:
                 <ChevronLeft size={20} className="transition-transform group-hover:-translate-x-1" />
               </button>
             </div>
+            {/* Divider */}
+            <div className="px-6">
+              <Divider />
+            </div>
 
-            {/* Navigation Items */}
-            <div className="flex-1 py-6">
+            {/* Navigation Items - Scrollable on short screens */}
+            <div className="flex-1 py-6 overflow-y-auto min-h-0">
               <nav className="px-4 space-y-4">
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = activeSection === item.href;
+                  const canAccess = !item.comingSoon || (item.adminOnly && isAdmin);
                   
-                  if (item.comingSoon) {
+                  if (item.comingSoon && !canAccess) {
+                    // Coming soon - not clickable for non-admins
                     return (
                       <div
                         key={item.label}
-                        className="flex items-center gap-3 w-full group opacity-60"
+                        className="flex items-center gap-3 w-full group opacity-60 cursor-not-allowed"
                       >
-                        <div className="w-12 h-12 rounded-full border border-border bg-card flex items-center justify-center">
-                          <Icon size={20} className="text-muted-foreground" />
+                        <div className={`${inactiveIconContainerClasses}`}>
+                          <Icon size={20} className={inactiveIconClasses} />
                         </div>
-                        <div className="flex-1">
-                          <span className="text-sm font-medium">{item.label}</span>
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground ml-2">Soon</span>
+                        <div className="flex-1 flex items-center gap-2">
+                          <span className="text-sm font-medium text-muted-foreground">{item.label}</span>
+                          <Badge variant="muted" className="text-[10px] px-2 py-0.5">Soon</Badge>
                         </div>
                       </div>
                     );
                   }
+
+                  if (item.comingSoon && canAccess) {
+                    // Coming soon but admin can access
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => {
+                          onClose();
+                          onNavInteraction?.();
+                        }}
+                        className="flex items-center gap-3 w-full group"
+                      >
+                        <div className={getNavIconContainerClasses(isActive, 'lg')}>
+                          <Icon size={20} className={getNavIconClasses(isActive)} />
+                        </div>
+                        <div className="flex-1 flex items-center gap-2">
+                          <span className={`text-sm font-medium transition-colors ${getNavIconClasses(isActive)}`}>{item.label}</span>
+                          <Badge variant="primary" className="text-[10px] px-2 py-0.5">Preview</Badge>
+                        </div>
+                      </Link>
+                    );
+                  }
                   
-                  // All items are now proper links
+                  // Regular items - all are proper links
                   return (
                     <Link
                       key={item.href}
@@ -142,10 +205,10 @@ function Sidebar({ isOpen, onClose, activeSection, pathname, onNavInteraction }:
                       }}
                       className="flex items-center gap-3 w-full group"
                     >
-                      <div className={`w-12 h-12 rounded-full border ${isActive ? 'border-verified bg-verified/10 scale-110' : 'border-border bg-card group-hover:border-muted-foreground/50'} flex items-center justify-center transition-all duration-200 ${isActive ? 'shadow-md shadow-verified/20' : ''}`}>
-                        <Icon size={20} className={`${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'} transition-colors`} />
+                      <div className={getNavIconContainerClasses(isActive, 'lg')}>
+                        <Icon size={20} className={getNavIconClasses(isActive)} />
                       </div>
-                      <span className={`flex-1 text-sm font-medium transition-colors ${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`}>{item.label}</span>
+                      <span className={`flex-1 text-sm font-medium transition-colors ${getNavIconClasses(isActive)}`}>{item.label}</span>
                     </Link>
                   );
                 })}
@@ -154,11 +217,13 @@ function Sidebar({ isOpen, onClose, activeSection, pathname, onNavInteraction }:
 
             {/* Footer */}
             <div className="p-6 space-y-4">
-              {/* Social Icons */}
-              <div className="flex justify-center gap-4 text-muted-foreground pb-4 border-b border-border">
+              {/* Logo + Social Icons */}
+              <div className="flex items-center justify-center gap-5 pb-4">
+                <Logo width={50} height={34} className="w-12 h-8" />
+                <Divider variant="vertical" className="h-5" />
                 <a
                   href="https://t.me/veganfriendsdao"
-                  className="hover:text-primary transition-colors"
+                  className="text-muted-foreground hover:text-primary transition-colors"
                   aria-label="Telegram"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -167,7 +232,7 @@ function Sidebar({ isOpen, onClose, activeSection, pathname, onNavInteraction }:
                 </a>
                 <a
                   href="https://x.com/VeganFriendsDAO"
-                  className="hover:text-primary transition-colors"
+                  className="text-muted-foreground hover:text-primary transition-colors"
                   aria-label="Twitter/X"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -176,7 +241,7 @@ function Sidebar({ isOpen, onClose, activeSection, pathname, onNavInteraction }:
                 </a>
                 <a
                   href="https://github.com/VF-DAO/vfdao-eco-engine"
-                  className="hover:text-primary transition-colors"
+                  className="text-muted-foreground hover:text-primary transition-colors"
                   aria-label="GitHub"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -184,6 +249,8 @@ function Sidebar({ isOpen, onClose, activeSection, pathname, onNavInteraction }:
                   <Github className="w-5 h-5" />
                 </a>
               </div>
+              {/* Divider */}
+              <Divider />
               
               <div className="flex items-center justify-between">
                 <WalletButton />
@@ -198,11 +265,14 @@ function Sidebar({ isOpen, onClose, activeSection, pathname, onNavInteraction }:
 }
 
 export function Navigation() {
-  const { isConnected } = useWallet();
+  const { isConnected, accountId } = useWallet();
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDesktopExpanded, setIsDesktopExpanded] = useState(false);
   const [activeSection, setActiveSection] = useState('/');
+
+  // Check if current user is admin
+  const isAdmin = accountId ? ADMIN_ACCOUNTS.includes(accountId) : false;
 
   // Scroll hide state for mobile
   const [isNavVisible, setIsNavVisible] = useState(true);
@@ -222,6 +292,15 @@ export function Navigation() {
       setIsDesktopExpanded(false);
     }
   }, [isConnected]);
+
+  // Listen for custom event to open sidebar (from HomeFloatingHeader)
+  useEffect(() => {
+    const handleOpenSidebar = () => {
+      setIsSidebarOpen(true);
+    };
+    window.addEventListener('open-sidebar', handleOpenSidebar);
+    return () => window.removeEventListener('open-sidebar', handleOpenSidebar);
+  }, []);
 
   // Update body class for sidebar state
   useEffect(() => {
@@ -341,6 +420,17 @@ export function Navigation() {
     }
   }, [pathname]);
 
+  // Check if we're on a profile page (has its own navigation)
+  const isProfilePage = pathname?.startsWith('/profile');
+  // Check if we're on a DAO page (has its own floating header)
+  const isDaoPage = pathname?.startsWith('/dao');
+  // Check if we're on the homepage (has its own floating header)
+  const isHomePage = pathname === '/';
+  // Check if we're on the VF token page (has its own floating header)
+  const isVfPage = pathname?.startsWith('/vf');
+  // Pages with their own floating header should hide mobile nav
+  const hasFloatingHeader = isProfilePage || isDaoPage || isHomePage || isVfPage;
+
   return (
     <>
       {isConnected && (
@@ -353,17 +443,22 @@ export function Navigation() {
             onTouchEnd={onTouchEnd}
           />
 
-          {/* Top Bar - Only visible on mobile */}
+          {/* Top Bar - Only visible on mobile, hidden on pages with floating headers */}
+          {!hasFloatingHeader && (
           <div className={`md:hidden fixed top-0 left-0 right-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border transition-transform duration-300 ${
             isNavVisible ? 'translate-y-0' : '-translate-y-full'
           }`}>
             <div className="flex h-16 items-center justify-between px-4">
               <button
                 onClick={() => setIsSidebarOpen(true)}
-                className="p-2"
+                className="rounded-full transition-all"
                 aria-label="Open sidebar"
               >
-                <Menu size={24} />
+                <ProfileAvatar
+                  accountId={accountId || ''}
+                  size="sm"
+                  className="w-9 h-9 ring-2 ring-background"
+                />
               </button>
 
               <div className="flex-1 flex justify-center">
@@ -385,18 +480,26 @@ export function Navigation() {
               <div className="w-10" /> {/* Spacer for balance */}
             </div>
           </div>
+          )}
 
           {/* Desktop Sidebar */}
           <div className={`hidden md:flex fixed left-0 top-0 h-full bg-background border-r border-border shadow-sidebar z-40 flex-col transition-all duration-300 ${
             isDesktopExpanded ? 'w-72' : 'w-20'
           }`}>
-            {/* Header */}
-            <div className={`flex flex-col items-center p-4 border-b border-border transition-all duration-300 ease-in-out ${isDesktopExpanded ? '' : 'space-y-3'}`}>
+            {/* Header - Profile */}
+            <div className={`flex flex-col items-center p-4 transition-all duration-300 ease-in-out ${isDesktopExpanded ? '' : 'space-y-3'}`}>
               {isDesktopExpanded ? (
                 <div className="flex items-center justify-between w-full transition-all duration-300">
-                  <div className="transition-all duration-300 ease-in-out">
-                    <Logo width={80} height={54} className="w-20 h-14" />
-                  </div>
+                  <Link href="/profile" className="flex items-center gap-3 group">
+                    <ProfileAvatar
+                      accountId={accountId || ''}
+                      size="md"
+                      className="w-10 h-10 ring-2 ring-background"
+                    />
+                    <span className="font-semibold text-sm truncate max-w-[140px] group-hover:text-primary transition-colors">
+                      {accountId?.replace('.near', '') || 'Profile'}
+                    </span>
+                  </Link>
                   <button
                     onClick={() => setIsDesktopExpanded(false)}
                     className="p-2 rounded-md transition-colors group"
@@ -406,66 +509,83 @@ export function Navigation() {
                   </button>
                 </div>
               ) : (
-                <button
-                  onClick={() => setIsDesktopExpanded(true)}
-                  className="flex flex-col items-center space-y-2 p-2 rounded-md transition-colors group"
-                  aria-label="Expand sidebar"
-                >
-                  <div className="transition-all duration-300 ease-in-out">
-                    <Logo width={64} height={43} className="w-16 h-11" />
-                  </div>
-                  <ChevronRight size={18} className="transition-transform group-hover:translate-x-1" />
-                </button>
+                <div className="flex flex-col items-center space-y-2">
+                  <Link href="/profile" className="group">
+                    <ProfileAvatar
+                      accountId={accountId || ''}
+                      size="md"
+                      className="w-10 h-10 ring-2 ring-background"
+                    />
+                  </Link>
+                  <button
+                    onClick={() => setIsDesktopExpanded(true)}
+                    className="p-1 rounded-md transition-colors group"
+                    aria-label="Expand sidebar"
+                  >
+                    <ChevronRight size={16} className="transition-transform group-hover:translate-x-1" />
+                  </button>
+                </div>
               )}
+            </div>
+            {/* Divider */}
+            <div className={isDesktopExpanded ? 'px-4' : 'px-3'}>
+              <Divider />
             </div>
 
             {/* Navigation Items */}
-            <div className="flex-1 py-6 transition-all duration-300">
-              <nav className="px-2 space-y-4 transition-all duration-300">
+            <div className="flex-1 py-6">
+              <nav className="px-4 space-y-4">
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = activeSection === item.href;
+                  const canAccess = !item.comingSoon || (item.adminOnly && isAdmin);
                   
-                  if (item.comingSoon) {
+                  if (item.comingSoon && !canAccess) {
+                    // Coming soon - not clickable for non-admins
                     return (
                       <div
                         key={item.label}
-                        className={`flex items-center justify-center w-full opacity-60 transition-all duration-300 ease-in-out ${
-                          isDesktopExpanded ? '' : 'justify-center'
-                        }`}
+                        className="flex items-center w-full opacity-60 cursor-not-allowed"
                       >
-                        <div className="w-12 h-12 rounded-full border border-border bg-card flex items-center justify-center">
-                          <Icon size={18} className="text-muted-foreground" />
+                        <div className={`flex-shrink-0 ${iconContainerVariants({ variant: 'inactiveStatic', size: 'lg' })}`}>
+                          <Icon size={18} className={inactiveIconClasses} />
                         </div>
-                        {isDesktopExpanded && (
-                          <div className="flex-1 ml-3 transition-all duration-300 ease-in-out">
-                            <span className="text-sm font-medium">{item.label}</span>
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground ml-2">Soon</span>
-                          </div>
-                        )}
+                        <div 
+                          className={`flex items-center gap-2 ml-3 overflow-hidden transition-all duration-300 ease-in-out ${
+                            isDesktopExpanded ? 'w-auto opacity-100' : 'w-0 opacity-0'
+                          }`}
+                        >
+                          <span className="text-sm font-medium whitespace-nowrap text-muted-foreground">{item.label}</span>
+                          <Badge variant="muted" className="text-[10px] px-2 py-0.5">Soon</Badge>
+                        </div>
                       </div>
                     );
                   }
 
-                  if (item.disabled) {
+                  if (item.comingSoon && canAccess) {
+                    // Coming soon but admin can access
                     return (
-                      <div
-                        key={item.label}
-                        className={`flex items-center justify-center w-full opacity-50 transition-all duration-300 ease-in-out ${
-                          isDesktopExpanded ? '' : 'justify-center'
-                        }`}
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className="flex items-center w-full group"
                       >
-                        <div className="w-12 h-12 rounded-full border border-border bg-card flex items-center justify-center">
-                          <Icon size={18} className="text-muted-foreground" />
+                        <div className={`flex-shrink-0 ${getNavIconContainerClasses(isActive, 'lg')}`}>
+                          <Icon size={18} className={getNavIconClasses(isActive)} />
                         </div>
-                        {isDesktopExpanded && (
-                          <span className="flex-1 ml-3 text-sm font-medium transition-all duration-300 ease-in-out">{item.label}</span>
-                        )}
-                      </div>
+                        <div 
+                          className={`flex items-center gap-2 ml-3 overflow-hidden transition-all duration-300 ease-in-out ${
+                            isDesktopExpanded ? 'w-auto opacity-100' : 'w-0 opacity-0'
+                          }`}
+                        >
+                          <span className={`text-sm font-medium whitespace-nowrap transition-colors ${getNavIconClasses(isActive)}`}>{item.label}</span>
+                          <Badge variant="primary" className="text-[10px] px-2 py-0.5">Preview</Badge>
+                        </div>
+                      </Link>
                     );
                   }
                   
-                  // All items are now proper links
+                  // Regular items - all are proper links
                   return (
                     <Link
                       key={item.href}
@@ -477,16 +597,18 @@ export function Navigation() {
                           window.scrollTo({ top: 0, behavior: 'smooth' });
                         }
                       }}
-                      className={`flex items-center justify-center w-full group transition-all duration-300 ease-in-out ${
-                        isDesktopExpanded ? '' : 'justify-center'
-                      }`}
+                      className="flex items-center w-full group"
                     >
-                      <div className={`w-12 h-12 rounded-full border ${isActive ? 'border-verified bg-verified/10 scale-110' : 'border-border bg-card group-hover:border-muted-foreground/50'} flex items-center justify-center transition-all duration-200 ${isActive ? 'shadow-md shadow-verified/20' : ''}`}>
-                        <Icon size={18} className={`${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'} transition-colors`} />
+                      <div className={`flex-shrink-0 ${getNavIconContainerClasses(isActive, 'lg')}`}>
+                        <Icon size={18} className={getNavIconClasses(isActive)} />
                       </div>
-                      {isDesktopExpanded && (
-                        <span className={`flex-1 ml-3 text-sm font-medium transition-all duration-300 ease-in-out ${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`}>{item.label}</span>
-                      )}
+                      <span 
+                        className={`ml-3 text-sm font-medium whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out ${
+                          isDesktopExpanded ? 'w-auto opacity-100' : 'w-0 opacity-0'
+                        } ${getNavIconClasses(isActive)}`}
+                      >
+                        {item.label}
+                      </span>
                     </Link>
                   );
                 })}
@@ -497,11 +619,13 @@ export function Navigation() {
             <div className={`p-4 transition-all duration-300 ease-in-out ${isDesktopExpanded ? 'space-y-4' : 'flex flex-col items-center space-y-3'}`}>
               {isDesktopExpanded ? (
                 <>
-                  {/* Social Icons */}
-                  <div className="flex justify-center gap-4 text-muted-foreground pb-4 border-b border-border transition-all duration-300">
+                  {/* Logo + Social Icons */}
+                  <div className="flex items-center justify-center gap-5 pb-4 transition-all duration-300">
+                    <Logo width={50} height={34} className="w-12 h-8" />
+                    <Divider variant="vertical" className="h-5" />
                     <a
                       href="https://t.me/veganfriendsdao"
-                      className="hover:text-primary transition-colors"
+                      className="text-muted-foreground hover:text-primary transition-colors"
                       aria-label="Telegram"
                       target="_blank"
                       rel="noopener noreferrer"
@@ -510,7 +634,7 @@ export function Navigation() {
                     </a>
                     <a
                       href="https://x.com/VeganFriendsDAO"
-                      className="hover:text-primary transition-colors"
+                      className="text-muted-foreground hover:text-primary transition-colors"
                       aria-label="Twitter/X"
                       target="_blank"
                       rel="noopener noreferrer"
@@ -519,7 +643,7 @@ export function Navigation() {
                     </a>
                     <a
                       href="https://github.com/VF-DAO/vfdao-eco-engine"
-                      className="hover:text-primary transition-colors"
+                      className="text-muted-foreground hover:text-primary transition-colors"
                       aria-label="GitHub"
                       target="_blank"
                       rel="noopener noreferrer"
@@ -527,6 +651,8 @@ export function Navigation() {
                       <Github className="w-5 h-5" />
                     </a>
                   </div>
+                  {/* Divider */}
+                  <Divider />
                   
                   <div className="flex items-center justify-between transition-all duration-300">
                     <motion.div
@@ -542,6 +668,10 @@ export function Navigation() {
                 </>
               ) : (
                 <>
+                  {/* Logo (collapsed) */}
+                  <div className="pb-1">
+                    <Logo width={40} height={27} className="w-10 h-7" />
+                  </div>
                   <div className="w-full flex justify-center px-2 transition-all duration-300">
                     <motion.div
                       initial={{ opacity: 0 }}
@@ -567,6 +697,8 @@ export function Navigation() {
             activeSection={activeSection}
             pathname={pathname}
             onNavInteraction={() => setSidebarInteractionTime(Date.now())}
+            isAdmin={isAdmin}
+            accountId={accountId}
           />
 
           {/* Mobile Bottom Navigation */}
@@ -577,35 +709,42 @@ export function Navigation() {
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeSection === item.href;
-                
-                if (item.disabled) {
+                const canAccess = !item.comingSoon || (item.adminOnly && isAdmin);
+
+                if (item.comingSoon && !canAccess) {
+                  // Coming soon - not clickable for non-admins
                   return (
                     <div
                       key={item.label}
-                      className="flex flex-col items-center justify-center flex-1 py-2 px-1 group opacity-50"
+                      className="flex flex-col items-center justify-center flex-1 py-2 px-1 relative group opacity-60 cursor-not-allowed"
                     >
-                      <div className="w-10 h-10 rounded-full border border-border bg-card flex items-center justify-center">
-                        <Icon size={20} className="text-muted-foreground" />
+                      <div className={iconContainerVariants({ variant: 'inactiveStatic', size: 'md' })}>
+                        <Icon size={20} className={inactiveIconClasses} />
                       </div>
+                      <Badge variant="muted" className="absolute -top-0.5 right-1 text-[8px] px-1.5 py-0">Soon</Badge>
                     </div>
                   );
                 }
 
-                if (item.comingSoon) {
+                if (item.comingSoon && canAccess) {
+                  // Coming soon but admin can access
                   return (
-                    <div
-                      key={item.label}
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setNavInteractionTime(Date.now())}
                       className="flex flex-col items-center justify-center flex-1 py-2 px-1 relative group"
+                      aria-label={item.label}
                     >
-                      <div className={`w-10 h-10 rounded-full border ${isActive ? 'border-verified bg-verified/10 scale-110' : 'border-border bg-card group-hover:border-muted-foreground/50'} flex items-center justify-center transition-all duration-200 ${isActive ? 'shadow-md shadow-verified/20' : ''}`}>
-                        <Icon size={20} className={`${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'} transition-colors`} />
+                      <div className={getNavIconContainerClasses(isActive, 'md')}>
+                        <Icon size={20} className={getNavIconClasses(isActive)} />
                       </div>
-                      <span className="absolute -top-1 -right-1 text-[8px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">Soon</span>
-                    </div>
+                      <Badge variant="primary" className="absolute -top-0.5 right-1 text-[8px] px-1.5 py-0">Preview</Badge>
+                    </Link>
                   );
                 }
                 
-                // All items are now proper links
+                // Regular items - all are proper links
                 return (
                   <Link
                     key={item.href}
@@ -621,8 +760,8 @@ export function Navigation() {
                     className="flex flex-col items-center justify-center flex-1 py-2 px-1 group"
                     aria-label={item.label}
                   >
-                      <div className={`w-10 h-10 rounded-full border ${isActive ? 'border-verified bg-verified/10 scale-110' : 'border-border bg-card group-hover:border-muted-foreground/50'} flex items-center justify-center transition-all duration-200 ${isActive ? 'shadow-md shadow-verified/20' : ''}`}>
-                        <Icon size={20} className={`${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'} transition-colors`} />
+                    <div className={getNavIconContainerClasses(isActive, 'md')}>
+                      <Icon size={20} className={getNavIconClasses(isActive)} />
                     </div>
                   </Link>
                 );

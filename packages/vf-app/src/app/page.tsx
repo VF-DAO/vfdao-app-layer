@@ -1,18 +1,27 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { PortfolioDashboard } from '@/features/portfolio';
 import { useWallet } from '@/features/wallet';
 import { useProfile } from '@/hooks/use-profile';
+import { useVfBalance, useDaoMembership } from '@/hooks/use-vf-dao';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { HomeFloatingHeader } from '@/components/ui/home-floating-header';
+import { JoinDaoModal } from '@/features/governance/components/JoinDaoModal';
+import { usePolicy } from '@/features/governance/hooks';
 import { FaXTwitter } from 'react-icons/fa6';
-import { Coins, Github, Send, Vote } from 'lucide-react';
+import { Coins, Compass, Github, Send, Vote } from 'lucide-react';
 import Logo from '@/components/ui/logo';
 
 export default function Home() {
   const { accountId, isConnected, isLoading: walletLoading } = useWallet();
   const { displayName, profile, loading: _profileLoading } = useProfile(accountId ?? undefined);
+  const { vfBalance, vfIcon } = useVfBalance();
+  const { isMember } = useDaoMembership();
+  const { data: policy } = usePolicy();
+  const [joinModalOpen, setJoinModalOpen] = useState(false);
   
   // Extract and format username from accountId (remove .near extension, capitalize first letter, truncate if too long) - fallback
   const username = accountId ? accountId.split('.')[0] : null;
@@ -24,7 +33,20 @@ export default function Home() {
   const displayUsername = profile?.profile?.name ? displayName : formattedUsernameFallback;
 
   return (
-    <div className={`flex flex-col min-h-screen bg-background ${isConnected ? 'pt-16 md:pt-0' : ''}`}>
+    <>
+      {/* Home Floating Header - when connected */}
+      {isConnected && (
+        <HomeFloatingHeader
+          accountId={accountId || undefined}
+          displayName={displayUsername || undefined}
+          vfBalance={vfBalance}
+          vfIcon={vfIcon}
+          isMember={isMember}
+          onJoinClick={() => setJoinModalOpen(true)}
+        />
+      )}
+
+      <div className={`flex flex-col min-h-screen bg-background ${isConnected ? 'pt-16' : ''}`}>
       
       {/* Hero Section */}
       <div className={`relative flex-1 flex flex-col items-center px-4 ${isConnected ? 'pt-16 sm:pt-24 md:pt-32' : 'pt-32 sm:pt-48 md:pt-56'} pb-20 sm:pb-32`}>
@@ -157,51 +179,15 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Quick Actions - Only show when connected */}
-      {isConnected && (
-        <section className="relative py-12 sm:py-16 px-4">
-          <div className="max-w-3xl mx-auto">
-            <motion.div 
-              className="grid grid-cols-2 gap-4 sm:gap-6"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.4 }}
-            >
-              {/* $VF Token Card */}
-              <Link
-                href="/vf"
-                className="group p-6 sm:p-8 rounded-2xl border border-border bg-card hover:border-primary/50 hover:bg-gradient-to-br hover:from-primary/5 hover:to-transparent transition-all duration-300"
-              >
-                <div className="flex flex-col items-center text-center gap-3 sm:gap-4">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                    <Coins className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg sm:text-xl font-bold text-foreground group-hover:text-primary transition-colors">$VF Token</h3>
-                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">Exchange & Pool</p>
-                  </div>
-                </div>
-              </Link>
-
-              {/* DAO Card */}
-              <Link
-                href="/dao"
-                className="group p-6 sm:p-8 rounded-2xl border border-border bg-card hover:border-verified/50 hover:bg-gradient-to-br hover:from-verified/5 hover:to-transparent transition-all duration-300"
-              >
-                <div className="flex flex-col items-center text-center gap-3 sm:gap-4">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-verified/10 flex items-center justify-center group-hover:bg-verified/20 transition-colors">
-                    <Vote className="w-6 h-6 sm:w-7 sm:h-7 text-verified" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg sm:text-xl font-bold text-foreground group-hover:text-verified transition-colors">DAO</h3>
-                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">Vote & Propose</p>
-                  </div>
-                </div>
-              </Link>
-            </motion.div>
-          </div>
-        </section>
-      )}
     </div>
+
+      {/* Join DAO Modal */}
+      <JoinDaoModal
+        isOpen={joinModalOpen}
+        onClose={() => setJoinModalOpen(false)}
+        policy={policy}
+        accountId={accountId ?? ''}
+      />
+    </>
   );
 }

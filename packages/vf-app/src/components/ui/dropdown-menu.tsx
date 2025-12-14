@@ -16,10 +16,12 @@ export const dropdownStyles = {
   animation: 'animate-in fade-in slide-in-from-top-1 duration-150',
   /** Combined container + animation for quick use */
   base: 'bg-card border border-border rounded-2xl shadow-dropdown p-3 z-10 animate-in fade-in slide-in-from-top-1 duration-150',
-  /** Item styles for custom dropdown buttons */
-  item: 'w-full px-4 py-2.5 flex items-center gap-2 rounded-full hover:bg-muted/50 hover:text-primary transition-colors text-left text-sm',
+  /** Item styles for custom dropdown buttons (use with group class) */
+  item: 'group w-full px-4 py-2.5 flex items-center gap-2 rounded-full hover:bg-muted/50 transition-colors text-left text-sm',
   /** Text styles for dropdown item labels */
-  itemText: 'truncate flex-1 text-muted-foreground',
+  itemText: 'truncate flex-1 text-muted-foreground group-hover:text-primary transition-colors',
+  /** Icon styles for dropdown item icons */
+  itemIcon: 'flex-shrink-0 text-muted-foreground group-hover:text-primary transition-colors',
   /** Check mark that always reserves space (use with selected condition for color) */
   check: (selected: boolean) => `w-4 h-4 flex-shrink-0 ${selected ? 'text-verified' : 'text-transparent'}`,
 } as const;
@@ -232,15 +234,18 @@ const DropdownMenuItem = React.forwardRef<HTMLButtonElement, DropdownMenuItemPro
         role="menuitem"
         onClick={handleClick}
         className={cn(
-          'flex w-full items-center justify-start gap-2 rounded-full px-4 py-2.5 text-sm transition-colors',
-          'hover:bg-muted/50 hover:text-primary focus:bg-muted/50 focus:text-primary focus:outline-none',
+          'group flex w-full items-center justify-start gap-2 rounded-full px-4 py-2.5 text-sm transition-colors',
+          'hover:bg-muted/50 focus:bg-muted/50 focus:outline-none',
           selected && 'text-primary',
           className
         )}
         {...props}
       >
-        {icon && <span className="flex-shrink-0">{icon}</span>}
-        <span className="flex-1 text-left text-muted-foreground">{children}</span>
+        {icon && <span className="flex-shrink-0 text-muted-foreground group-hover:text-primary transition-colors">{icon}</span>}
+        <span className={cn(
+          "flex-1 text-left transition-colors",
+          selected ? "text-primary" : "text-muted-foreground group-hover:text-primary"
+        )}>{children}</span>
         {/* Always render check to reserve space and prevent layout shift */}
         <svg 
           className={`h-4 w-4 flex-shrink-0 ${selected ? 'text-verified' : 'text-transparent'}`} 

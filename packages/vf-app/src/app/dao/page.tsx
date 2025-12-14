@@ -3,8 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
+import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import { expandVariants, transitions } from '@/lib/animations';
+import { Divider, dividerVariants } from '@/components/ui/divider';
+import { FloatingHeader } from '@/components/ui/floating-header';
 import { ProposalList } from '@/features/governance/components/ProposalList';
 import { JoinDaoModal } from '@/features/governance/components/JoinDaoModal';
 import { useGovernanceStats, usePersonalVotingStats, usePolicy, useTotalProposals, useTreasuryBalance } from '@/features/governance/hooks';
@@ -134,7 +137,26 @@ export default function GovernancePage() {
   const { getDisplayName: getMemberDisplayName, getProfileImageUrl: getMemberProfileImageUrl, loading: _membersProfileLoading } = useMultipleProfiles(allMemberIds);
 
   return (
-    <div className="md:container md:mx-auto px-4 py-24 pt-20 md:pt-24 space-y-4 sm:space-y-8">
+    <>
+      <FloatingHeader
+        profileImageUrl={daoProfileImageUrl}
+        displayName={daoDisplayName || 'VF DAO'}
+        showCollapsedProfile={true}
+        actions={
+          canAddProposal && (
+            <Button
+              variant="verified"
+              size="sm"
+              className="gap-2"
+              onClick={() => router.push('/dao/create')}
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Create Proposal</span>
+            </Button>
+          )
+        }
+      />
+      <div className="md:container md:mx-auto px-4 py-24 pt-20 md:pt-24 space-y-4 sm:space-y-8">
       {/* Redesigned Compact Institutional Header */}
       <div className="bg-card border border-border rounded-2xl shadow-main-card overflow-hidden">
         {/* Consistent Gradient Background like Liquidity Widget */}
@@ -380,7 +402,7 @@ export default function GovernancePage() {
           </div>
 
           {/* Treasury Holdings - Collapsible */}
-          <div className="border-t border-border/30" />
+          <Divider />
           <motion.div
             onClick={() => setTreasuryExpanded(!treasuryExpanded)}
             className="flex items-center justify-between py-2 cursor-pointer transition-colors rounded-md px-2 -mx-2"
@@ -433,7 +455,7 @@ export default function GovernancePage() {
                 transition={transitions.expand}
                 className="overflow-hidden"
               >
-                <div className="mt-2 md:mt-3 space-y-1.5 md:space-y-2 pl-3 md:pl-4 border-l-2 border-primary/20">
+                <div className={`mt-2 md:mt-3 space-y-1.5 md:space-y-2 pl-3 md:pl-4 ${dividerVariants({ variant: 'leftAccentPrimary' })}`}>
                     {/* NEAR Balance */}
                     <div className="flex items-center justify-between py-2 border-b border-border/30">
                       <div className="flex items-center gap-2 md:gap-3">
@@ -500,7 +522,7 @@ export default function GovernancePage() {
           {/* Groups & Members - Collapsible */}
           {groupRoles.length > 0 && (
             <>
-              <div className="border-t border-border/30" />
+              <Divider />
               <motion.div
                 onClick={() => setGroupsExpanded(!groupsExpanded)}
                 className="flex items-center justify-between py-2 cursor-pointer transition-colors rounded-md px-2 -mx-2"
@@ -552,7 +574,7 @@ export default function GovernancePage() {
                     transition={transitions.expand}
                     className="overflow-hidden"
                   >
-                    <div className="mt-2 md:mt-3 space-y-2 md:space-y-3 pl-3 md:pl-4 border-l-2 border-primary/20">
+                    <div className={`mt-2 md:mt-3 space-y-2 md:space-y-3 pl-3 md:pl-4 ${dividerVariants({ variant: 'leftAccentPrimary' })}`}>
                       {groupRoles.map((role: any, index: number) => (
                         <div key={role.name} className="space-y-2">
                           <div className="text-sm md:text-base font-medium capitalize text-muted-foreground">
@@ -569,15 +591,21 @@ export default function GovernancePage() {
                                 : shortAccountId;
                               
                               return (
-                                <Badge key={member} variant="secondary" className="font-mono text-[10px] md:text-xs px-1 md:px-1.5 py-1 flex items-center gap-1.5 border-0">
-                                  <ProfileAvatar
-                                    accountId={member}
-                                    size="sm"
-                                    profileImageUrl={memberProfileImageUrl}
-                                  />
-                                  {/* Show display name if loaded, otherwise show formatted account ID */}
-                                  <span className="truncate">{memberDisplayName || formattedFallback}</span>
-                                </Badge>
+                                <Link 
+                                  key={member} 
+                                  href={`/profile/${encodeURIComponent(member)}`}
+                                  className="transition-transform hover:scale-105"
+                                >
+                                  <Badge variant="secondary" className="font-mono text-[10px] md:text-xs px-1 md:px-1.5 py-1 flex items-center gap-1.5 border-0 cursor-pointer hover:bg-muted">
+                                    <ProfileAvatar
+                                      accountId={member}
+                                      size="sm"
+                                      profileImageUrl={memberProfileImageUrl}
+                                    />
+                                    {/* Show display name if loaded, otherwise show formatted account ID */}
+                                    <span className="truncate">{memberDisplayName || formattedFallback}</span>
+                                  </Badge>
+                                </Link>
                               );
                             })}
                           </div>
@@ -600,7 +628,7 @@ export default function GovernancePage() {
         {/* Filter and Search */}
         <div className="space-y-4">
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-            <h2 className="text-2xl font-semibold">
+            <h2 className="text-2xl sm:text-3xl font-semibold">
               {statusFilter !== 'All' ? `${statusFilter} Proposals` : 
                searchQuery ? `Search Results` :
                currentPage === 0 ? 'Latest Proposals' : `Proposals (Page ${currentPage + 1})`}
@@ -631,10 +659,21 @@ export default function GovernancePage() {
                 }
               };
               
+              // Semantic color mapping for inactive filter hover states
+              const getInactiveVariant = () => {
+                switch (status) {
+                  case 'Approved': return 'filterInactiveApproved';  // Green hover
+                  case 'Rejected': return 'filterInactiveRejected';  // Orange hover
+                  case 'Removed': return 'filterInactiveMuted';      // Muted hover
+                  case 'Expired': return 'filterInactiveMuted';      // Muted hover
+                  default: return 'filter';                          // Gold hover (All, Active)
+                }
+              };
+              
               return (
                 <Button
                   key={status}
-                  variant={statusFilter === status ? getActiveVariant() : 'filter'}
+                  variant={statusFilter === status ? getActiveVariant() : getInactiveVariant()}
                   size="filter"
                   onClick={() => {
                     setStatusFilter(status);
@@ -732,5 +771,6 @@ export default function GovernancePage() {
         onSuccess={() => refetchProfile()}
       />
     </div>
+    </>
   );
 }

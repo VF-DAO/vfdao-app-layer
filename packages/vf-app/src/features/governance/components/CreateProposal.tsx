@@ -35,7 +35,12 @@ interface FormData {
   poolId?: string;
 }
 
-export function CreateProposal() {
+interface CreateProposalProps {
+  /** Callback when proposal type changes */
+  onTypeChange?: (type: ProposalType, label: string) => void;
+}
+
+export function CreateProposal({ onTypeChange }: CreateProposalProps) {
   const router = useRouter();
   const { wallet, accountId } = useWallet();
   const createProposal = useCreateProposal(wallet);
@@ -79,6 +84,14 @@ export function CreateProposal() {
       setProposalType(availableProposalTypes[0].type);
     }
   }, [availableProposalTypes, proposalType, canCreateProposal]);
+
+  // Notify parent of type changes
+  useEffect(() => {
+    const typeInfo = availableProposalTypes.find(pt => pt.type === proposalType);
+    if (typeInfo && onTypeChange) {
+      onTypeChange(typeInfo.type, typeInfo.label);
+    }
+  }, [proposalType, availableProposalTypes, onTypeChange]);
 
   // Available tokens for transfer (NEAR + treasury tokens)
   const availableTokens = useMemo(() => [
@@ -287,7 +300,7 @@ export function CreateProposal() {
                 <FileText className="w-6 h-6 sm:w-7 sm:h-7" />
               </div>
               <div>
-                <h1 className="text-lg sm:text-xl font-bold text-foreground">
+                <h1 className="text-xl sm:text-2xl font-bold text-foreground">
                   Create Proposal
                 </h1>
                 <p className="text-muted-foreground text-sm">

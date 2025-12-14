@@ -27,6 +27,21 @@ export interface UseLiquidityActionsParams {
   refetchBalances: () => void;
   refetchShares: () => void;
   refetchPool: () => void;
+  // Cached data to avoid RPC calls on button click
+  cachedData?: {
+    poolData: {
+      token_account_ids: string[];
+      amounts: string[];
+      total_shares: string;
+    } | null;
+    depositedBalances: Record<string, string> | null;
+    registrations: {
+      token1: boolean;
+      token2: boolean;
+      wrapNear: boolean;
+    } | null;
+    timestamp: number;
+  };
 }
 
 export interface UseLiquidityActionsReturn {
@@ -138,20 +153,41 @@ export function useLiquidityActions(params: UseLiquidityActionsParams): UseLiqui
 
       // Get the correct token order from the pool contract
       const rpcUrl = process.env.NEXT_PUBLIC_NEAR_RPC_MAINNET ?? 'https://rpc.mainnet.near.org';
-      const provider = new providers.JsonRpcProvider({ url: rpcUrl });
-      const poolResponse = await provider.query({
-        request_type: 'call_function',
-        account_id: 'v2.ref-finance.near',
-        method_name: 'get_pool',
-        args_base64: Buffer.from(JSON.stringify({ pool_id: params.poolId })).toString('base64'),
-        finality: 'final',
-      }) as unknown as { result: number[] };
+      
+      // Use cached data if available to avoid async RPC calls (prevents popup blocker)
+      let poolData;
+      let depositedBalances;
+      let token1Registered;
+      let token2Registered;
+      
+      if (params.cachedData?.poolData && params.cachedData?.depositedBalances && params.cachedData?.registrations) {
+        console.warn('[useLiquidityActions] ⚡ Using cached data - instant wallet popup!');
+        poolData = params.cachedData.poolData;
+        depositedBalances = params.cachedData.depositedBalances;
+        token1Registered = params.cachedData.registrations.token1;
+        token2Registered = params.cachedData.registrations.token2;
+      } else {
+        console.warn('[useLiquidityActions] ⏳ No cache - fetching data (may trigger popup blocker)');
+        const provider = new providers.JsonRpcProvider({ url: rpcUrl });
+        const poolResponse = await provider.query({
+          request_type: 'call_function',
+          account_id: 'v2.ref-finance.near',
+          method_name: 'get_pool',
+          args_base64: Buffer.from(JSON.stringify({ pool_id: params.poolId })).toString('base64'),
+          finality: 'final',
+        }) as unknown as { result: number[] };
 
-      const poolData = JSON.parse(Buffer.from(poolResponse.result).toString()) as {
-        token_account_ids: string[];
-        amounts: string[];
-        total_shares: string;
-      };
+        poolData = JSON.parse(Buffer.from(poolResponse.result).toString()) as {
+          token_account_ids: string[];
+          amounts: string[];
+          total_shares: string;
+        };
+
+        // Get deposited balances and registrations
+        depositedBalances = await params.getRefDepositedBalances(poolData.token_account_ids);
+        token1Registered = await checkStorageDeposit(params.poolInfo.token1.id, accountId, rpcUrl);
+        token2Registered = await checkStorageDeposit(params.poolInfo.token2.id, accountId, rpcUrl);
+      }
 
       // Create amounts array in the same order as token_account_ids
       const amounts: string[] = [];
@@ -170,7 +206,7 @@ export function useLiquidityActions(params: UseLiquidityActionsParams): UseLiqui
       // We just need to send min_amounts for slippage protection instead
 
       // SMART DEPOSIT DETECTION: Check what's already deposited in Ref Finance
-      const depositedBalances = await params.getRefDepositedBalances(poolData.token_account_ids);
+      // (already fetched if using cache)
 
       // Calculate what needs to be deposited (needed - already_deposited)
       const depositsNeeded: Record<string, { needed: string; alreadyDeposited: string; toDeposit: string }> = {};
@@ -192,10 +228,6 @@ export function useLiquidityActions(params: UseLiquidityActionsParams): UseLiqui
         console.warn('[useLiquidityActions] ✅ All tokens already deposited! Skipping deposit step, going straight to add_liquidity.');
       }
 
-      // Check token registrations
-      const token1Registered = await checkStorageDeposit(params.poolInfo.token1.id, accountId, rpcUrl);
-      const token2Registered = await checkStorageDeposit(params.poolInfo.token2.id, accountId, rpcUrl);
-
       // Build transactions array - Ref Finance builds in forward order then executes
       // DO NOT use unshift() - array index 0 executes first
       const transactions: any[] = [];
@@ -208,8 +240,10 @@ export function useLiquidityActions(params: UseLiquidityActionsParams): UseLiqui
         if (wNearToDeposit !== '0') {
           console.warn(`[useLiquidityActions] Need to wrap ${formatTokenAmount(wNearToDeposit, 24, 6)} NEAR (already deposited: ${formatTokenAmount(depositsNeeded['wrap.near']?.alreadyDeposited ?? '0', 24, 6)})`);
           
-          // Check if user is registered on wrap.near FIRST
-          const wrapNearRegistered = await checkStorageDeposit('wrap.near', accountId, rpcUrl);
+          // Check if user is registered on wrap.near (use cache if available)
+          const wrapNearRegistered = params.cachedData?.registrations?.wrapNear ?? 
+            await checkStorageDeposit('wrap.near', accountId, rpcUrl);
+            
           if (!wrapNearRegistered) {
             // Add storage_deposit for wrap.near FIRST
             transactions.push({

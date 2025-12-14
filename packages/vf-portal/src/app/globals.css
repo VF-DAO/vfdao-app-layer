@@ -57,8 +57,9 @@
     --background: 108 5% 3%; /* Fresh vibrant green tint */
     --foreground: 0 0% 100%; /* #FFFFFF - Pure white text */
 
-    --card: 108 5% 6%; /* Fresh green dark gray */
+    --card: 108 5% 7%; /* Slightly lighter for better depth */
     --card-foreground: 0 0% 100%;
+    --card-hover: 108 5% 9%; /* Hover state for cards */
 
     --popover: 108 5% 5%;
     --popover-foreground: 0 0% 100%;
@@ -196,7 +197,22 @@
 @layer utilities {
   /* Main Card Shadows - For primary containers like swap, liquidity cards */
   .shadow-main-card {
-    @apply shadow-md shadow-primary/5;
+    box-shadow: 0 4px 24px -4px hsl(var(--primary) / 0.08), 0 2px 8px -2px hsl(var(--primary) / 0.04);
+  }
+
+  /* Modern Card Shadow - Sleek professional look */
+  .shadow-card {
+    box-shadow: 
+      0 0 0 1px hsl(var(--primary) / 0.02),
+      0 2px 16px -4px hsl(var(--primary) / 0.06),
+      0 1px 4px -1px hsl(var(--primary) / 0.04);
+  }
+
+  .shadow-card:hover {
+    box-shadow: 
+      0 0 0 1px hsl(var(--primary) / 0.03),
+      0 4px 24px -4px hsl(var(--primary) / 0.08),
+      0 2px 8px -2px hsl(var(--primary) / 0.06);
   }
 
   /* Modal Shadows - For overlays like token select, slippage settings */

@@ -28,46 +28,58 @@ const buttonVariants = cva(
         percentage: 'border border-border bg-card text-muted-foreground hover:border-muted-foreground/50 hover:text-primary shadow-none hover:shadow-none',
         
         // Slippage preset buttons (inactive state)
-        preset: 'border border-border bg-card text-muted-foreground hover:border-muted-foreground/50 hover:text-primary font-medium shadow-none hover:shadow-none',
+        preset: 'border border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-primary font-medium shadow-none hover:shadow-none',
         
         // Slippage preset buttons (active state)
         presetActive: 'border border-primary bg-secondary/10 text-primary shadow-primary/20 hover:bg-secondary/20 hover:shadow-primary/30 font-medium',
         
-        // Filter/tab buttons (inactive state) - matches nav icon style exactly
-        filter: 'border border-border bg-card text-muted-foreground hover:border-muted-foreground/50 hover:text-primary shadow-none hover:shadow-none',
+        // Filter/tab buttons (inactive state) - default hover (verified/gold)
+        filter: 'border border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-primary shadow-none hover:shadow-none',
+        
+        // Filter/tab buttons (inactive state) - approved hover (green text)
+        filterInactiveApproved: 'border border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-primary shadow-none hover:shadow-none',
+        
+        // Filter/tab buttons (inactive state) - rejected hover (orange text)
+        filterInactiveRejected: 'border border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-orange shadow-none hover:shadow-none',
+        
+        // Filter/tab buttons (inactive state) - removed/expired hover (muted text)
+        filterInactiveMuted: 'border border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-foreground shadow-none hover:shadow-none',
         
         // Filter/tab buttons (active state) - verified/gold
-        filterActive: 'border border-verified bg-verified/10 text-primary shadow-md shadow-verified/20',
+        filterActive: 'border border-verified bg-verified/10 text-primary shadow-md shadow-verified/20 hover:bg-verified/15',
         
         // Filter/tab buttons (active state) - primary/green
-        filterPrimary: 'border border-primary bg-primary/10 text-primary shadow-md shadow-primary/20',
+        filterPrimary: 'border border-primary bg-primary/10 text-primary shadow-md shadow-primary/20 hover:bg-primary/15',
         
         // Filter/tab buttons (active state) - primary/green (success/approved)
-        filterSecondary: 'border border-primary bg-secondary/10 text-primary shadow-md shadow-primary/20',
+        filterSecondary: 'border border-primary bg-secondary/10 text-primary shadow-md shadow-primary/20 hover:bg-secondary/15',
         
         // Filter/tab buttons (active state) - orange (warning/rejected)
-        filterOrange: 'border border-orange bg-orange/10 text-orange shadow-md shadow-orange/20',
+        filterOrange: 'border border-orange bg-orange/10 text-orange shadow-md shadow-orange/20 hover:bg-orange/15',
         
         // Filter/tab buttons (active state) - muted (inactive/expired)
-        filterMuted: 'border border-muted-foreground/50 bg-muted/50 text-muted-foreground shadow-md shadow-muted-foreground/10',
+        filterMuted: 'border border-muted-foreground/50 bg-muted/50 text-muted-foreground shadow-md shadow-muted-foreground/10 hover:bg-muted/60',
         
-        // Navigation buttons (inactive) - for prev/next, pagination
-        nav: 'border border-border bg-card text-muted-foreground hover:border-muted-foreground/50 hover:text-primary shadow-none hover:shadow-none disabled:opacity-50',
+        // Navigation buttons (inactive) - dropdown-like hover
+        nav: 'border border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-primary shadow-none hover:shadow-none disabled:opacity-50',
         
         // Navigation buttons (active/primary state)
-        navActive: 'border border-primary bg-primary/10 text-primary shadow-md shadow-primary/20',
+        navActive: 'border border-primary bg-primary/10 text-primary shadow-md shadow-primary/20 hover:bg-primary/15',
         
-        // Subtle action buttons - for explorer, share, secondary actions (same hover as nav)
-        navMuted: 'border border-border bg-card text-muted-foreground hover:border-muted-foreground/50 hover:text-primary shadow-none hover:shadow-none',
+        // Subtle action buttons - dropdown-like hover
+        navMuted: 'border border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-primary shadow-none hover:shadow-none',
         
-        // Cancel/outline button - subtle border style
-        outline: 'border border-border bg-card text-muted-foreground hover:border-muted-foreground/50 hover:text-primary shadow-none hover:shadow-none',
+        // Cancel/outline button - dropdown-like hover
+        outline: 'border border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-primary shadow-none hover:shadow-none',
         
         // Cancel button - muted with shadows like other action buttons
         muted: 'border border-muted-foreground/50 bg-muted/50 text-muted-foreground shadow-muted-foreground/20 hover:bg-muted/70 hover:shadow-muted-foreground/30 disabled:opacity-50',
         
-        // Ghost button for minimal actions
-        ghost: 'border border-transparent bg-transparent text-muted-foreground hover:border-muted-foreground/50 hover:text-primary shadow-none hover:shadow-none',
+        // Ghost button for minimal actions - dropdown-like hover
+        ghost: 'border border-transparent bg-transparent text-muted-foreground hover:bg-muted/50 hover:text-primary shadow-none hover:shadow-none',
+        
+        // Floating buttons - for overlaying on images/content with backdrop blur
+        floating: 'border border-border bg-card/80 backdrop-blur-sm text-muted-foreground hover:bg-card hover:text-primary shadow-none hover:shadow-none',
         
         // Link style button - no underline
         link: 'text-primary hover:text-primary/80 shadow-none hover:shadow-none',

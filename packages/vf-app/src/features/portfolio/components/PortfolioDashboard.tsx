@@ -2,17 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Leaf, Pencil, Plus, Sparkles, UserPlus } from 'lucide-react';
+import { Leaf, Plus, Sparkles, UserPlus } from 'lucide-react';
 import { useWallet } from '@/features/wallet';
-import { useProfile } from '@/hooks/use-profile';
 import { LoadingDots } from '@/components/ui/loading-dots';
-import { ProfileAvatar } from '@/components/ui/profile-avatar';
-import { ProfileEditorModal } from '@/components/ui/profile-editor-modal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { providers } from 'near-api-js';
 import Big from 'big.js';
 import { formatTokenAmount, calculateVfPriceFromPool } from '@/lib/swap-utils';
+import { Divider } from '@/components/ui/divider';
 import Image from 'next/image';
 import { usePersonalVotingStats } from '@/features/governance/hooks';
 import { usePolicy } from '@/features/governance/hooks';
@@ -26,10 +24,6 @@ const REF_FINANCE_CONTRACT = 'v2.ref-finance.near';
 export function PortfolioDashboard() {
   const router = useRouter();
   const { accountId, isConnected, signIn, isConnecting } = useWallet();
-  const { profileImageUrl, loading: profileLoading, refetch: refetchProfile } = useProfile(accountId ?? undefined);
-  
-  // Profile editor modal state
-  const [profileEditorOpen, setProfileEditorOpen] = useState(false);
   
   // Separate loading states for each data type
   const [vfBalance, setVfBalance] = useState<string>('0');
@@ -444,65 +438,36 @@ export function PortfolioDashboard() {
   }
 
   return (
-    <div className="w-full max-w-[800px] mx-auto">
-      <div className="px-4 sm:px-6 py-3 sm:py-4">
+    <div className="w-full max-w-[900px] mx-auto">
+      <div className="px-6 sm:px-8 py-5 sm:py-6">
         {/* Compact Grid */}
-        <div className="flex items-center justify-between gap-3 sm:gap-6">
-          {/* Your Holdings Icon - Clickable to edit profile */}
-          <button
-            onClick={() => setProfileEditorOpen(true)}
-            className="relative group flex items-center gap-2 flex-shrink-0"
-            title="Edit profile"
-          >
-            {profileLoading ? (
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-verified bg-verified/10 animate-pulse flex-shrink-0" />
-            ) : profileImageUrl ? (
-              <ProfileAvatar
-                accountId={accountId}
-                size="md"
-                profileImageUrl={profileImageUrl}
-                showFallback={false}
-                className="w-8 h-8 sm:w-10 sm:h-10 border border-verified/30 group-hover:border-primary/50 transition-colors"
-              />
-            ) : (
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-verified bg-verified/10 flex items-center justify-center flex-shrink-0 group-hover:border-primary/50 transition-colors">
-                <Leaf className={`w-4 h-4 sm:w-5 sm:h-5 text-primary ${(isRefreshingVf || isRefreshingLp || isRefreshingPrices) ? 'animate-pulse' : ''}`} />
-              </div>
-            )}
-            <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-              <Pencil className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-            </div>
-          </button>
-
-          {/* Divider */}
-          <div className="h-8 w-px border-l border-verified/30 flex-shrink-0"></div>
-
+        <div className="flex items-center justify-between gap-4 sm:gap-8">
           {/* VF Tokens */}
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-3 min-w-0">
                 {isLoadingVfIcon ? (
-                  <div className="w-6 h-6 rounded-full bg-verified/20 animate-pulse flex-shrink-0" />
+                  <div className="w-8 h-8 rounded-full bg-verified/20 animate-pulse flex-shrink-0" />
                 ) : vfIcon ? (
                   <Image 
                     src={vfIcon} 
                     alt="VF"
-                    width={24}
-                    height={24}
+                    width={32}
+                    height={32}
                     className="rounded-full flex-shrink-0"
                   />
                 ) : (
-                  <div className="w-6 h-6 rounded-full bg-verified/20 flex items-center justify-center flex-shrink-0">
-                    <span className="text-verified font-bold text-xs">V</span>
+                  <div className="w-8 h-8 rounded-full bg-verified/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-verified font-bold text-sm">V</span>
                   </div>
                 )}
                 <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground">VF</p>
-                  <div className="h-[32px] flex flex-col justify-center">
+                  <p className="text-sm text-muted-foreground">VF Tokens</p>
+                  <div className="h-[36px] flex flex-col justify-center">
                     {isLoadingVf ? (
                       <LoadingDots />
                     ) : (
                       <>
-                        <span className={`text-sm sm:text-base font-bold text-foreground truncate block transition-opacity ${isRefreshingVf ? 'opacity-50 animate-pulse' : 'opacity-100'}`}>{vfBalance}</span>
-                        <span className={`text-[10px] sm:text-xs text-primary font-semibold truncate block transition-opacity ${isRefreshingPrices ? 'opacity-50 animate-pulse' : 'opacity-100'}`}>
+                        <span className={`text-base sm:text-lg font-bold text-foreground truncate block transition-opacity ${isRefreshingVf ? 'opacity-50 animate-pulse' : 'opacity-100'}`}>{vfBalance}</span>
+                        <span className={`text-xs sm:text-sm text-primary font-semibold truncate block transition-opacity ${isRefreshingPrices ? 'opacity-50 animate-pulse' : 'opacity-100'}`}>
                           {showPriceLoading ? <LoadingDots size="xs" /> : formatDollarAmount(vfUsdValue)}
                         </span>
                       </>
@@ -512,40 +477,40 @@ export function PortfolioDashboard() {
           </div>
 
               {/* Pool icons */}
-              <div className="flex items-center gap-2 min-w-0">
+              <div className="flex items-center gap-3 min-w-0">
                 <div className="flex items-center justify-center flex-shrink-0">
                   <Image 
                     src={nearIcon} 
                     alt="NEAR"
-                    width={20}
-                    height={20}
+                    width={26}
+                    height={26}
                     className="rounded-full relative z-10"
                   />
                   {isLoadingVfIcon ? (
-                    <div className="w-5 h-5 rounded-full bg-verified/20 animate-pulse -ml-1" />
+                    <div className="w-6 h-6 rounded-full bg-verified/20 animate-pulse -ml-2" />
                   ) : vfIcon ? (
                     <Image 
                       src={vfIcon} 
                       alt="VF"
-                      width={20}
-                      height={20}
-                      className="rounded-full -ml-1"
+                      width={26}
+                      height={26}
+                      className="rounded-full -ml-2"
                     />
                   ) : (
-                    <div className="w-5 h-5 rounded-full bg-verified/20 flex items-center justify-center -ml-1">
+                    <div className="w-6 h-6 rounded-full bg-verified/20 flex items-center justify-center -ml-2">
                       <span className="text-verified font-bold text-xs">V</span>
                     </div>
                   )}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground">Pool</p>
-                  <div className="h-[32px] flex flex-col justify-center">
+                  <p className="text-sm text-muted-foreground">Pool</p>
+                  <div className="h-[36px] flex flex-col justify-center">
                     {isLoadingLp ? (
                       <LoadingDots />
                     ) : (
                       <>
-                        <span className={`text-sm sm:text-base font-bold text-foreground truncate block transition-opacity ${isRefreshingLp ? 'opacity-50 animate-pulse' : 'opacity-100'}`}>{lpShares}</span>
-                        <span className={`text-[10px] sm:text-xs text-primary font-semibold truncate block transition-opacity ${isRefreshingPrices ? 'opacity-50 animate-pulse' : 'opacity-100'}`}>
+                        <span className={`text-base sm:text-lg font-bold text-foreground truncate block transition-opacity ${isRefreshingLp ? 'opacity-50 animate-pulse' : 'opacity-100'}`}>{lpShares}</span>
+                        <span className={`text-xs sm:text-sm text-primary font-semibold truncate block transition-opacity ${isRefreshingPrices ? 'opacity-50 animate-pulse' : 'opacity-100'}`}>
                           {showPriceLoading ? <LoadingDots size="xs" /> : formatDollarAmount(lpUsdValue)}
                         </span>
                       </>
@@ -555,19 +520,19 @@ export function PortfolioDashboard() {
               </div>
 
               {/* Divider */}
-              <div className="h-8 w-px border-l border-verified/30 flex-shrink-0"></div>
+              <Divider variant="verticalVerified" />
 
               {/* Total */}
-              <div className="flex items-center gap-2 min-w-0">
-                <Sparkles className="w-4 h-4 text-primary flex-shrink-0" />
+              <div className="flex items-center gap-3 min-w-0">
+                <Sparkles className="w-5 h-5 text-primary flex-shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground">Total</p>
-                  <div className="h-[18px] flex items-center">
+                  <p className="text-sm text-muted-foreground">Total</p>
+                  <div className="h-[22px] flex items-center">
                     {showPriceLoading ? (
                       <LoadingDots />
                     ) : (
                       <div className={`transition-opacity ${isRefreshingPrices ? 'opacity-50 animate-pulse' : 'opacity-100'}`}>
-                        <p className="text-sm sm:text-base font-bold text-primary truncate">
+                        <p className="text-base sm:text-lg font-bold text-primary truncate">
                           {formatDollarAmount(totalValue)}
                         </p>
                       </div>
@@ -578,27 +543,27 @@ export function PortfolioDashboard() {
         </div>
 
         {/* Bottom Row: DAO Governance */}
-        <div className="px-4 sm:px-6 py-3 sm:py-4">
-          <div className="flex items-center justify-center pt-2 border-t border-verified/30">
-            <div className="flex flex-col items-center gap-2">
+        <div className="px-4 sm:px-6 py-4 sm:py-5">
+          <div className="flex items-center justify-center pt-4 border-t border-verified/30">
+            <div className="flex flex-col items-center gap-3">
               {/* Row 1: VF DAO • Member • votes cast */}
-              <div className="flex items-center gap-2 flex-wrap justify-center">
+              <div className="flex items-center gap-3 flex-wrap justify-center">
                 {votingStatsLoading ? (
                   <LoadingDots />
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-bold text-foreground whitespace-nowrap">VF DAO</p>
+                  <div className="flex items-center gap-3">
+                    <p className="text-base font-bold text-foreground whitespace-nowrap">VF DAO</p>
                     <span className="text-muted-foreground">•</span>
                     {isMember ? (
                       <>
-                        <p className="text-sm text-primary font-semibold whitespace-nowrap">Member</p>
+                        <p className="text-base text-primary font-semibold whitespace-nowrap">Member</p>
                         <span className="text-muted-foreground">•</span>
-                        <p className="text-sm text-primary font-semibold whitespace-nowrap">
+                        <p className="text-base text-primary font-semibold whitespace-nowrap">
                           {votingStats.totalVotes} votes cast
                         </p>
                       </>
                     ) : (
-                      <p className="text-sm text-muted-foreground font-semibold whitespace-nowrap">Not a member</p>
+                      <p className="text-base text-muted-foreground font-semibold whitespace-nowrap">Not a member</p>
                     )}
                   </div>
                 )}
@@ -607,11 +572,11 @@ export function PortfolioDashboard() {
               {isMember ? (
                 <>
                   {/* Row 2: Groups • badges */}
-                  <div className="flex flex-wrap items-center gap-2 justify-center">
-                    <span className="text-xs text-muted-foreground">Groups</span>
+                  <div className="flex flex-wrap items-center gap-3 justify-center">
+                    <span className="text-sm text-muted-foreground">Groups</span>
                     <span className="text-muted-foreground">•</span>
                     {userGroups.map((group: string) => (
-                      <Badge key={group} variant="primary" className="text-[10px] sm:text-xs px-1.5 py-0 capitalize">
+                      <Badge key={group} variant="primary" className="text-xs sm:text-sm px-2 py-0.5 capitalize">
                         {group}
                       </Badge>
                     ))}
@@ -622,10 +587,10 @@ export function PortfolioDashboard() {
                     <Button
                       onClick={() => router.push('/dao/create')}
                       variant="verified"
-                      size="sm"
-                      className="text-xs h-7 px-3"
+                      size="default"
+                      className="text-sm h-9 px-5 mt-1"
                     >
-                      <Plus className="w-3 h-3 mr-1" />
+                      <Plus className="w-4 h-4 mr-1.5" />
                       Create Proposal
                     </Button>
                   )}
@@ -633,11 +598,11 @@ export function PortfolioDashboard() {
               ) : (
                 <Button
                   variant="verified"
-                  size="sm"
+                  size="default"
                   onClick={() => setJoinModalOpen(true)}
-                  className="text-xs h-8 px-3"
+                  className="text-sm h-9 px-5 mt-1"
                 >
-                  <UserPlus className="w-3 h-3 mr-1.5" />
+                  <UserPlus className="w-4 h-4 mr-1.5" />
                   Request to Join
                 </Button>
               )}
@@ -655,13 +620,6 @@ export function PortfolioDashboard() {
           accountId={accountId}
         />
       )}
-
-      {/* Profile Editor Modal */}
-      <ProfileEditorModal
-        isOpen={profileEditorOpen}
-        onClose={() => setProfileEditorOpen(false)}
-        onSuccess={() => refetchProfile()}
-      />
     </div>
   );
 }
