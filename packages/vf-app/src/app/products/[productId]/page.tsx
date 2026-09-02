@@ -2,9 +2,10 @@
 
 import { use } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, QrCode } from 'lucide-react';
+import { ArrowLeft, Plus, QrCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { useAppDrawer } from '@/features/shell';
 import {
   encodeLotQr,
   IngredientList,
@@ -18,6 +19,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ produc
   const { productId } = use(params);
   const { data: product, loading, error } = useProduct(productId);
   const lots = useLots(productId);
+  const { openDrawer } = useAppDrawer();
 
   if (loading) {
     return <div className="mx-auto max-w-4xl px-4 py-12 text-muted-foreground">Loading product…</div>;
@@ -39,7 +41,17 @@ export default function ProductDetailPage({ params }: { params: Promise<{ produc
       <IngredientList ingredients={product.ingredients} claims={product.claims} />
 
       <div>
-        <h2 className="mb-4 text-2xl font-semibold">Lots</h2>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="text-2xl font-semibold">Lots</h2>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => openDrawer({ id: 'create-lot', productId: product.id })}
+          >
+            <Plus className="h-4 w-4" />
+            Open lot
+          </Button>
+        </div>
         <div className="space-y-3">
           {lots.data?.map((lot) => (
             <Card key={lot.id} className="border border-border p-5">

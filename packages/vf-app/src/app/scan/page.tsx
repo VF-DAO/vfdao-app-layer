@@ -1,32 +1,29 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { encodeLotQr, FIXTURE_LOT_ID, QrScanner, TrackingBackendBadge } from '@/features/tracking';
+import { useEffect } from 'react';
+import { TrackingBackendBadge } from '@/features/tracking';
+import { useAppDrawer } from '@/features/shell';
 
 export default function ScanPage() {
-  const router = useRouter();
-  const demoCode = encodeLotQr(FIXTURE_LOT_ID);
+  const { openDrawer } = useAppDrawer();
+
+  useEffect(() => {
+    openDrawer({ id: 'scan' });
+  }, [openDrawer]);
 
   return (
     <div className="mx-auto max-w-xl space-y-6 px-4 py-8 md:py-12">
       <div className="space-y-3">
         <h1 className="text-3xl font-bold text-foreground sm:text-4xl">Scan a product</h1>
         <p className="text-muted-foreground">
-          Point the camera at a VF QR code or paste the lot code. The record is resolved from OnSocial
-          core when an OnAPI key is configured.
+          Scanning is a quick action in the shared drawer. The result opens as a full page so you can
+          read the farm-to-shelf record.
         </p>
         <TrackingBackendBadge />
+        <button type="button" className="text-sm text-primary" onClick={() => openDrawer({ id: 'scan' })}>
+          Open scanner
+        </button>
       </div>
-
-      <QrScanner onCode={(code) => router.push(`/scan/${encodeURIComponent(code)}`)} />
-
-      <p className="text-sm text-muted-foreground">
-        Try the demo oat drink:{' '}
-        <Link href={`/scan/${encodeURIComponent(demoCode)}`} className="font-mono text-primary">
-          {demoCode}
-        </Link>
-      </p>
     </div>
   );
 }

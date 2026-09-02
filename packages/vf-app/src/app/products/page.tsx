@@ -1,12 +1,13 @@
 'use client';
 
-import Link from 'next/link';
 import { ScanLine, Warehouse } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProductCard, TrackingBackendBadge, useProducts } from '@/features/tracking';
+import { useAppDrawer } from '@/features/shell';
 
 export default function ProductsPage() {
   const { data, loading, error } = useProducts();
+  const { openDrawer } = useAppDrawer();
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 md:py-12">
@@ -19,17 +20,13 @@ export default function ProductsPage() {
           <TrackingBackendBadge />
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button asChild variant="verified">
-            <Link href="/scan">
-              <ScanLine className="h-4 w-4" />
-              Scan
-            </Link>
+          <Button variant="verified" onClick={() => openDrawer({ id: 'scan' })}>
+            <ScanLine className="h-4 w-4" />
+            Scan
           </Button>
-          <Button asChild variant="outline">
-            <Link href="/studio">
-              <Warehouse className="h-4 w-4" />
-              Studio
-            </Link>
+          <Button variant="outline" onClick={() => openDrawer({ id: 'studio' })}>
+            <Warehouse className="h-4 w-4" />
+            Studio
           </Button>
         </div>
       </div>

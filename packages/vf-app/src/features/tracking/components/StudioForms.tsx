@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,11 +13,35 @@ import { useTrackingMutations } from '../hooks/use-tracking-mutations';
 import { canIssueCertificate, canRecordEvent, canRegisterProduct } from '../lib/roles';
 import { encodeLotQr } from '../lib/qr';
 
+interface FormChromeProps {
+  chrome?: 'card' | 'plain';
+  title?: string;
+  children: ReactNode;
+}
+
 function FieldLabel({ children }: { children: ReactNode }) {
   return <label className="mb-1 block text-sm font-medium text-foreground">{children}</label>;
 }
 
-export function RegisterProductForm() {
+function FormChrome({ chrome = 'card', title, children }: FormChromeProps) {
+  if (chrome === 'plain') {
+    return <div className="space-y-4">{children}</div>;
+  }
+  return (
+    <Card className="border border-border p-6">
+      {title && <h2 className="mb-4 text-xl font-semibold">{title}</h2>}
+      {children}
+    </Card>
+  );
+}
+
+export function RegisterProductForm({
+  chrome = 'card',
+  onSuccess,
+}: {
+  chrome?: 'card' | 'plain';
+  onSuccess?: () => void;
+}) {
   const router = useRouter();
   const { accountId } = useWallet();
   const { data: org } = useOrgRole(accountId);
@@ -30,8 +54,7 @@ export function RegisterProductForm() {
   const allowed = canRegisterProduct(org?.role) || !org;
 
   return (
-    <Card className="border border-border p-6">
-      <h2 className="mb-4 text-xl font-semibold">Register product</h2>
+    <FormChrome chrome={chrome} title="Register product">
       <form
         className="space-y-3"
         onSubmit={(event) => {
@@ -44,6 +67,7 @@ export function RegisterProductForm() {
             claims: claims.split(',').map((item) => item.trim()),
             producerAccountId: accountId ?? org?.accountId ?? 'demo.near',
           }).then((product) => {
+            onSuccess?.();
             router.push(`/products/${product.id}`);
           });
         }}
@@ -74,25 +98,40 @@ export function RegisterProductForm() {
           {pending ? 'Saving…' : 'Save product'}
         </Button>
       </form>
-    </Card>
+    </FormChrome>
   );
 }
 
-export function CreateLotForm({ products }: { products?: Product[] }) {
+export function CreateLotForm({
+  products,
+  productId: initialProductId,
+  chrome = 'card',
+  onSuccess,
+}: {
+  products?: Product[];
+  productId?: string;
+  chrome?: 'card' | 'plain';
+  onSuccess?: () => void;
+}) {
   const router = useRouter();
   const { accountId } = useWallet();
   const catalog = useProducts();
-  const list = products ?? catalog.data ?? [];
+  const list = useMemo(() => products ?? catalog.data ?? [], [catalog.data, products]);
   const { createLot, pending, error } = useTrackingMutations();
-  const [productId, setProductId] = useState(list[0]?.id ?? '');
+  const [productId, setProductId] = useState(initialProductId ?? '');
   const [label, setLabel] = useState('');
   const [harvestedAt, setHarvestedAt] = useState('');
   const [quantity, setQuantity] = useState('');
   const [site, setSite] = useState('');
 
+  useEffect(() => {
+    if (!productId && list[0]?.id) {
+      setProductId(list[0].id);
+    }
+  }, [list, productId]);
+
   return (
-    <Card className="border border-border p-6">
-      <h2 className="mb-4 text-xl font-semibold">Open a lot</h2>
+    <FormChrome chrome={chrome} title="Open a lot">
       <form
         className="space-y-3"
         onSubmit={(event) => {
@@ -105,6 +144,7 @@ export function CreateLotForm({ products }: { products?: Product[] }) {
             site,
             producerAccountId: accountId ?? 'demo.near',
           }).then((lot) => {
+            onSuccess?.();
             router.push(`/products/${lot.productId}/lots/${lot.id}`);
           });
         }}
@@ -144,11 +184,20 @@ export function CreateLotForm({ products }: { products?: Product[] }) {
           {pending ? 'Saving…' : 'Create lot'}
         </Button>
       </form>
-    </Card>
+    </FormChrome>
   );
 }
 
-export function RecordEventForm({ lotId }: { lotId?: string }) {
+export function RecordEventForm({
+  lotId,
+  chrome = 'card',
+  onSuccess,
+}: {
+  lotId?: string;
+  chrome?: 'card' | 'plain';
+  onSuccess?: () => void;
+}) {
+  const router = useRouter();
   const { accountId } = useWallet();
   const { data: org } = useOrgRole(accountId);
   const { addEvent, pending, error } = useTrackingMutations();
@@ -158,8 +207,7 @@ export function RecordEventForm({ lotId }: { lotId?: string }) {
   const allowed = canRecordEvent(org?.role) || !org;
 
   return (
-    <Card className="border border-border p-6">
-      <h2 className="mb-4 text-xl font-semibold">Record event</h2>
+    <FormChrome chrome={chrome} title="Record event">
       <form
         className="space-y-3"
         onSubmit={(event) => {
@@ -171,7 +219,8 @@ export function RecordEventForm({ lotId }: { lotId?: string }) {
             orgAccountId: accountId ?? org?.accountId ?? 'demo.near',
           }).then((created) => {
             setNote('');
-            window.location.assign(`/scan/${encodeURIComponent(encodeLotQr(created.lotId))}`);
+            onSuccess?.();
+            router.push(`/scan/${encodeURIComponent(encodeLotQr(created.lotId))}`);
           });
         }}
       >
@@ -205,11 +254,21 @@ export function RecordEventForm({ lotId }: { lotId?: string }) {
           {pending ? 'Saving…' : 'Append event'}
         </Button>
       </form>
-    </Card>
+    </FormChrome>
   );
 }
 
-export function IssueCertificateForm({ subjectId, subjectType = 'lot' }: { subjectId?: string; subjectType?: 'lot' | 'product' }) {
+export function IssueCertificateForm({
+  subjectId,
+  subjectType = 'lot',
+  chrome = 'card',
+  onSuccess,
+}: {
+  subjectId?: string;
+  subjectType?: 'lot' | 'product';
+  chrome?: 'card' | 'plain';
+  onSuccess?: () => void;
+}) {
   const { accountId } = useWallet();
   const { data: org } = useOrgRole(accountId);
   const { issueCertificate, pending, error } = useTrackingMutations();
@@ -218,8 +277,7 @@ export function IssueCertificateForm({ subjectId, subjectType = 'lot' }: { subje
   const allowed = canIssueCertificate(org?.role) || !org;
 
   return (
-    <Card className="border border-border p-6">
-      <h2 className="mb-4 text-xl font-semibold">Issue certificate</h2>
+    <FormChrome chrome={chrome} title="Issue certificate">
       <form
         className="space-y-3"
         onSubmit={(event) => {
@@ -229,6 +287,8 @@ export function IssueCertificateForm({ subjectId, subjectType = 'lot' }: { subje
             subjectId: id,
             standard,
             issuerAccountId: accountId ?? org?.accountId ?? 'vegcert.near',
+          }).then(() => {
+            onSuccess?.();
           });
         }}
       >
@@ -248,6 +308,6 @@ export function IssueCertificateForm({ subjectId, subjectType = 'lot' }: { subje
           {pending ? 'Saving…' : 'Issue certificate'}
         </Button>
       </form>
-    </Card>
+    </FormChrome>
   );
 }
