@@ -7,7 +7,7 @@ import { CertificateBadge } from './CertificateBadge';
 import { IngredientList } from './IngredientList';
 import { LotQrCard } from './LotQrCard';
 import { ProductHeader } from './ProductHeader';
-import { SupplyChainTimeline } from './SupplyChainTimeline';
+import { StampTimeline } from './StampTimeline';
 
 export function LotBundleView({
   bundle,
@@ -58,7 +58,7 @@ export function LotBundleView({
 
       <Card className="border border-border p-6">
         <h3 className="mb-4 text-lg font-semibold text-foreground">Stamps</h3>
-        <SupplyChainTimeline events={bundle.events} />
+        <StampTimeline events={bundle.events} />
       </Card>
 
       {showProductLink && (

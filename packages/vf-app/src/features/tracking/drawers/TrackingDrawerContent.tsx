@@ -183,7 +183,7 @@ function StudioChoices() {
       id: 'record-event' as const,
       icon: <StickyNote className="h-5 w-5" />,
       title: 'Record event',
-      description: 'Append a farm-to-shelf step',
+      description: 'Add a stamp on your path',
       show: canRecordEvent(actor.role),
     },
     {

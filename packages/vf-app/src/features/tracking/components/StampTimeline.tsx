@@ -2,7 +2,7 @@ import { Circle } from 'lucide-react';
 import { type ChainEvent } from '../types';
 import { eventKindLabel } from '../lib/status';
 
-export function SupplyChainTimeline({ events }: { events: ChainEvent[] }) {
+export function StampTimeline({ events }: { events: ChainEvent[] }) {
   const stamps = [...events].sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
 
   if (stamps.length === 0) {
