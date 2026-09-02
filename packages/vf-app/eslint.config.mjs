@@ -213,6 +213,22 @@ export default tseslint.config(
   },
 
   {
+    // Product tracking - OnSocial gateway JSON and session-lane writes
+    files: [
+      'src/features/tracking/**/*.{ts,tsx}',
+      'src/features/shell/**/*.{ts,tsx}',
+      'src/features/home/**/*.{ts,tsx}',
+    ],
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/require-await': 'off',
+    },
+  },
+
+  {
     // Services - Social DB and other NEAR contract calls
     files: ['src/services/**/*.{ts,tsx}'],
     rules: {

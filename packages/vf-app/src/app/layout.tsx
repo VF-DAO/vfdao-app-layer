@@ -1,11 +1,13 @@
 'use client';
 
-import { type ReactNode } from 'react';
+import { type ReactNode, Suspense } from 'react';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { WalletProviderWrapper } from '@/features/wallet';
 import { Navigation } from '@/components/navigation/navigation';
+import { AppDrawerHost, AppDrawerProvider } from '@/features/shell';
+import { DrawerQueryOpener } from '@/features/shell/DrawerQueryOpener';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -21,10 +23,16 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           storageKey="vf-app-theme"
         >
           <WalletProviderWrapper network="mainnet">
-            <Navigation />
-            <main className="min-h-screen pb-16 md:pb-0" suppressHydrationWarning>
-              {children}
-            </main>
+            <AppDrawerProvider>
+              <Suspense fallback={null}>
+                <DrawerQueryOpener />
+              </Suspense>
+              <Navigation />
+              <main className="min-h-screen pb-16 md:pb-0" suppressHydrationWarning>
+                {children}
+              </main>
+              <AppDrawerHost />
+            </AppDrawerProvider>
           </WalletProviderWrapper>
         </ThemeProvider>
       </body>

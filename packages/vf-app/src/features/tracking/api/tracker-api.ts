@@ -1,0 +1,34 @@
+import type {
+  AddEventInput,
+  Certificate,
+  ChainEvent,
+  CreateLotInput,
+  IssueCertificateInput,
+  Lot,
+  LotBundle,
+  Org,
+  Product,
+  RecordScanInput,
+  RegisterProductInput,
+  ScanRecord,
+  TrackerStatus,
+} from '../types';
+
+export interface TrackerApi {
+  status(): Promise<TrackerStatus>;
+  listProducts(): Promise<Product[]>;
+  getProduct(productId: string): Promise<Product | null>;
+  listLots(productId: string): Promise<Lot[]>;
+  getLot(lotId: string): Promise<Lot | null>;
+  getEvents(lotId: string): Promise<ChainEvent[]>;
+  getCertificates(subjectId: string): Promise<Certificate[]>;
+  getLotBundle(lotId: string): Promise<LotBundle | null>;
+  resolveScan(code: string): Promise<LotBundle | null>;
+  getOrg(accountId: string): Promise<Org | null>;
+  listScans(accountId?: string): Promise<ScanRecord[]>;
+  registerProduct(input: RegisterProductInput): Promise<Product>;
+  createLot(input: CreateLotInput): Promise<Lot>;
+  addEvent(input: AddEventInput): Promise<ChainEvent>;
+  issueCertificate(input: IssueCertificateInput): Promise<Certificate>;
+  recordScan(input: RecordScanInput): Promise<ScanRecord>;
+}

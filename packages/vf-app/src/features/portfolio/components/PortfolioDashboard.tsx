@@ -14,7 +14,7 @@ import { Divider } from '@/components/ui/divider';
 import Image from 'next/image';
 import { usePersonalVotingStats } from '@/features/governance/hooks';
 import { usePolicy } from '@/features/governance/hooks';
-import { JoinDaoModal } from '@/features/governance/components/JoinDaoModal';
+import { useAppDrawer } from '@/features/shell';
 
 const VF_TOKEN_CONTRACT = 'veganfriends.tkn.near';
 const VF_TOKEN_DECIMALS = 18;
@@ -87,8 +87,7 @@ export function PortfolioDashboard() {
     });
   }, [accountId, policy]);
 
-  // Join DAO modal state
-  const [joinModalOpen, setJoinModalOpen] = useState(false);
+  const { openDrawer } = useAppDrawer();
   const isMember = userGroups.length > 0;
 
   // Format dollar amounts with special handling for small values
@@ -599,7 +598,7 @@ export function PortfolioDashboard() {
                 <Button
                   variant="verified"
                   size="default"
-                  onClick={() => setJoinModalOpen(true)}
+                  onClick={() => openDrawer({ id: 'join-dao' })}
                   className="text-sm h-9 px-5 mt-1"
                 >
                   <UserPlus className="w-4 h-4 mr-1.5" />
@@ -611,15 +610,6 @@ export function PortfolioDashboard() {
         </div>
       </div>
 
-      {/* Join DAO Modal */}
-      {!isMember && accountId && (
-        <JoinDaoModal
-          isOpen={joinModalOpen}
-          onClose={() => setJoinModalOpen(false)}
-          policy={policy}
-          accountId={accountId}
-        />
-      )}
     </div>
   );
 }

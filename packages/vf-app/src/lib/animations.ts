@@ -123,6 +123,22 @@ export const modalVariants: Variants = {
   },
 };
 
+/** Shared overlay — bottom sheet on phone, centered dialog on desktop */
+export const drawerVariants: Variants = {
+  hidden: {
+    opacity: 0,
+    y: '100%',
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+  },
+  exit: {
+    opacity: 0,
+    y: '40%',
+  },
+};
+
 /** Dropdown menus */
 export const dropdownVariants: Variants = {
   hidden: { 

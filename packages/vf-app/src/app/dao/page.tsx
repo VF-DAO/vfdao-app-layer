@@ -9,12 +9,11 @@ import { expandVariants, transitions } from '@/lib/animations';
 import { Divider, dividerVariants } from '@/components/ui/divider';
 import { FloatingHeader } from '@/components/ui/floating-header';
 import { ProposalList } from '@/features/governance/components/ProposalList';
-import { JoinDaoModal } from '@/features/governance/components/JoinDaoModal';
+import { useAppDrawer } from '@/features/shell';
 import { useGovernanceStats, usePersonalVotingStats, usePolicy, useTotalProposals, useTreasuryBalance } from '@/features/governance/hooks';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ProfileAvatar } from '@/components/ui/profile-avatar';
-import { ProfileEditorModal } from '@/components/ui/profile-editor-modal';
 import { ChevronLeft, ChevronRight, Leaf, Pencil, Plus, UserPlus, Users, Vault, Vote } from 'lucide-react';
 import { SearchInput } from '@/components/ui/search-input';
 import { LoadingDots } from '@/components/ui/loading-dots';
@@ -34,8 +33,7 @@ export default function GovernancePage() {
   const [groupsExpanded, setGroupsExpanded] = useState(false);
   const [treasuryHovered, setTreasuryHovered] = useState(false);
   const [groupsHovered, setGroupsHovered] = useState(false);
-  const [joinModalOpen, setJoinModalOpen] = useState(false);
-  const [profileEditorOpen, setProfileEditorOpen] = useState(false);
+  const { openDrawer } = useAppDrawer();
   const treasuryHoverRotationRef = useRef<number>(0);
   const groupsHoverRotationRef = useRef<number>(0);
   const proposalsSectionRef = useRef<HTMLDivElement>(null);
@@ -274,7 +272,7 @@ export default function GovernancePage() {
               <div className={`flex ${userGroups.length > 0 ? 'flex-col sm:flex-row sm:items-center sm:justify-between' : 'flex-row items-center justify-between'} gap-3`}>
                 <div className="flex items-center gap-3">
                   <button
-                    onClick={() => setProfileEditorOpen(true)}
+                    onClick={() => openDrawer({ id: 'edit-profile', onSuccess: () => refetchProfile() })}
                     className="relative group"
                     title="Edit profile"
                   >
@@ -337,7 +335,7 @@ export default function GovernancePage() {
                     <Button
                       variant="verified"
                       size="default"
-                      onClick={() => setJoinModalOpen(true)}
+                      onClick={() => openDrawer({ id: 'join-dao' })}
                       className="h-10 px-3 sm:px-4 flex-shrink-0"
                     >
                       <UserPlus className="w-4 h-4 mr-1.5 sm:mr-2" />
@@ -756,20 +754,6 @@ export default function GovernancePage() {
         )}
       </div>
 
-      {/* Join DAO Modal */}
-      <JoinDaoModal
-        isOpen={joinModalOpen}
-        onClose={() => setJoinModalOpen(false)}
-        policy={policy}
-        accountId={accountId ?? ''}
-      />
-
-      {/* Profile Editor Modal */}
-      <ProfileEditorModal
-        isOpen={profileEditorOpen}
-        onClose={() => setProfileEditorOpen(false)}
-        onSuccess={() => refetchProfile()}
-      />
     </div>
     </>
   );

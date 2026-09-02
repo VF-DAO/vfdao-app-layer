@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ProfileAvatar } from '@/components/ui/profile-avatar';
-import { ProfileEditorModal } from '@/components/ui/profile-editor-modal';
+import { useAppDrawer } from '@/features/shell';
 import { FloatingHeader } from '@/components/ui/floating-header';
 import { Divider } from '@/components/ui/divider';
 import { WithYouButton, WithYouCount } from '@/components/ui/with-you-button';
@@ -28,7 +28,7 @@ interface ProfileViewProps {
 export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProps) {
   const { profile: profileData, loading, refetch } = useProfile(accountId);
   const [copied, setCopied] = useState(false);
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const { openDrawer } = useAppDrawer();
 
   // Extract the nested profile object
   const profile = profileData?.profile;
@@ -119,7 +119,7 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
                 variant="floating" 
                 size="sm" 
                 className="gap-2"
-                onClick={() => setIsEditorOpen(true)}
+                onClick={() => openDrawer({ id: 'edit-profile', onSuccess: () => refetch() })}
               >
                 <Edit3 className="w-4 h-4" />
                 <span className="hidden sm:inline">Edit</span>
@@ -297,14 +297,6 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
         </section>
       </div>
 
-      {/* Profile Editor Modal */}
-      <ProfileEditorModal 
-        isOpen={isEditorOpen} 
-        onClose={() => setIsEditorOpen(false)}
-        onSuccess={() => {
-          refetch();
-        }}
-      />
     </div>
   );
 }
