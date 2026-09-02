@@ -29,6 +29,8 @@ vfdao-app-layer/
 └── docs/                   # Documentation
 ```
 
+Product tracking / OnSocial plan (shelf, stamps, VF token): [docs/vf-tracker-plan.md](docs/vf-tracker-plan.md).
+
 ## 🚀 Quick Start
 
 ### Prerequisites
