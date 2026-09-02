@@ -152,10 +152,11 @@ export function JoinDaoDrawerContent() {
           <div className="flex min-h-[160px] items-center justify-center">
             <LoadingDots />
           </div>
-        ) : !accountId ? (
-          <p className="text-sm text-muted-foreground">Connect a wallet to request a group role.</p>
         ) : (
           <>
+            {!accountId && (
+              <p className="text-sm text-muted-foreground">Connect a wallet to submit the join request.</p>
+            )}
             <div className="space-y-2">
               <Label className="text-sm font-medium">Select Group</Label>
               <div className="relative" ref={roleRef}>
