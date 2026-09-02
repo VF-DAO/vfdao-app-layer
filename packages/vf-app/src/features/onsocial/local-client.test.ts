@@ -44,4 +44,26 @@ describe('local OnSocial client', () => {
     const listed = await tracker.listProducts();
     expect(listed.some((item) => item.id === product.id)).toBe(true);
   });
+
+  it('rejects writes from the wrong org role', async () => {
+    const tracker = createOnSocialTracker(createLocalOnSocialClient());
+    await expect(
+      tracker.registerProduct({
+        name: 'Fake Stamp',
+        brand: 'VegCert',
+        description: 'Should not publish',
+        ingredients: [],
+        claims: [],
+        producerAccountId: 'vegcert.near',
+      })
+    ).rejects.toThrow(/Producer role required/);
+    await expect(
+      tracker.issueCertificate({
+        subjectType: 'lot',
+        subjectId: 'lot-oatmilk-nordic-2403',
+        standard: 'VegCert Vegan Standard 2026',
+        issuerAccountId: 'green-valley.near',
+      })
+    ).rejects.toThrow(/Certifier role required/);
+  });
 });

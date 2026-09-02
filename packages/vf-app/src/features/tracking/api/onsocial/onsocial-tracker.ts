@@ -1,6 +1,12 @@
 import type { OnSocialClient } from '@/features/onsocial';
 import { createId } from '../../lib/ids';
 import { parseScanCode } from '../../lib/qr';
+import {
+  canCreateLot,
+  canIssueCertificate,
+  canRecordEvent,
+  canRegisterProduct,
+} from '../../lib/roles';
 import type {
   AddEventInput,
   Certificate,
@@ -74,6 +80,19 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
     if (!result.ok) {
       throw new Error(result.message);
     }
+  }
+
+  async function requireOrg(
+    accountId: string,
+    allowed: (role: Org['role'] | null | undefined) => boolean,
+    message: string
+  ): Promise<Org> {
+    const row = await client.queryByPath(recordPath('org', accountId, config.appId));
+    const org = asOrg(row?.value) ?? (await local.getOrg(accountId));
+    if (!org || !allowed(org.role)) {
+      throw new Error(message);
+    }
+    return org;
   }
 
   return {
@@ -213,6 +232,11 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
     },
 
     async registerProduct(input: RegisterProductInput): Promise<Product> {
+      const org = await requireOrg(
+        input.producerAccountId,
+        canRegisterProduct,
+        'Producer role required to publish on core.'
+      );
       const product: Product = {
         id: createId('prd'),
         name: input.name.trim(),
@@ -221,7 +245,7 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
         ingredients: input.ingredients.map((item) => item.trim()).filter(Boolean),
         claims: input.claims.map((item) => item.trim()).filter(Boolean),
         imageUrl: input.imageUrl,
-        producerAccountId: input.producerAccountId,
+        producerAccountId: org.accountId,
         createdAt: new Date().toISOString(),
       };
       await write(recordPath('product', product.id, config.appId), product);
@@ -229,6 +253,11 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
     },
 
     async createLot(input: CreateLotInput): Promise<Lot> {
+      const org = await requireOrg(
+        input.producerAccountId,
+        canCreateLot,
+        'Producer role required to open a lot.'
+      );
       const lot: Lot = {
         id: createId('lot'),
         productId: input.productId,
@@ -236,7 +265,7 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
         harvestedAt: input.harvestedAt,
         quantity: input.quantity.trim(),
         site: input.site.trim(),
-        producerAccountId: input.producerAccountId,
+        producerAccountId: org.accountId,
         createdAt: new Date().toISOString(),
       };
       await write(recordPath('lot', lot.id, config.appId), lot);
@@ -244,13 +273,18 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
     },
 
     async addEvent(input: AddEventInput): Promise<ChainEvent> {
+      const org = await requireOrg(
+        input.orgAccountId,
+        canRecordEvent,
+        'Your org role cannot append chain events.'
+      );
       const event: ChainEvent = {
         id: createId('evt'),
         lotId: input.lotId,
         kind: input.kind,
         at: input.at ?? new Date().toISOString(),
         note: input.note.trim(),
-        orgAccountId: input.orgAccountId,
+        orgAccountId: org.accountId,
         mediaCid: input.mediaCid,
       };
       await write(recordPath('event', `${event.lotId}/${event.id}`, config.appId), event);
@@ -258,12 +292,17 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
     },
 
     async issueCertificate(input: IssueCertificateInput): Promise<Certificate> {
+      const org = await requireOrg(
+        input.issuerAccountId,
+        canIssueCertificate,
+        'Certifier role required.'
+      );
       const certificate: Certificate = {
         id: createId('cert'),
         subjectType: input.subjectType,
         subjectId: input.subjectId,
         standard: input.standard.trim(),
-        issuerAccountId: input.issuerAccountId,
+        issuerAccountId: org.accountId,
         issuedAt: new Date().toISOString(),
         expiresAt: input.expiresAt,
         status: 'active',
