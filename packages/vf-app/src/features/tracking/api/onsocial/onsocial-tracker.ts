@@ -114,7 +114,7 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
 
     async listProducts(): Promise<Product[]> {
       try {
-        const rows = await client.queryByType('product');
+        const rows = await client.queryByPrefix('product');
         const products = rows.map((row) => asProduct(row.value)).filter((item): item is Product => Boolean(item));
         return products.length > 0 ? products : await local.listProducts();
       } catch (error) {
@@ -126,7 +126,11 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
     async getProduct(productId: string): Promise<Product | null> {
       try {
         const row = await client.queryByPath(recordPath('product', productId, config.appId));
-        return asProduct(row?.value) ?? (await local.getProduct(productId));
+        const fromPath = asProduct(row?.value);
+        if (fromPath) return fromPath;
+        const rows = await client.queryByJsonContains({ id: productId });
+        const fromJson = rows.map((item) => asProduct(item.value)).find((item): item is Product => Boolean(item));
+        return fromJson ?? (await local.getProduct(productId));
       } catch (error) {
         console.warn('[tracking] OnSocial product read fell back to local fixtures', error);
         return local.getProduct(productId);
@@ -135,7 +139,7 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
 
     async listLots(productId: string): Promise<Lot[]> {
       try {
-        const rows = await client.queryByType('lot');
+        const rows = await client.queryByJsonContains({ productId });
         const lots = rows
           .map((row) => asLot(row.value))
           .filter((item): item is Lot => item !== null && item.productId === productId);
@@ -149,7 +153,11 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
     async getLot(lotId: string): Promise<Lot | null> {
       try {
         const row = await client.queryByPath(recordPath('lot', lotId, config.appId));
-        return asLot(row?.value) ?? (await local.getLot(lotId));
+        const fromPath = asLot(row?.value);
+        if (fromPath) return fromPath;
+        const rows = await client.queryByJsonContains({ id: lotId });
+        const fromJson = rows.map((item) => asLot(item.value)).find((item): item is Lot => Boolean(item));
+        return fromJson ?? (await local.getLot(lotId));
       } catch (error) {
         console.warn('[tracking] OnSocial lot read fell back to local fixtures', error);
         return local.getLot(lotId);
@@ -158,7 +166,7 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
 
     async getEvents(lotId: string): Promise<ChainEvent[]> {
       try {
-        const rows = await client.queryByType('event');
+        const rows = await client.queryByJsonContains({ lotId });
         const events = rows
           .map((row) => asEvent(row.value))
           .filter((item): item is ChainEvent => item !== null && item.lotId === lotId)
@@ -172,7 +180,7 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
 
     async getCertificates(subjectId: string): Promise<Certificate[]> {
       try {
-        const rows = await client.queryByType('certificate');
+        const rows = await client.queryByJsonContains({ subjectId });
         const certificates = rows
           .map((row) => asCertificate(row.value))
           .filter((item): item is Certificate => item !== null && item.subjectId === subjectId);
@@ -212,7 +220,11 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
     async getOrg(accountId: string): Promise<Org | null> {
       try {
         const row = await client.queryByPath(recordPath('org', accountId, config.appId));
-        return asOrg(row?.value) ?? (await local.getOrg(accountId));
+        const fromPath = asOrg(row?.value);
+        if (fromPath) return fromPath;
+        const rows = await client.queryByJsonContains({ accountId });
+        const fromJson = rows.map((item) => asOrg(item.value)).find((item): item is Org => Boolean(item));
+        return fromJson ?? (await local.getOrg(accountId));
       } catch (error) {
         console.warn('[tracking] OnSocial org read fell back to local fixtures', error);
         return local.getOrg(accountId);
@@ -221,7 +233,9 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
 
     async listScans(accountId?: string): Promise<ScanRecord[]> {
       try {
-        const rows = await client.queryByType('scan');
+        const rows = accountId
+          ? await client.queryByJsonContains({ accountId })
+          : await client.queryByPrefix('scan');
         const scans = rows
           .map((row) => asScan(row.value))
           .filter((item): item is ScanRecord => item !== null && (!accountId || item.accountId === accountId));

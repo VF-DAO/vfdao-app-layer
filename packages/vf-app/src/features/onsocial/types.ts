@@ -19,11 +19,14 @@ export type OnSocialWriteResult =
 
 /**
  * Stable seam for @onsocial/sdk.
+ * Reads map to os.query.raw.byAppId / byAppPrefix / byAppJsonContains / byPath.
  * Swap the implementation; keep TrackerApi and UI unchanged.
  */
 export interface OnSocialClient {
   session: OnSocialSession | null;
   queryByType(type: string): Promise<OnSocialRecord[]>;
   queryByPath(path: string): Promise<OnSocialRecord | null>;
+  queryByPrefix(prefix: string): Promise<OnSocialRecord[]>;
+  queryByJsonContains(contains: Record<string, unknown>): Promise<OnSocialRecord[]>;
   set(data: Record<string, string>): Promise<OnSocialWriteResult>;
 }

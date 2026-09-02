@@ -1,7 +1,13 @@
-import { cloneFixtures } from '@/features/tracking/api/fixtures';
-import { DEFAULT_APP_ID, matchesRecordType, recordPath } from '@/features/tracking/api/onsocial/paths';
-import { ensureLocalSession } from './session';
 import type { OnSocialClient, OnSocialRecord, OnSocialSession } from './types';
+import { cloneFixtures } from '@/features/tracking/api/fixtures';
+import {
+  DEFAULT_APP_ID,
+  jsonContains,
+  matchesRecordType,
+  pathMatchesAppPrefix,
+  recordPath,
+} from '@/features/tracking/api/onsocial/paths';
+import { ensureLocalSession } from './session';
 
 export const LOCAL_KV_KEY = 'vf.onsocial.kv.v1';
 const LEGACY_KEY = 'vf.tracking.v1';
@@ -90,7 +96,14 @@ export function createLocalOnSocialClient(appId = DEFAULT_APP_ID): OnSocialClien
       return Object.values(loadKv(appId)).filter((row) => matchesRecordType(row.path, type, appId));
     },
     async queryByPath(path: string) {
-      return loadKv(appId)[path] ?? null;
+      const store = loadKv(appId);
+      return store[path] ?? Object.values(store).find((row) => row.path.endsWith(`/${path}`)) ?? null;
+    },
+    async queryByPrefix(prefix: string) {
+      return Object.values(loadKv(appId)).filter((row) => pathMatchesAppPrefix(row.path, prefix, appId));
+    },
+    async queryByJsonContains(contains: Record<string, unknown>) {
+      return Object.values(loadKv(appId)).filter((row) => jsonContains(row.value, contains));
     },
     async set(data) {
       const store = loadKv(appId);

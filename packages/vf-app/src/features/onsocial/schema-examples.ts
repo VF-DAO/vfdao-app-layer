@@ -1,6 +1,7 @@
 /**
  * Example core Set payloads. The SDK swap is `os.social.set(data)`
- * with the same keys. Keep this file as the contract, not a runtime import.
+ * with the same keys. Indexed as dataType=apps, dataId=vf-tracker.
+ * Keep this file as the contract, not a runtime import.
  */
 export const productSetExample = {
   'apps/vf-tracker/product/prd-oatmilk-nordic': JSON.stringify({

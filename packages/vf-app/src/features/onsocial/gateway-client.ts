@@ -2,10 +2,15 @@ import type { OnSocialClient, OnSocialSession } from './types';
 import { getOnSocialConfig } from '@/features/tracking/api/onsocial/config';
 import {
   queryRecordByPath,
+  queryRecordsByAppJsonContains,
+  queryRecordsByAppPrefix,
   queryRecordsByType,
   relayCoreSet,
 } from '@/features/tracking/api/onsocial/gateway';
-import type { TrackingRecordKind } from '@/features/tracking/api/onsocial/paths';
+import {
+  APP_DATA_TYPE,
+  type TrackingRecordKind,
+} from '@/features/tracking/api/onsocial/paths';
 
 const KINDS: TrackingRecordKind[] = ['product', 'lot', 'event', 'certificate', 'org', 'scan'];
 
@@ -32,10 +37,19 @@ export function createGatewayOnSocialClient(sessionToken?: string): OnSocialClie
   return {
     session,
     async queryByType(type) {
+      if (type === APP_DATA_TYPE || type === config.appId) {
+        return queryRecordsByAppPrefix(config, '');
+      }
       return queryRecordsByType(config, resolveKind(type, config.appId));
     },
     async queryByPath(path) {
       return queryRecordByPath(config, path);
+    },
+    async queryByPrefix(prefix) {
+      return queryRecordsByAppPrefix(config, prefix);
+    },
+    async queryByJsonContains(contains) {
+      return queryRecordsByAppJsonContains(config, contains);
     },
     async set(data) {
       return relayCoreSet(config, sessionToken ?? '', data);

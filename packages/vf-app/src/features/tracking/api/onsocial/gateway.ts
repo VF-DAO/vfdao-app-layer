@@ -1,5 +1,12 @@
 import type { OnSocialConfig } from './config';
-import { dataTypeFor, type TrackingRecordKind } from './paths';
+import {
+  APP_DATA_TYPE,
+  indexedAppId,
+  latestByPath,
+  pathMatchesAppPrefix,
+  pathSuffixRegex,
+  type TrackingRecordKind,
+} from './paths';
 
 interface DataUpdateRow {
   path?: string;
@@ -20,6 +27,8 @@ export interface GatewayRecord {
   value: unknown;
   accountId?: string;
 }
+
+const DATA_FIELDS = 'path value accountId blockTimestamp';
 
 function authHeaders(config: OnSocialConfig): Record<string, string> {
   const headers: Record<string, string> = {
@@ -70,50 +79,101 @@ function parseValue(raw: string | undefined): unknown {
   }
 }
 
+function toRecords(rows: DataUpdateRow[] | undefined): GatewayRecord[] {
+  return latestByPath(
+    (rows ?? [])
+      .filter((row) => row.path)
+      .map((row) => ({
+        path: row.path!,
+        value: parseValue(row.value),
+        accountId: row.accountId,
+      }))
+  );
+}
+
+async function queryAppRows(config: OnSocialConfig): Promise<GatewayRecord[]> {
+  const data = await graphql<{ dataUpdates?: DataUpdateRow[] }>(
+    config,
+    `query TrackingByApp($dataType: String!, $appId: String!) {
+      dataUpdates(
+        where: { _and: [{ dataType: { _eq: $dataType } }, { dataId: { _eq: $appId } }] }
+        limit: 200
+        orderBy: [{ blockHeight: DESC }]
+      ) {
+        ${DATA_FIELDS}
+      }
+    }`,
+    { dataType: APP_DATA_TYPE, appId: indexedAppId(config.appId) }
+  );
+  return toRecords(data.dataUpdates);
+}
+
 export async function queryRecordsByType(
   config: OnSocialConfig,
   kind: TrackingRecordKind
 ): Promise<GatewayRecord[]> {
+  return queryRecordsByAppPrefix(config, kind);
+}
+
+export async function queryRecordsByAppPrefix(
+  config: OnSocialConfig,
+  prefix: string
+): Promise<GatewayRecord[]> {
+  const rows = await queryAppRows(config);
+  return rows.filter((row) => pathMatchesAppPrefix(row.path, prefix, config.appId));
+}
+
+export async function queryRecordsByAppJsonContains(
+  config: OnSocialConfig,
+  contains: Record<string, unknown>
+): Promise<GatewayRecord[]> {
   const data = await graphql<{ dataUpdates?: DataUpdateRow[] }>(
     config,
-    `query TrackingByType($type: String!) {
-      dataUpdates(where: { dataType: { _eq: $type } }, limit: 200, orderBy: [{ blockHeight: DESC }]) {
-        path
-        value
-        accountId
-        blockTimestamp
+    `query TrackingByJson($dataType: String!, $appId: String!, $contains: jsonb!) {
+      dataUpdates(
+        where: {
+          _and: [
+            { dataType: { _eq: $dataType } },
+            { dataId: { _eq: $appId } },
+            { valueJson: { _contains: $contains } }
+          ]
+        }
+        limit: 200
+        orderBy: [{ blockHeight: DESC }]
+      ) {
+        ${DATA_FIELDS}
       }
     }`,
-    { type: dataTypeFor(kind, config.appId) }
+    { dataType: APP_DATA_TYPE, appId: indexedAppId(config.appId), contains }
   );
-
-  return (data.dataUpdates ?? [])
-    .filter((row) => row.path)
-    .map((row) => ({
-      path: row.path!,
-      value: parseValue(row.value),
-      accountId: row.accountId,
-    }));
+  return toRecords(data.dataUpdates);
 }
 
 export async function queryRecordByPath(
   config: OnSocialConfig,
   path: string
 ): Promise<GatewayRecord | null> {
-  const data = await graphql<{ dataUpdates?: DataUpdateRow[] }>(
-    config,
-    `query TrackingByPath($path: String!) {
-      dataUpdates(where: { path: { _eq: $path } }, limit: 1, orderBy: [{ blockHeight: DESC }]) {
-        path
-        value
-        accountId
-      }
-    }`,
-    { path }
-  );
-  const row = data.dataUpdates?.[0];
-  if (!row?.path) return null;
-  return { path: row.path, value: parseValue(row.value), accountId: row.accountId };
+  try {
+    const data = await graphql<{ dataUpdates?: DataUpdateRow[] }>(
+      config,
+      `query TrackingByPath($path: String!, $suffix: String!) {
+        dataUpdates(
+          where: { _or: [{ path: { _eq: $path } }, { path: { _regex: $suffix } }] }
+          limit: 5
+          orderBy: [{ blockHeight: DESC }]
+        ) {
+          ${DATA_FIELDS}
+        }
+      }`,
+      { path, suffix: pathSuffixRegex(path) }
+    );
+    return toRecords(data.dataUpdates)[0] ?? null;
+  } catch {
+    const rows = await queryAppRows(config);
+    return (
+      rows.find((row) => row.path === path || row.path.endsWith(`/${path}`)) ?? null
+    );
+  }
 }
 
 /**

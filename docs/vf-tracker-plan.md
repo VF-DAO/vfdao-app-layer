@@ -108,7 +108,7 @@ Optional later: featured boost, larger bond to be **featured** as an issuer (sti
 
 1. **Scan / lot page** — compose by `lotId`. Show writer on every stamp. VF shelf badge only if listed.
 2. **Studio** — one schema. Session account is the writer. Producer: product/lot. Chain: event. Certifier: certificate on **their** path.
-3. **OnSocial seam** — `queryByType` / `queryByPath` / `set` / `completeAppHandoff({ appId: 'vf-tracker' })`. Local mock until SDK is live.
+3. **OnSocial seam** — `queryByPrefix` / `queryByJsonContains` / `queryByPath` / `set` / `completeAppHandoff({ appId: 'vf-tracker' })`. Indexed reads, not RPC. Local mock until SDK is live.
 4. **Explore** — VF group listings only. Unlisted lots still resolve by QR.
 5. **Later** — org’s own core group for staff wallets; VF Boost + social-spend; listing bond → grant.
 
@@ -136,6 +136,30 @@ Optional later: featured boost, larger bond to be **featured** as an issuer (sti
 5. Deploy VF Boost + VF social-spend (`veganfriends.tkn.near`)
 6. Listing bond → `listed/` grant
 7. Per-org groups when a farm has many wallets
+
+---
+
+## Indexing (do not invent types)
+
+Writes under `{owner}/apps/vf-tracker/{kind}/…` index as:
+
+| Column | Value |
+| --- | --- |
+| `dataType` | `apps` |
+| `dataId` | `vf-tracker` |
+| `path` | `{owner}/apps/vf-tracker/{kind}/…` |
+| `valueJson` | the JSON body (GIN `_contains`) |
+
+SDK maps: `os.query.raw.byAppId('vf-tracker')`, `byAppJsonContains('vf-tracker', { lotId })`, `byPath('{owner}/apps/…')`. There is no `vf-tracker-lot` data type.
+
+Hub reads:
+
+- List a kind → `queryByPrefix('product' \| 'lot' \| …)` (`dataType=apps` + `dataId=vf-tracker`, then path prefix)
+- Scan / lot bundle → `queryByJsonContains({ id })` / `{ lotId }` / `{ subjectId }` (works across writer accounts)
+- Exact row when the account is known → `queryByPath`
+- Do **not** query `dataType: vf-tracker-lot`
+
+Optional protocol-wide follow-up (any app, not VF-only): `app_relpath` + `os.query.raw.byAppPrefix`. Not required to ship scan.
 
 ---
 
