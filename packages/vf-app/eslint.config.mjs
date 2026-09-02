@@ -214,7 +214,11 @@ export default tseslint.config(
 
   {
     // Product tracking - OnSocial gateway JSON and session-lane writes
-    files: ['src/features/tracking/**/*.{ts,tsx}', 'src/features/shell/**/*.{ts,tsx}'],
+    files: [
+      'src/features/tracking/**/*.{ts,tsx}',
+      'src/features/shell/**/*.{ts,tsx}',
+      'src/features/home/**/*.{ts,tsx}',
+    ],
     rules: {
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',

@@ -1,16 +1,16 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import Link from 'next/link';
 import { PortfolioDashboard } from '@/features/portfolio';
+import { HomeHub } from '@/features/home';
 import { useWallet } from '@/features/wallet';
 import { useProfile } from '@/hooks/use-profile';
-import { useVfBalance, useDaoMembership } from '@/hooks/use-vf-dao';
+import { useDaoMembership, useVfBalance } from '@/hooks/use-vf-dao';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { HomeFloatingHeader } from '@/components/ui/home-floating-header';
 import { useAppDrawer } from '@/features/shell';
 import { FaXTwitter } from 'react-icons/fa6';
-import { Coins, Compass, Github, Send, Vote } from 'lucide-react';
+import { Github, Send } from 'lucide-react';
 import Logo from '@/components/ui/logo';
 
 export default function Home() {
@@ -34,8 +34,8 @@ export default function Home() {
       {/* Home Floating Header - when connected */}
       {isConnected && (
         <HomeFloatingHeader
-          accountId={accountId || undefined}
-          displayName={displayUsername || undefined}
+          accountId={accountId ?? undefined}
+          displayName={displayUsername ?? undefined}
           vfBalance={vfBalance}
           vfIcon={vfIcon}
           isMember={isMember}
@@ -46,7 +46,7 @@ export default function Home() {
       <div className={`flex flex-col min-h-screen bg-background ${isConnected ? 'pt-16' : ''}`}>
       
       {/* Hero Section */}
-      <div className={`relative flex-1 flex flex-col items-center px-4 ${isConnected ? 'pt-16 sm:pt-24 md:pt-32' : 'pt-32 sm:pt-48 md:pt-56'} pb-20 sm:pb-32`}>
+      <div className={`relative flex-1 flex flex-col items-center px-4 ${isConnected ? 'pt-10 sm:pt-14' : 'pt-32 sm:pt-48 md:pt-56'} pb-20 sm:pb-32`}>
         {/* Logo in top left corner - Only show when not connected */}
         {!isConnected && !walletLoading && (
           <div className="absolute top-4 left-4 z-10">
@@ -99,7 +99,7 @@ export default function Home() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: 0.2, ease: "easeOut" }}
                   >
-                    Your space is ready to explore.
+                    Scan a product or open studio.
                   </motion.p>
                 </div>
               ) : (
@@ -123,14 +123,14 @@ export default function Home() {
               )}
             </motion.div>
 
-            {/* Portfolio Dashboard - appears with slight delay after hero content */}
             {!walletLoading && (
-              <motion.div 
-                className="flex justify-center"
+              <motion.div
+                className="flex w-full flex-col items-center gap-10"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.3 }}
               >
+                <HomeHub accountId={accountId} />
                 <PortfolioDashboard />
               </motion.div>
             )}
