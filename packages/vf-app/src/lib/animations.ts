@@ -123,7 +123,7 @@ export const modalVariants: Variants = {
   },
 };
 
-/** Shared app drawer — one bottom sheet for quick actions */
+/** Shared overlay — bottom sheet on phone, centered dialog on desktop */
 export const drawerVariants: Variants = {
   hidden: {
     opacity: 0,

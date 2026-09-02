@@ -3,7 +3,8 @@
 import React, { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
-import { backdropVariants, drawerVariants, expandVariants, transitions } from '@/lib/animations';
+import { backdropVariants, drawerVariants, expandVariants, modalVariants, transitions } from '@/lib/animations';
+import { useDesktopOverlay } from '@/hooks/use-media-query';
 
 interface DrawerProps {
   isOpen: boolean;
@@ -39,8 +40,8 @@ interface DrawerExpandableSectionProps {
 }
 
 /**
- * Single app drawer. Quick actions and choices use this sheet only —
- * full pages stay for deep views (product, lot, scan result).
+ * Single overlay host. Phone: bottom sheet. Desktop: centered dialog.
+ * Same actions and chrome — not a second overlay system.
  */
 export function Drawer({
   isOpen,
@@ -50,6 +51,7 @@ export function Drawer({
   disableClose = false,
   labelledBy,
 }: DrawerProps) {
+  const isDesktop = useDesktopOverlay();
   const mouseDownTarget = React.useRef<EventTarget | null>(null);
 
   useEffect(() => {
@@ -86,7 +88,7 @@ export function Drawer({
             transition={transitions.normal}
           />
           <div
-            className="fixed inset-0 z-50 flex items-end justify-center sm:items-end"
+            className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-6 md:left-20"
             onMouseDown={(event) => {
               mouseDownTarget.current = event.target;
             }}
@@ -105,8 +107,9 @@ export function Drawer({
               role="dialog"
               aria-modal="true"
               aria-labelledby={labelledBy}
-              className="flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border border-border bg-card shadow-main-card"
-              variants={drawerVariants}
+              data-presentation={isDesktop ? 'dialog' : 'sheet'}
+              className="flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border border-border bg-card shadow-main-card md:max-h-[min(88vh,40rem)] md:rounded-3xl"
+              variants={isDesktop ? modalVariants : drawerVariants}
               initial="hidden"
               animate="visible"
               exit="exit"
@@ -114,7 +117,7 @@ export function Drawer({
               onClick={(event) => event.stopPropagation()}
               onMouseDown={(event) => event.stopPropagation()}
             >
-              <div className="flex justify-center pt-3">
+              <div className="flex justify-center pt-3 md:hidden">
                 <div className="h-1.5 w-10 rounded-full bg-muted-foreground/30" />
               </div>
               {children}
