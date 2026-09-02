@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { appPrefix, coreSetPayload, dataTypeFor, normalizeAppId, recordPath } from './paths';
+import {
+  appPrefix,
+  coreSetPayload,
+  dataTypeFor,
+  kindFromPath,
+  matchesRecordType,
+  normalizeAppId,
+  recordPath,
+} from './paths';
 
 describe('OnSocial core paths', () => {
   it('keeps the portal app namespace stable', () => {
@@ -7,6 +15,9 @@ describe('OnSocial core paths', () => {
     expect(appPrefix('vf-tracker')).toBe('apps/vf-tracker');
     expect(recordPath('product', 'prd-1')).toBe('apps/vf-tracker/product/prd-1');
     expect(dataTypeFor('lot')).toBe('vf-tracker-lot');
+    expect(kindFromPath('apps/vf-tracker/product/prd-1')).toBe('product');
+    expect(matchesRecordType('apps/vf-tracker/lot/lot-1', 'lot')).toBe(true);
+    expect(matchesRecordType('apps/vf-tracker/lot/lot-1', 'vf-tracker-lot')).toBe(true);
   });
 
   it('builds a core Set payload for session-lane writes', () => {

@@ -1,8 +1,4 @@
-import type { TrackerApi } from '../tracker-api';
-import { createLocalTracker } from '../local-tracker';
-import { getOnSocialConfig } from './config';
-import { queryRecordByPath, queryRecordsByType, relayCoreSet } from './gateway';
-import { coreSetPayload, recordPath } from './paths';
+import type { OnSocialClient } from '@/features/onsocial';
 import { createId } from '../../lib/ids';
 import { parseScanCode } from '../../lib/qr';
 import type {
@@ -20,6 +16,10 @@ import type {
   ScanRecord,
   TrackerStatus,
 } from '../../types';
+import { createLocalTracker } from '../local-tracker';
+import type { TrackerApi } from '../tracker-api';
+import { getOnSocialConfig, isOnSocialConfigured } from './config';
+import { coreSetPayload, recordPath } from './paths';
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -63,13 +63,14 @@ function asScan(value: unknown): ScanRecord | null {
   return record as unknown as ScanRecord;
 }
 
-export function createOnSocialTracker(sessionToken?: string): TrackerApi {
+export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
   const config = getOnSocialConfig();
   const local = createLocalTracker();
+  const live = isOnSocialConfigured();
 
   async function write(path: string, value: unknown): Promise<void> {
     const payload = coreSetPayload(path, value);
-    const result = await relayCoreSet(config, sessionToken ?? '', payload.data);
+    const result = await client.set(payload.data);
     if (!result.ok) {
       throw new Error(result.message);
     }
@@ -78,21 +79,23 @@ export function createOnSocialTracker(sessionToken?: string): TrackerApi {
   return {
     async status(): Promise<TrackerStatus> {
       return {
-        backend: 'onsocial',
+        backend: live ? 'onsocial' : 'local',
         appId: config.appId,
         coreContract: config.coreContract,
         gatewayUrl: config.gatewayUrl,
         usingOnApi: Boolean(config.apiKey),
-        needsSession: !sessionToken,
-        note: sessionToken
-          ? 'Writes go to OnSocial core with a session key. Users do not sign every product or scan.'
-          : 'Reads can use OnAPI. Writes wait for an OnSocial portal session so the app can be listed.',
+        needsSession: live && !client.session?.token,
+        note: live
+          ? client.session?.token
+            ? 'Writes go to OnSocial core with a session key. Users do not sign every product or scan.'
+            : 'Reads can use OnAPI. Writes wait for an OnSocial portal session so the app can be listed.'
+          : 'Local OnSocial seam. Same Set and query path as core; swap the client when the SDK ships.',
       };
     },
 
     async listProducts(): Promise<Product[]> {
       try {
-        const rows = await queryRecordsByType(config, 'product');
+        const rows = await client.queryByType('product');
         const products = rows.map((row) => asProduct(row.value)).filter((item): item is Product => Boolean(item));
         return products.length > 0 ? products : await local.listProducts();
       } catch (error) {
@@ -103,7 +106,7 @@ export function createOnSocialTracker(sessionToken?: string): TrackerApi {
 
     async getProduct(productId: string): Promise<Product | null> {
       try {
-        const row = await queryRecordByPath(config, recordPath('product', productId, config.appId));
+        const row = await client.queryByPath(recordPath('product', productId, config.appId));
         return asProduct(row?.value) ?? (await local.getProduct(productId));
       } catch (error) {
         console.warn('[tracking] OnSocial product read fell back to local fixtures', error);
@@ -113,7 +116,7 @@ export function createOnSocialTracker(sessionToken?: string): TrackerApi {
 
     async listLots(productId: string): Promise<Lot[]> {
       try {
-        const rows = await queryRecordsByType(config, 'lot');
+        const rows = await client.queryByType('lot');
         const lots = rows
           .map((row) => asLot(row.value))
           .filter((item): item is Lot => item !== null && item.productId === productId);
@@ -126,7 +129,7 @@ export function createOnSocialTracker(sessionToken?: string): TrackerApi {
 
     async getLot(lotId: string): Promise<Lot | null> {
       try {
-        const row = await queryRecordByPath(config, recordPath('lot', lotId, config.appId));
+        const row = await client.queryByPath(recordPath('lot', lotId, config.appId));
         return asLot(row?.value) ?? (await local.getLot(lotId));
       } catch (error) {
         console.warn('[tracking] OnSocial lot read fell back to local fixtures', error);
@@ -136,7 +139,7 @@ export function createOnSocialTracker(sessionToken?: string): TrackerApi {
 
     async getEvents(lotId: string): Promise<ChainEvent[]> {
       try {
-        const rows = await queryRecordsByType(config, 'event');
+        const rows = await client.queryByType('event');
         const events = rows
           .map((row) => asEvent(row.value))
           .filter((item): item is ChainEvent => item !== null && item.lotId === lotId)
@@ -150,7 +153,7 @@ export function createOnSocialTracker(sessionToken?: string): TrackerApi {
 
     async getCertificates(subjectId: string): Promise<Certificate[]> {
       try {
-        const rows = await queryRecordsByType(config, 'certificate');
+        const rows = await client.queryByType('certificate');
         const certificates = rows
           .map((row) => asCertificate(row.value))
           .filter((item): item is Certificate => item !== null && item.subjectId === subjectId);
@@ -189,7 +192,7 @@ export function createOnSocialTracker(sessionToken?: string): TrackerApi {
 
     async getOrg(accountId: string): Promise<Org | null> {
       try {
-        const row = await queryRecordByPath(config, recordPath('org', accountId, config.appId));
+        const row = await client.queryByPath(recordPath('org', accountId, config.appId));
         return asOrg(row?.value) ?? (await local.getOrg(accountId));
       } catch (error) {
         console.warn('[tracking] OnSocial org read fell back to local fixtures', error);
@@ -199,7 +202,7 @@ export function createOnSocialTracker(sessionToken?: string): TrackerApi {
 
     async listScans(accountId?: string): Promise<ScanRecord[]> {
       try {
-        const rows = await queryRecordsByType(config, 'scan');
+        const rows = await client.queryByType('scan');
         const scans = rows
           .map((row) => asScan(row.value))
           .filter((item): item is ScanRecord => item !== null && (!accountId || item.accountId === accountId));
@@ -210,7 +213,6 @@ export function createOnSocialTracker(sessionToken?: string): TrackerApi {
     },
 
     async registerProduct(input: RegisterProductInput): Promise<Product> {
-      if (!sessionToken) return local.registerProduct(input);
       const product: Product = {
         id: createId('prd'),
         name: input.name.trim(),
@@ -227,7 +229,6 @@ export function createOnSocialTracker(sessionToken?: string): TrackerApi {
     },
 
     async createLot(input: CreateLotInput): Promise<Lot> {
-      if (!sessionToken) return local.createLot(input);
       const lot: Lot = {
         id: createId('lot'),
         productId: input.productId,
@@ -243,7 +244,6 @@ export function createOnSocialTracker(sessionToken?: string): TrackerApi {
     },
 
     async addEvent(input: AddEventInput): Promise<ChainEvent> {
-      if (!sessionToken) return local.addEvent(input);
       const event: ChainEvent = {
         id: createId('evt'),
         lotId: input.lotId,
@@ -258,7 +258,6 @@ export function createOnSocialTracker(sessionToken?: string): TrackerApi {
     },
 
     async issueCertificate(input: IssueCertificateInput): Promise<Certificate> {
-      if (!sessionToken) return local.issueCertificate(input);
       const certificate: Certificate = {
         id: createId('cert'),
         subjectType: input.subjectType,
@@ -275,7 +274,6 @@ export function createOnSocialTracker(sessionToken?: string): TrackerApi {
     },
 
     async recordScan(input: RecordScanInput): Promise<ScanRecord> {
-      if (!sessionToken) return local.recordScan(input);
       const scan: ScanRecord = {
         id: createId('scan'),
         code: input.code,

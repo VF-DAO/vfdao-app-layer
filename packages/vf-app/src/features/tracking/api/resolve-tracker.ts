@@ -1,8 +1,9 @@
-import type { TrackerApi } from './tracker-api';
-import { createLocalTracker } from './local-tracker';
+import { createGatewayOnSocialClient, createLocalOnSocialClient } from '@/features/onsocial';
 import { createHttpTracker } from './http-tracker';
-import { createOnSocialTracker } from './onsocial/onsocial-tracker';
+import { createLocalTracker } from './local-tracker';
 import { isOnSocialConfigured, publicTrackerBackend } from './onsocial/config';
+import { createOnSocialTracker } from './onsocial/onsocial-tracker';
+import type { TrackerApi } from './tracker-api';
 
 let localSingleton: TrackerApi | null = null;
 
@@ -15,12 +16,12 @@ export function getClientTracker(): TrackerApi {
   if (publicTrackerBackend() === 'onsocial') {
     return createHttpTracker();
   }
-  return getLocalTracker();
+  return createOnSocialTracker(createLocalOnSocialClient());
 }
 
 export function getServerTracker(sessionToken?: string): TrackerApi {
   if (isOnSocialConfigured()) {
-    return createOnSocialTracker(sessionToken);
+    return createOnSocialTracker(createGatewayOnSocialClient(sessionToken));
   }
-  return getLocalTracker();
+  return createOnSocialTracker(createLocalOnSocialClient());
 }

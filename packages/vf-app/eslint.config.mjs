@@ -216,6 +216,7 @@ export default tseslint.config(
     // Product tracking - OnSocial gateway JSON and session-lane writes
     files: [
       'src/features/tracking/**/*.{ts,tsx}',
+      'src/features/onsocial/**/*.{ts,tsx}',
       'src/features/shell/**/*.{ts,tsx}',
       'src/features/home/**/*.{ts,tsx}',
     ],

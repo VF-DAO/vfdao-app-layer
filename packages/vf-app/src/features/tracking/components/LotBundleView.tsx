@@ -4,10 +4,11 @@ import { Card } from '@/components/ui/card';
 import type { LotBundle } from '../types';
 import { deriveVerificationStatus } from '../lib/status';
 import { encodeLotQr } from '../lib/qr';
-import { ProductHeader } from './ProductHeader';
-import { IngredientList } from './IngredientList';
-import { SupplyChainTimeline } from './SupplyChainTimeline';
 import { CertificateBadge } from './CertificateBadge';
+import { IngredientList } from './IngredientList';
+import { LotQrCard } from './LotQrCard';
+import { ProductHeader } from './ProductHeader';
+import { SupplyChainTimeline } from './SupplyChainTimeline';
 
 export function LotBundleView({
   bundle,
@@ -31,6 +32,8 @@ export function LotBundleView({
         </p>
         <p className="mt-3 font-mono text-xs text-muted-foreground">{qr}</p>
       </Card>
+
+      <LotQrCard lotId={bundle.lot.id} lotLabel={bundle.lot.label} />
 
       <IngredientList ingredients={bundle.product.ingredients} claims={bundle.product.claims} />
 

@@ -3,15 +3,15 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Card } from '@/components/ui/card';
-import { useWallet } from '@/features/wallet';
 import { EVENT_KINDS, type EventKind, type Product } from '../types';
-import { useOrgRole, useProducts } from '../hooks/use-tracker';
+import { useStudioActor } from '../hooks/use-studio-actor';
+import { useProducts } from '../hooks/use-tracker';
 import { useTrackingMutations } from '../hooks/use-tracking-mutations';
-import { canIssueCertificate, canRecordEvent, canRegisterProduct } from '../lib/roles';
 import { encodeLotQr } from '../lib/qr';
+import { canCreateLot, canIssueCertificate, canRecordEvent, canRegisterProduct } from '../lib/roles';
 
 interface FormChromeProps {
   chrome?: 'card' | 'plain';
@@ -43,15 +43,14 @@ export function RegisterProductForm({
   onSuccess?: () => void;
 }) {
   const router = useRouter();
-  const { accountId } = useWallet();
-  const { data: org } = useOrgRole(accountId);
+  const actor = useStudioActor();
   const { registerProduct, pending, error } = useTrackingMutations();
   const [name, setName] = useState('');
   const [brand, setBrand] = useState('');
   const [description, setDescription] = useState('');
   const [ingredients, setIngredients] = useState('');
   const [claims, setClaims] = useState('');
-  const allowed = canRegisterProduct(org?.role) || !org;
+  const allowed = canRegisterProduct(actor.role);
 
   return (
     <FormChrome chrome={chrome} title="Register product">
@@ -65,7 +64,7 @@ export function RegisterProductForm({
             description,
             ingredients: ingredients.split(',').map((item) => item.trim()),
             claims: claims.split(',').map((item) => item.trim()),
-            producerAccountId: accountId ?? org?.accountId ?? 'demo.near',
+            producerAccountId: actor.accountId ?? 'demo.near',
           }).then((product) => {
             onSuccess?.();
             router.push(`/products/${product.id}`);
@@ -92,9 +91,11 @@ export function RegisterProductForm({
           <FieldLabel>Claims (comma separated)</FieldLabel>
           <Input value={claims} onChange={(event) => setClaims(event.target.value)} />
         </div>
-        {!allowed && <p className="text-sm text-orange">Producer role required to publish on core.</p>}
+        {!allowed && (
+          <p className="text-sm text-orange">{actor.reason ?? 'Producer role required to publish on core.'}</p>
+        )}
         {error && <p className="text-sm text-orange">{error}</p>}
-        <Button type="submit" variant="verified" disabled={pending || !name || !brand}>
+        <Button type="submit" variant="verified" disabled={pending || actor.pending || !allowed || !name || !brand}>
           {pending ? 'Saving…' : 'Save product'}
         </Button>
       </form>
@@ -114,10 +115,11 @@ export function CreateLotForm({
   onSuccess?: () => void;
 }) {
   const router = useRouter();
-  const { accountId } = useWallet();
+  const actor = useStudioActor();
   const catalog = useProducts();
   const list = useMemo(() => products ?? catalog.data ?? [], [catalog.data, products]);
   const { createLot, pending, error } = useTrackingMutations();
+  const allowed = canCreateLot(actor.role);
   const [productId, setProductId] = useState(initialProductId ?? '');
   const [label, setLabel] = useState('');
   const [harvestedAt, setHarvestedAt] = useState('');
@@ -142,7 +144,7 @@ export function CreateLotForm({
             harvestedAt,
             quantity,
             site,
-            producerAccountId: accountId ?? 'demo.near',
+            producerAccountId: actor.accountId ?? 'demo.near',
           }).then((lot) => {
             onSuccess?.();
             router.push(`/products/${lot.productId}/lots/${lot.id}`);
@@ -179,8 +181,11 @@ export function CreateLotForm({
           <FieldLabel>Site</FieldLabel>
           <Input value={site} onChange={(event) => setSite(event.target.value)} required />
         </div>
+        {!allowed && (
+          <p className="text-sm text-orange">{actor.reason ?? 'Producer role required to open a lot.'}</p>
+        )}
         {error && <p className="text-sm text-orange">{error}</p>}
-        <Button type="submit" variant="primary" disabled={pending || !productId}>
+        <Button type="submit" variant="primary" disabled={pending || actor.pending || !allowed || !productId}>
           {pending ? 'Saving…' : 'Create lot'}
         </Button>
       </form>
@@ -198,13 +203,12 @@ export function RecordEventForm({
   onSuccess?: () => void;
 }) {
   const router = useRouter();
-  const { accountId } = useWallet();
-  const { data: org } = useOrgRole(accountId);
+  const actor = useStudioActor();
   const { addEvent, pending, error } = useTrackingMutations();
   const [selectedLot, setSelectedLot] = useState(lotId ?? '');
   const [kind, setKind] = useState<EventKind>('sourced');
   const [note, setNote] = useState('');
-  const allowed = canRecordEvent(org?.role) || !org;
+  const allowed = canRecordEvent(actor.role);
 
   return (
     <FormChrome chrome={chrome} title="Record event">
@@ -216,7 +220,7 @@ export function RecordEventForm({
             lotId: selectedLot,
             kind,
             note,
-            orgAccountId: accountId ?? org?.accountId ?? 'demo.near',
+            orgAccountId: actor.accountId ?? 'demo.near',
           }).then((created) => {
             setNote('');
             onSuccess?.();
@@ -248,9 +252,15 @@ export function RecordEventForm({
           <FieldLabel>Note</FieldLabel>
           <Textarea value={note} onChange={(event) => setNote(event.target.value)} required />
         </div>
-        {!allowed && <p className="text-sm text-orange">Your org role cannot append chain events.</p>}
+        {!allowed && (
+          <p className="text-sm text-orange">{actor.reason ?? 'Your org role cannot append chain events.'}</p>
+        )}
         {error && <p className="text-sm text-orange">{error}</p>}
-        <Button type="submit" variant="primary" disabled={pending || !selectedLot || !note}>
+        <Button
+          type="submit"
+          variant="primary"
+          disabled={pending || actor.pending || !allowed || !selectedLot || !note}
+        >
           {pending ? 'Saving…' : 'Append event'}
         </Button>
       </form>
@@ -269,12 +279,11 @@ export function IssueCertificateForm({
   chrome?: 'card' | 'plain';
   onSuccess?: () => void;
 }) {
-  const { accountId } = useWallet();
-  const { data: org } = useOrgRole(accountId);
+  const actor = useStudioActor();
   const { issueCertificate, pending, error } = useTrackingMutations();
   const [id, setId] = useState(subjectId ?? '');
   const [standard, setStandard] = useState('VegCert Vegan Standard 2026');
-  const allowed = canIssueCertificate(org?.role) || !org;
+  const allowed = canIssueCertificate(actor.role);
 
   return (
     <FormChrome chrome={chrome} title="Issue certificate">
@@ -286,7 +295,7 @@ export function IssueCertificateForm({
             subjectType,
             subjectId: id,
             standard,
-            issuerAccountId: accountId ?? org?.accountId ?? 'vegcert.near',
+            issuerAccountId: actor.accountId ?? 'vegcert.near',
           }).then(() => {
             onSuccess?.();
           });
@@ -302,9 +311,9 @@ export function IssueCertificateForm({
           <FieldLabel>Standard</FieldLabel>
           <Input value={standard} onChange={(event) => setStandard(event.target.value)} required />
         </div>
-        {!allowed && <p className="text-sm text-orange">Certifier role required.</p>}
+        {!allowed && <p className="text-sm text-orange">{actor.reason ?? 'Certifier role required.'}</p>}
         {error && <p className="text-sm text-orange">{error}</p>}
-        <Button type="submit" variant="verified" disabled={pending || !id}>
+        <Button type="submit" variant="verified" disabled={pending || actor.pending || !allowed || !id}>
           {pending ? 'Saving…' : 'Issue certificate'}
         </Button>
       </form>

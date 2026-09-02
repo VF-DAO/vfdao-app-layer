@@ -26,6 +26,19 @@ export function dataTypeFor(kind: TrackingRecordKind, appId = DEFAULT_APP_ID): s
   return `${normalizeAppId(appId)}-${kind}`;
 }
 
+const PATH_KIND = /\/(product|lot|event|certificate|org|scan)(?:\/|$)/;
+
+export function kindFromPath(path: string): TrackingRecordKind | null {
+  const match = PATH_KIND.exec(path);
+  return (match?.[1] as TrackingRecordKind | undefined) ?? null;
+}
+
+export function matchesRecordType(path: string, type: string, appId = DEFAULT_APP_ID): boolean {
+  const kind = kindFromPath(path);
+  if (!kind) return false;
+  return type === kind || type === dataTypeFor(kind, appId);
+}
+
 export function coreSetPayload(
   path: string,
   value: unknown
