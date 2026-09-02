@@ -1,4 +1,4 @@
-import type { Certificate, ChainEvent, Lot, Org, Product } from '../types';
+import type { Certificate, ChainEvent, Listing, Lot, Org, Product } from '../types';
 
 export const FIXTURE_PRODUCER_ID = 'green-valley.near';
 export const FIXTURE_CERTIFIER_ID = 'vegcert.near';
@@ -72,6 +72,14 @@ export const fixtureEvents: ChainEvent[] = [
     orgAccountId: FIXTURE_PROCESSOR_ID,
   },
   {
+    id: 'evt-tested-lab-2403',
+    lotId: FIXTURE_LOT_ID,
+    kind: 'tested',
+    at: '2026-03-14T15:30:00.000Z',
+    note: 'Independent lab confirmed the mill result.',
+    orgAccountId: 'plant-lab.near',
+  },
+  {
     id: 'evt-certified-2403',
     lotId: FIXTURE_LOT_ID,
     kind: 'certified',
@@ -110,6 +118,13 @@ export const fixtureCertificates: Certificate[] = [
   },
 ];
 
+export const fixtureListings: Listing[] = [
+  {
+    orgAccountId: FIXTURE_PRODUCER_ID,
+    listedAt: '2026-03-01T08:00:00.000Z',
+  },
+];
+
 export function cloneFixtures() {
   return {
     orgs: structuredClone(fixtureOrgs),
@@ -117,5 +132,6 @@ export function cloneFixtures() {
     lots: structuredClone(fixtureLots),
     events: structuredClone(fixtureEvents),
     certificates: structuredClone(fixtureCertificates),
+    listings: structuredClone(fixtureListings),
   };
 }

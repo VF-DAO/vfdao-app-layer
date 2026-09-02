@@ -8,6 +8,7 @@ import type {
   ChainEvent,
   CreateLotInput,
   IssueCertificateInput,
+  Listing,
   Lot,
   LotBundle,
   Org,
@@ -27,6 +28,7 @@ interface TrackingStore {
   lots: Lot[];
   events: ChainEvent[];
   certificates: Certificate[];
+  listings: Listing[];
 }
 
 function canUseStorage(): boolean {
@@ -60,7 +62,14 @@ function loadStore(): TrackingStore {
     lots: mergeById(seeded.lots, saved.lots ?? []),
     events: mergeById(seeded.events, saved.events ?? []),
     certificates: mergeById(seeded.certificates, saved.certificates ?? []),
+    listings: mergeListings(seeded.listings, saved.listings ?? []),
   };
+}
+
+function mergeListings(base: Listing[], extra: Listing[]): Listing[] {
+  const map = new Map(base.map((item) => [item.orgAccountId, item]));
+  extra.forEach((item) => map.set(item.orgAccountId, item));
+  return [...map.values()];
 }
 
 function mergeById<T extends { id: string }>(base: T[], extra: T[]): T[] {
@@ -98,6 +107,7 @@ function toBundle(store: TrackingStore, lot: Lot): LotBundle {
     events,
     certificates,
     producer: store.orgs.find((org) => org.accountId === product.producerAccountId),
+    vfListed: store.listings.some((listing) => listing.orgAccountId === lot.producerAccountId),
   };
 }
 

@@ -15,7 +15,7 @@ export default function ProductsPage() {
         <div className="space-y-3">
           <h1 className="text-3xl font-bold text-foreground sm:text-4xl md:text-5xl">Verified products</h1>
           <p className="max-w-2xl text-muted-foreground">
-            Scan a carton or open a product to see the farm-to-shelf record stored on OnSocial core.
+            Scan a carton or open a lot to see every stamp, labeled with the writer.
           </p>
           <TrackingBackendBadge />
         </div>

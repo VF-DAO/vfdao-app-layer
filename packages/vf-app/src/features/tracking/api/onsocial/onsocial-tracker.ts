@@ -22,10 +22,12 @@ import type {
   ScanRecord,
   TrackerStatus,
 } from '../../types';
+import { isListingForOrg } from '../../lib/listing';
+import { cloneFixtures } from '../fixtures';
 import { createLocalTracker } from '../local-tracker';
 import type { TrackerApi } from '../tracker-api';
 import { getOnSocialConfig, isOnSocialConfigured } from './config';
-import { coreSetPayload, recordPath } from './paths';
+import { coreSetPayload, kindFromPath, recordPath } from './paths';
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -93,6 +95,29 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
       throw new Error(message);
     }
     return org;
+  }
+
+  async function isVfListed(accountId: string): Promise<boolean> {
+    try {
+      const row = await client.queryByPath(recordPath('listed', accountId, config.appId));
+      if (isListingForOrg(row?.value, accountId)) {
+        return true;
+      }
+      const rows = await client.queryByJsonContains({ orgAccountId: accountId });
+      if (
+        rows.some(
+          (item) => kindFromPath(item.path) === 'listed' && isListingForOrg(item.value, accountId)
+        )
+      ) {
+        return true;
+      }
+      if (live) {
+        return false;
+      }
+    } catch {
+      // fall through
+    }
+    return cloneFixtures().listings.some((listing) => listing.orgAccountId === accountId);
   }
 
   return {
@@ -194,12 +219,13 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
     async getLotBundle(lotId: string): Promise<LotBundle | null> {
       const lot = await this.getLot(lotId);
       if (!lot) return null;
-      const [product, events, lotCerts, productCerts, producer] = await Promise.all([
+      const [product, events, lotCerts, productCerts, producer, vfListed] = await Promise.all([
         this.getProduct(lot.productId),
         this.getEvents(lot.id),
         this.getCertificates(lot.id),
         this.getCertificates(lot.productId),
         this.getOrg(lot.producerAccountId),
+        isVfListed(lot.producerAccountId),
       ]);
       if (!product) return null;
       return {
@@ -208,6 +234,7 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
         events,
         certificates: [...lotCerts, ...productCerts.filter((item) => !lotCerts.some((cert) => cert.id === item.id))],
         producer: producer ?? undefined,
+        vfListed,
       };
     },
 

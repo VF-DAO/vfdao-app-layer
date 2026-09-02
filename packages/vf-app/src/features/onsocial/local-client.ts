@@ -51,6 +51,9 @@ function seedFromFixtures(appId: string): KvStore {
   fixtures.certificates.forEach((certificate) =>
     put(store, recordPath('certificate', certificate.id, appId), certificate, certificate.issuerAccountId)
   );
+  fixtures.listings.forEach((listing) =>
+    put(store, recordPath('listed', listing.orgAccountId, appId), listing, listing.orgAccountId)
+  );
   return store;
 }
 

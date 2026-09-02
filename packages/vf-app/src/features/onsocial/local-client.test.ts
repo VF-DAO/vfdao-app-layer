@@ -82,6 +82,10 @@ describe('local OnSocial client', () => {
     expect(bundle?.lot.id).toBe(FIXTURE_LOT_ID);
     expect(bundle?.events.length).toBeGreaterThan(0);
     expect(bundle?.certificates.length).toBeGreaterThan(0);
+    expect(bundle?.vfListed).toBe(true);
+    expect(bundle?.events.filter((event) => event.kind === 'tested').map((event) => event.orgAccountId)).toEqual(
+      expect.arrayContaining(['nordic-mill.near', 'plant-lab.near'])
+    );
   });
 
   it('rejects writes from the wrong org role', async () => {

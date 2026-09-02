@@ -5,6 +5,7 @@ export type {
   CreateLotInput,
   EventKind,
   IssueCertificateInput,
+  Listing,
   Lot,
   LotBundle,
   Org,

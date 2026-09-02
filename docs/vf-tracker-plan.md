@@ -44,6 +44,12 @@ Kinds under the owner (account now, their core group when they have staff):
 {owner}/apps/vf-tracker/scan/{scanId}
 ```
 
+VF shelf promo (VF DAO writes this; optional):
+
+```
+{vf-dao}/apps/vf-tracker/listed/{orgAccountId}
+```
+
 Links, not shared folders:
 
 - Lot → `productId`, `producerAccountId`
@@ -106,7 +112,7 @@ Optional later: featured boost, larger bond to be **featured** as an issuer (sti
 
 ## VF app (build this)
 
-1. **Scan / lot page** — compose by `lotId`. Show writer on every stamp. VF shelf badge only if listed.
+1. **Scan / lot page** — first product surface. Compose by `lotId`. Show **every** stamp (do not collapse to one per kind). Label the writer on each. VF shelf badge only if `listed/{org}`. Unlisted lots still resolve. Dashboards later reuse `getLotBundle`.
 2. **Studio** — one schema. Session account is the writer. Producer: product/lot. Chain: event. Certifier: certificate on **their** path.
 3. **OnSocial seam** — `queryByPrefix` / `queryByJsonContains` / `queryByPath` / `set` / `completeAppHandoff({ appId: 'vf-tracker' })`. Indexed reads, not RPC. Local mock until SDK is live.
 4. **Explore** — VF group listings only. Unlisted lots still resolve by QR.
@@ -129,13 +135,14 @@ Optional later: featured boost, larger bond to be **featured** as an issuer (sti
 
 ## Build order
 
-1. Seam + studio role UX + lot QR (in progress in vf-app)
-2. Live session handoff when `@onsocial/sdk` ships
-3. Scan composes by `lotId` from org-owned paths
-4. Explore = VF listing group
-5. Deploy VF Boost + VF social-spend (`veganfriends.tkn.near`)
-6. Listing bond → `listed/` grant
-7. Per-org groups when a farm has many wallets
+1. **Scan / lot compose** — attestation graph. QR → `getLotBundle`. Writer on every stamp. VF shelf optional. (this is the first build)
+2. Seam + studio role UX + lot QR + indexed `apps/` reads — done in vf-app
+3. Producer / certifier desks — lists on the same compose (`getLotBundle`), not a second graph
+4. Live session handoff when `@onsocial/sdk` ships
+5. Explore = VF listing group (`listed/{org}` already read on scan)
+6. Deploy VF Boost + VF social-spend (`veganfriends.tkn.near`)
+7. Listing bond → `listed/` grant
+8. Per-org groups when a farm has many wallets
 
 ---
 
@@ -156,6 +163,7 @@ Hub reads:
 
 - List a kind → `queryByPrefix('product' \| 'lot' \| …)` (`dataType=apps` + `dataId=vf-tracker`, then path prefix)
 - Scan / lot bundle → `queryByJsonContains({ id })` / `{ lotId }` / `{ subjectId }` (works across writer accounts)
+- VF shelf badge → `listed/{org}` (`queryByPath` or `{ orgAccountId }` where kind is `listed`). Absence is not a failure.
 - Exact row when the account is known → `queryByPath`
 - Do **not** query `dataType: vf-tracker-lot`
 

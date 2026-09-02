@@ -14,6 +14,31 @@ describe('local tracker', () => {
     expect(bundle?.product.id).toBe(FIXTURE_PRODUCT_ID);
     expect(bundle?.events.map((event) => event.kind)).toContain('certified');
     expect(bundle?.certificates[0]?.standard).toMatch(/VegCert/);
+    expect(bundle?.vfListed).toBe(true);
+    expect(bundle?.events.filter((event) => event.kind === 'tested')).toHaveLength(2);
+  });
+
+  it('resolves an unlisted producer lot without a VF shelf flag', async () => {
+    const tracker = createLocalTracker();
+    const product = await tracker.registerProduct({
+      name: 'Cashew Cream',
+      brand: 'CashewCheese',
+      description: 'Cultured cashew cream',
+      ingredients: ['Cashews'],
+      claims: ['Vegan'],
+      producerAccountId: 'cashew.near',
+    });
+    const lot = await tracker.createLot({
+      productId: product.id,
+      label: 'Pilot lot',
+      harvestedAt: '2026-04-01',
+      quantity: '200 jars',
+      site: 'Portland',
+      producerAccountId: 'cashew.near',
+    });
+    const bundle = await tracker.getLotBundle(lot.id);
+    expect(bundle?.vfListed).toBe(false);
+    expect(bundle?.lot.id).toBe(lot.id);
   });
 
   it('registers a product and opens a lot', async () => {

@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import type { LotBundle } from '../types';
-import { deriveVerificationStatus } from '../lib/status';
 import { encodeLotQr } from '../lib/qr';
 import { CertificateBadge } from './CertificateBadge';
 import { IngredientList } from './IngredientList';
@@ -17,12 +16,15 @@ export function LotBundleView({
   bundle: LotBundle;
   showProductLink?: boolean;
 }) {
-  const status = deriveVerificationStatus(bundle.events, bundle.certificates);
   const qr = encodeLotQr(bundle.lot.id);
 
   return (
     <div className="space-y-6">
-      <ProductHeader product={bundle.product} producer={bundle.producer} status={status} />
+      <ProductHeader
+        product={bundle.product}
+        producer={bundle.producer}
+        vfListed={bundle.vfListed === true}
+      />
 
       <Card className="border border-border p-6">
         <p className="text-sm text-muted-foreground">Lot</p>
@@ -31,22 +33,31 @@ export function LotBundleView({
           Harvested {bundle.lot.harvestedAt} · {bundle.lot.quantity} · {bundle.lot.site}
         </p>
         <p className="mt-3 font-mono text-xs text-muted-foreground">{qr}</p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Each stamp below is labeled with the account that wrote it. VF listing is optional promo, not
+          a gate.
+        </p>
       </Card>
 
       <LotQrCard lotId={bundle.lot.id} lotLabel={bundle.lot.label} />
 
       <IngredientList ingredients={bundle.product.ingredients} claims={bundle.product.claims} />
 
-      {bundle.certificates.length > 0 && (
-        <div className="space-y-3">
-          {bundle.certificates.map((certificate) => (
+      <div className="space-y-3">
+        <h3 className="text-lg font-semibold text-foreground">Certificates</h3>
+        {bundle.certificates.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No certificates yet. Anyone can stamp as themselves; it will show as their account.
+          </p>
+        ) : (
+          bundle.certificates.map((certificate) => (
             <CertificateBadge key={certificate.id} certificate={certificate} />
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
 
       <Card className="border border-border p-6">
-        <h3 className="mb-4 text-lg font-semibold text-foreground">Farm to shelf</h3>
+        <h3 className="mb-4 text-lg font-semibold text-foreground">Stamps</h3>
         <SupplyChainTimeline events={bundle.events} />
       </Card>
 

@@ -13,7 +13,7 @@ export function CertificateBadge({ certificate }: { certificate: Certificate }) 
           <p className="font-semibold text-foreground">{certificate.standard}</p>
           <Badge variant={active ? 'verified' : 'orange'}>{active ? 'Active' : certificate.status}</Badge>
         </div>
-        <p className="text-sm text-muted-foreground">Issued by {certificate.issuerAccountId}</p>
+        <p className="text-sm text-muted-foreground">Stamped by {certificate.issuerAccountId}</p>
         {certificate.expiresAt && (
           <p className="text-xs text-muted-foreground">
             Expires {new Date(certificate.expiresAt).toLocaleDateString()}

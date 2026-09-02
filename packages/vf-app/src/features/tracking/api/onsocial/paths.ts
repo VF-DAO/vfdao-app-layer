@@ -3,7 +3,14 @@ export const DEFAULT_APP_ID = 'vf-tracker';
 /** First path segment after the account. Matches OnSocial `classify_data_path`. */
 export const APP_DATA_TYPE = 'apps';
 
-export type TrackingRecordKind = 'product' | 'lot' | 'event' | 'certificate' | 'org' | 'scan';
+export type TrackingRecordKind =
+  | 'product'
+  | 'lot'
+  | 'event'
+  | 'certificate'
+  | 'org'
+  | 'scan'
+  | 'listed';
 
 export function normalizeAppId(appId = DEFAULT_APP_ID): string {
   return appId.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-') || DEFAULT_APP_ID;
@@ -82,7 +89,7 @@ export function pathMatchesAppPrefix(
   return rel === normalized || rel.startsWith(`${normalized}/`);
 }
 
-const PATH_KIND = /\/(product|lot|event|certificate|org|scan)(?:\/|$)/;
+const PATH_KIND = /\/(product|lot|event|certificate|org|scan|listed)(?:\/|$)/;
 
 export function kindFromPath(path: string): TrackingRecordKind | null {
   const match = PATH_KIND.exec(path);

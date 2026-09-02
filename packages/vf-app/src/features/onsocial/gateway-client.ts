@@ -12,7 +12,15 @@ import {
   type TrackingRecordKind,
 } from '@/features/tracking/api/onsocial/paths';
 
-const KINDS: TrackingRecordKind[] = ['product', 'lot', 'event', 'certificate', 'org', 'scan'];
+const KINDS: TrackingRecordKind[] = [
+  'product',
+  'lot',
+  'event',
+  'certificate',
+  'org',
+  'scan',
+  'listed',
+];
 
 function resolveKind(type: string, appId: string): TrackingRecordKind {
   if ((KINDS as readonly string[]).includes(type)) {
