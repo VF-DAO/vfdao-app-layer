@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Award, PackagePlus, ScanLine, StickyNote, Warehouse } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAppDrawer } from '@/features/shell/drawer-context';
-import type { AppDrawerAction } from '@/features/shell/drawer-types';
+import type { TrackingDrawerAction } from '@/features/shell/drawer-types';
 import { FIXTURE_LOT_ID } from '../api/fixtures';
 import { QrScanner } from '../components/QrScanner';
 import { encodeLotQr } from '../lib/qr';
@@ -42,7 +42,7 @@ function ChoiceButton({
   );
 }
 
-export function TrackingDrawerContent({ action }: { action: AppDrawerAction }) {
+export function TrackingDrawerContent({ action }: { action: TrackingDrawerAction }) {
   const router = useRouter();
   const { openDrawer, closeDrawer } = useAppDrawer();
   const demoCode = encodeLotQr(FIXTURE_LOT_ID);
@@ -141,7 +141,7 @@ export function TrackingDrawerContent({ action }: { action: AppDrawerAction }) {
   );
 }
 
-export function drawerCopy(action: AppDrawerAction): {
+export function drawerCopy(action: TrackingDrawerAction): {
   title: string;
   subtitle: string;
   icon: ReactNode;

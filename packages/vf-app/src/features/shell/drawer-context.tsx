@@ -7,18 +7,25 @@ const AppDrawerContext = createContext<AppDrawerContextValue | null>(null);
 
 export function AppDrawerProvider({ children }: { children: ReactNode }) {
   const [action, setAction] = useState<AppDrawerAction | null>(null);
+  const [isLocked, setLocked] = useState(false);
 
   const openDrawer = useCallback((next: AppDrawerAction) => {
+    setLocked(false);
     setAction(next);
   }, []);
 
   const closeDrawer = useCallback(() => {
-    setAction(null);
-  }, []);
+    setAction((current) => {
+      if (isLocked) {
+        return current;
+      }
+      return null;
+    });
+  }, [isLocked]);
 
   const value = useMemo(
-    () => ({ action, openDrawer, closeDrawer }),
-    [action, closeDrawer, openDrawer]
+    () => ({ action, isLocked, openDrawer, closeDrawer, setLocked }),
+    [action, closeDrawer, isLocked, openDrawer]
   );
 
   return <AppDrawerContext.Provider value={value}>{children}</AppDrawerContext.Provider>;

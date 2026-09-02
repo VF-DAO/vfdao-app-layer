@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
-import { backdropVariants, drawerVariants, transitions } from '@/lib/animations';
+import { backdropVariants, drawerVariants, expandVariants, transitions } from '@/lib/animations';
 
 interface DrawerProps {
   isOpen: boolean;
@@ -23,6 +23,17 @@ interface DrawerHeaderProps {
 }
 
 interface DrawerContentProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+interface DrawerFooterProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+interface DrawerExpandableSectionProps {
+  isOpen: boolean;
   children: React.ReactNode;
   className?: string;
 }
@@ -148,5 +159,30 @@ function DrawerContent({ children, className = '' }: DrawerContentProps) {
   return <div className={`flex-1 overflow-y-auto px-5 pb-6 pt-2 ${className}`}>{children}</div>;
 }
 
+function DrawerFooter({ children, className = '' }: DrawerFooterProps) {
+  return <div className={`flex-shrink-0 border-t border-border px-5 py-4 ${className}`}>{children}</div>;
+}
+
+function DrawerExpandableSection({ isOpen, children, className = '' }: DrawerExpandableSectionProps) {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          variants={expandVariants}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          transition={transitions.normal}
+          className={className}
+        >
+          {children}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 Drawer.Header = DrawerHeader;
 Drawer.Content = DrawerContent;
+Drawer.Footer = DrawerFooter;
+Drawer.ExpandableSection = DrawerExpandableSection;

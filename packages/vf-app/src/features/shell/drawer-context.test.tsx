@@ -17,10 +17,36 @@ describe('app drawer host', () => {
     expect(result.current.action?.id).toBe('scan');
 
     act(() => {
-      result.current.openDrawer({ id: 'studio' });
+      result.current.openDrawer({ id: 'join-dao' });
     });
-    expect(result.current.action?.id).toBe('studio');
+    expect(result.current.action?.id).toBe('join-dao');
 
+    act(() => {
+      result.current.openDrawer({ id: 'edit-profile' });
+    });
+    expect(result.current.action?.id).toBe('edit-profile');
+
+    act(() => {
+      result.current.closeDrawer();
+    });
+    expect(result.current.action).toBeNull();
+  });
+
+  it('does not close while locked', () => {
+    const { result } = renderHook(() => useAppDrawer(), { wrapper });
+
+    act(() => {
+      result.current.openDrawer({ id: 'join-dao' });
+      result.current.setLocked(true);
+    });
+    act(() => {
+      result.current.closeDrawer();
+    });
+    expect(result.current.action?.id).toBe('join-dao');
+
+    act(() => {
+      result.current.setLocked(false);
+    });
     act(() => {
       result.current.closeDrawer();
     });

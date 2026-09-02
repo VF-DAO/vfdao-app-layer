@@ -25,7 +25,7 @@ function TransactionModalWrapper({ children, onClose }: { children: React.ReactN
   return (
     <AnimatePresence>
       <motion.div 
-        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 md:left-20"
+        className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4 md:left-20"
         variants={backdropVariants}
         initial="hidden"
         animate="visible"

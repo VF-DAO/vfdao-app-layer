@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { PortfolioDashboard } from '@/features/portfolio';
@@ -9,8 +8,7 @@ import { useProfile } from '@/hooks/use-profile';
 import { useVfBalance, useDaoMembership } from '@/hooks/use-vf-dao';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { HomeFloatingHeader } from '@/components/ui/home-floating-header';
-import { JoinDaoModal } from '@/features/governance/components/JoinDaoModal';
-import { usePolicy } from '@/features/governance/hooks';
+import { useAppDrawer } from '@/features/shell';
 import { FaXTwitter } from 'react-icons/fa6';
 import { Coins, Compass, Github, Send, Vote } from 'lucide-react';
 import Logo from '@/components/ui/logo';
@@ -20,8 +18,7 @@ export default function Home() {
   const { displayName, profile, loading: _profileLoading } = useProfile(accountId ?? undefined);
   const { vfBalance, vfIcon } = useVfBalance();
   const { isMember } = useDaoMembership();
-  const { data: policy } = usePolicy();
-  const [joinModalOpen, setJoinModalOpen] = useState(false);
+  const { openDrawer } = useAppDrawer();
   
   // Extract and format username from accountId (remove .near extension, capitalize first letter, truncate if too long) - fallback
   const username = accountId ? accountId.split('.')[0] : null;
@@ -42,7 +39,7 @@ export default function Home() {
           vfBalance={vfBalance}
           vfIcon={vfIcon}
           isMember={isMember}
-          onJoinClick={() => setJoinModalOpen(true)}
+          onJoinClick={() => openDrawer({ id: 'join-dao' })}
         />
       )}
 
@@ -181,13 +178,6 @@ export default function Home() {
 
     </div>
 
-      {/* Join DAO Modal */}
-      <JoinDaoModal
-        isOpen={joinModalOpen}
-        onClose={() => setJoinModalOpen(false)}
-        policy={policy}
-        accountId={accountId ?? ''}
-      />
     </>
   );
 }
