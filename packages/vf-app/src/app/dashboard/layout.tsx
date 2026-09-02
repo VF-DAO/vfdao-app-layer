@@ -1,7 +1,7 @@
 'use client';
 
 import { type ReactNode } from 'react';
-import { BarChart3, LogOut, Sparkles, Vote, Wallet } from 'lucide-react';
+import { BarChart3, LogOut, Package, Sparkles, Vote, Wallet } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
@@ -42,11 +42,18 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               <span>History</span>
             </Link>
             <Link
-              href="/dashboard/scanner"
+              href="/scan"
               className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors"
             >
               <Sparkles className="w-5 h-5" />
               <span>Scanner</span>
+            </Link>
+            <Link
+              href="/products"
+              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors"
+            >
+              <Package className="w-5 h-5" />
+              <span>Products</span>
             </Link>
           </nav>
 

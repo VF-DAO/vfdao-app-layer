@@ -1,14 +1,21 @@
 'use client';
 
+import Link from 'next/link';
 import { Award, CheckCircle2, Leaf, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useScanHistory } from '@/features/tracking';
+import { useWallet } from '@/features/wallet';
 
 export default function ConsumerDashboard() {
+  const { accountId } = useWallet();
+  const { data: scans } = useScanHistory(accountId ?? undefined);
+  const verifiedCount = scans?.length ?? 0;
+
   const stats = [
     {
       icon: <CheckCircle2 className="w-8 h-8" />,
       label: 'Products Verified',
-      value: '0',
+      value: String(verifiedCount),
       color: 'text-verified',
     },
     {
@@ -62,24 +69,33 @@ export default function ConsumerDashboard() {
         <div className="lg:col-span-2 p-4 sm:p-6 rounded-2xl border border-border bg-card">
           <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-3 sm:mb-4">Recent Verifications</h2>
           <div className="space-y-3 sm:space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
+          {(scans && scans.length > 0 ? scans.slice(0, 3) : []).map((scan, i) => (
+              <Link
+                key={scan.id}
+                href={`/scan/${encodeURIComponent(scan.code)}`}
                 className="p-3 sm:p-4 rounded-lg bg-muted/50 flex items-center justify-between hover:bg-muted transition-colors"
               >
                 <div className="flex items-center gap-2 sm:gap-3">
                   <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/20 flex items-center justify-center text-primary font-bold text-sm sm:text-base">
-                    {i}
+                    {i + 1}
                   </div>
                   <div>
-                    <p className="font-medium text-foreground text-sm sm:text-base">No verifications yet</p>
+                    <p className="font-medium text-foreground text-sm sm:text-base">{scan.productId}</p>
                     <p className="text-xs text-muted-foreground">
-                      Start scanning products to build your history
+                      {new Date(scan.scannedAt).toLocaleString()}
                     </p>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
+            {!scans?.length && (
+              <div className="p-3 sm:p-4 rounded-lg bg-muted/50">
+                <p className="font-medium text-foreground text-sm sm:text-base">No verifications yet</p>
+                <p className="text-xs text-muted-foreground">
+                  Start scanning products to build your history
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -87,11 +103,11 @@ export default function ConsumerDashboard() {
         <div className="space-y-3 sm:space-y-4">
           <div className="p-4 sm:p-6 rounded-2xl border border-border bg-card">
             <h3 className="font-bold text-foreground mb-3 sm:mb-4 text-sm sm:text-base">Quick Start</h3>
-            <Button variant="verified" className="w-full mb-2 sm:mb-3">
-              📱 Scan Product
+            <Button asChild variant="verified" className="w-full mb-2 sm:mb-3">
+              <Link href="/scan">Scan Product</Link>
             </Button>
-            <Button variant="outline" className="w-full">
-              📚 Learn More
+            <Button asChild variant="outline" className="w-full">
+              <Link href="/products">Browse products</Link>
             </Button>
           </div>
 

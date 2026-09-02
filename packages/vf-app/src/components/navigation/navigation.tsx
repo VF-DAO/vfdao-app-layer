@@ -415,6 +415,8 @@ export function Navigation() {
       setActiveSection('/vf');
     } else if (pathname.startsWith('/dao')) {
       setActiveSection('/dao');
+    } else if (pathname.startsWith('/products') || pathname.startsWith('/scan') || pathname.startsWith('/studio')) {
+      setActiveSection('/explore');
     } else {
       setActiveSection(pathname);
     }

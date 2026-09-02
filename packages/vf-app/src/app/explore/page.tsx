@@ -6,14 +6,14 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
-  Search, 
-  Store, 
-  Heart, 
-  Palette, 
-  Package,
-  Utensils,
   ArrowRight,
-  Sparkles
+  Heart, 
+  Package,
+  Palette, 
+  Search, 
+  Sparkles,
+  Store, 
+  Utensils,
 } from 'lucide-react';
 
 interface ExploreCategory {
@@ -69,8 +69,8 @@ const categories: ExploreCategory[] = [
     title: 'Verified Products',
     description: 'Browse products verified through our tracking system',
     icon: <Package className="w-6 h-6" />,
-    href: '/explore/products',
-    comingSoon: true,
+    href: '/products',
+    comingSoon: false,
     gradient: 'from-verified/20 to-verified/5',
   },
 ];
