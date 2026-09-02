@@ -3,6 +3,8 @@
 Consumer dashboard for VeganFriends DAO. Currently in development with wallet authentication and
 product verification features.
 
+**Tracker / OnSocial plan:** [docs/vf-tracker-plan.md](../../docs/vf-tracker-plan.md) — keep this when building scan, studio, listing, and VF-token Boost/spend.
+
 ## Quick Start
 
 ```bash
