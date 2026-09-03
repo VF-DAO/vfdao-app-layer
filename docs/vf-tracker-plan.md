@@ -54,7 +54,12 @@ Links, not shared folders:
 
 - Lot → `productId`, `producerAccountId`
 - Event → `lotId`, `orgAccountId` (mill writes this on **the mill’s** path)
-- Certificate → `subjectId` (lot), `issuerAccountId` (certifier writes on **their** path)
+- Certificate → `issuerAccountId` (certifier writes on **their** path) and a **subject**:
+  - `subjectType: lot` + `subjectId = lotId` — tracking product (scan compose)
+  - `subjectType: org` + `subjectId = accountId` — company product (profile + later wallet token)
+  - Optional `expiresAt` — review clock, not for life
+
+Do **not** treat an org cert as “every SKU is certified.” Scan still composes lot stamps. The org cert is context: this company is under review until a date.
 
 QR: `vf:lot:<lotId>` (keep ids globally unique).
 
@@ -91,7 +96,7 @@ UI is not a lock.
 
 - You can always `Set` on your own tree. CLI can too.
 - You cannot `Set` as another account. Core `predecessor` is the stamp.
-- Certifiers do **not** get `WRITE` on the producer. They stamp `certificate` on their path with `subjectId = lotId`.
+- Certifiers do **not** get `WRITE` on the producer. They stamp `certificate` on their path. Subject is a **lot** or an **org**, never a grant on the farm folder.
 - VF group `listed/{org}` is the only VF write-gate (shelf). Without it they still have a real lot + real VegCert stamp — just not on Explore.
 - App mirrors `has_permission` / listing / spend totals. It must not be the gate.
 
@@ -101,9 +106,11 @@ UI is not a lock.
 
 VegCert and peers are already public names. VF must **not** vote them into existence.
 
-- Scan shows every certificate, labeled as the issuer account.
+- Scan shows every **lot** certificate, labeled as the issuer account.
+- Company review (`subjectType: org`) shows on the producer profile and as scan **context**. It does not stamp every product.
 - “VF listed / featured” is optional promo, not accreditation.
 - A nobody can write a cert as themselves; it shows as them, with no VF promo.
+- Soulbound token issuance (Scarces) later **mirrors the org cert** onto the producer wallet, with the same expiry. Do not mint one token per lot. Do not make the token the gate to stamp.
 
 ---
 
@@ -139,7 +146,7 @@ Optional later: featured boost, larger bond to be **featured** as an issuer (sti
 2. **Studio** — one schema. Session account is the writer. Producer: product/lot. Chain: event. Certifier: certificate on **their** path.
 3. **OnSocial seam** — `queryByPrefix` / `queryByJsonContains` / `queryByPath` / `set` / `completeAppHandoff({ appId: 'vf-tracker' })`. Indexed reads, not RPC. Local mock until SDK is live. Names, avatars, `kind`, and `industry` read/write `{account}/profile/` on core — not `social.near`.
 4. **Explore** — VF group listings only. Unlisted lots still resolve by QR.
-5. **Later** — org’s own core group for staff wallets; VF Boost + social-spend; listing bond → grant.
+5. **Later** — org’s own core group for staff wallets; VF Boost + social-spend; listing bond → grant; Scarces mint of the org cert (wallet badge, same expiry).
 
 ---
 
@@ -174,6 +181,7 @@ Do **not** use cleanup as a chance to add product-option paths or a second compo
 6. Deploy VF Boost + VF social-spend (`veganfriends.tkn.near`)
 7. Listing bond → `listed/` grant
 8. Per-org groups when a farm has many wallets
+9. Scarces soulbound mint for **org** certs only (facility / season review). Lot certs stay OnSocial `certificate/` writes.
 
 ---
 

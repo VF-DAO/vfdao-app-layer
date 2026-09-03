@@ -14,7 +14,7 @@ import {
 } from '../hooks/use-tracker';
 import { certificateBundleHref, deskTitle, eventBundleHref } from '../lib/desk';
 import { canIssueCertificate, canRecordEvent, canRegisterProduct, roleLabel } from '../lib/roles';
-import { eventKindLabel } from '../lib/status';
+import { certificateUntilLabel, eventKindLabel } from '../lib/status';
 import { ProducerDesk } from './ProducerDesk';
 import { TrackingBackendBadge } from './TrackingBackendBadge';
 
@@ -102,7 +102,14 @@ export function DeskView() {
               <Link href={certificateBundleHref(certificate)} className="block">
                 <h3 className="text-lg font-semibold text-foreground">{certificate.standard}</h3>
                 <p className="text-sm text-muted-foreground">
-                  {certificate.subjectType} {certificate.subjectId} · {certificate.status} · {certificate.issuedAt}
+                  {certificate.subjectType === 'org'
+                    ? 'Company review'
+                    : certificate.subjectType === 'lot'
+                      ? 'Lot stamp'
+                      : 'Product stamp'}{' '}
+                  {certificate.subjectId}
+                  {certificateUntilLabel(certificate) ? ` · ${certificateUntilLabel(certificate)}` : ''} ·{' '}
+                  {certificate.status}
                 </p>
               </Link>
             </Card>

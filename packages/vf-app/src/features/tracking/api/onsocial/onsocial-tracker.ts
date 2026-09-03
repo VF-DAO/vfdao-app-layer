@@ -1,6 +1,7 @@
 import type { OnSocialClient } from '@/features/onsocial';
 import { createId } from '../../lib/ids';
 import { parseScanCode } from '../../lib/qr';
+import { assertOrgCertificateExpiry } from '../../lib/status';
 import {
   canCreateLot,
   canIssueCertificate,
@@ -294,20 +295,23 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
     async getLotBundle(lotId: string): Promise<LotBundle | null> {
       const lot = await this.getLot(lotId);
       if (!lot) return null;
-      const [product, events, lotCerts, productCerts, producer, vfListed] = await Promise.all([
+      const [product, events, lotCerts, productCerts, producerCerts, producer, vfListed] = await Promise.all([
         this.getProduct(lot.productId),
         this.getEvents(lot.id),
         this.getCertificates(lot.id),
         this.getCertificates(lot.productId),
+        this.getCertificates(lot.producerAccountId),
         this.getOrg(lot.producerAccountId),
         isVfListed(lot.producerAccountId),
       ]);
       if (!product) return null;
+      const lotAndProduct = [...lotCerts, ...productCerts.filter((item) => !lotCerts.some((cert) => cert.id === item.id))];
       return {
         lot,
         product,
         events,
-        certificates: [...lotCerts, ...productCerts.filter((item) => !lotCerts.some((cert) => cert.id === item.id))],
+        certificates: lotAndProduct.filter((item) => item.subjectType !== 'org'),
+        orgCertificates: producerCerts.filter((item) => item.subjectType === 'org'),
         producer: producer ?? undefined,
         vfListed,
       };
@@ -430,6 +434,7 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
     },
 
     async issueCertificate(input: IssueCertificateInput): Promise<Certificate> {
+      assertOrgCertificateExpiry(input.subjectType, input.expiresAt);
       const org = await requireOrg(
         input.issuerAccountId,
         canIssueCertificate,

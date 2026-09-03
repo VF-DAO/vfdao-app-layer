@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { EVENT_KINDS, type EventKind, type Product } from '../types';
+import { type CertificateSubjectType, EVENT_KINDS, type EventKind, type Product } from '../types';
 import { useStudioActor } from '../hooks/use-studio-actor';
 import { useLotsForAccount, useProductsForAccount } from '../hooks/use-tracker';
 import { useTrackingMutations } from '../hooks/use-tracking-mutations';
@@ -296,20 +296,30 @@ export function RecordEventForm({
 
 export function IssueCertificateForm({
   subjectId,
-  subjectType = 'lot',
+  subjectType: initialSubjectType = 'lot',
   chrome = 'card',
   onSuccess,
 }: {
   subjectId?: string;
-  subjectType?: 'lot' | 'product';
+  subjectType?: CertificateSubjectType;
   chrome?: 'card' | 'plain';
   onSuccess?: () => void;
 }) {
   const actor = useStudioActor();
   const { issueCertificate, pending, error } = useTrackingMutations();
+  const [subjectType, setSubjectType] = useState<CertificateSubjectType>(initialSubjectType);
   const [id, setId] = useState(subjectId ?? '');
-  const [standard, setStandard] = useState('VegCert Vegan Standard 2026');
+  const [standard, setStandard] = useState(
+    initialSubjectType === 'org' ? 'VegCert Facility Standard 2026' : 'VegCert Vegan Standard 2026'
+  );
+  const [expiresAt, setExpiresAt] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
   const allowed = canIssueCertificate(actor.role);
+  const isOrg = subjectType === 'org';
+
+  useEffect(() => {
+    if (subjectId) setId(subjectId);
+  }, [subjectId]);
 
   return (
     <FormChrome chrome={chrome} title="Issue certificate">
@@ -317,30 +327,70 @@ export function IssueCertificateForm({
         className="space-y-3"
         onSubmit={(event) => {
           event.preventDefault();
+          setFormError(null);
+          if (isOrg && !expiresAt) {
+            setFormError('Company review needs an expiry — that is the review clock.');
+            return;
+          }
           void issueCertificate({
             subjectType,
             subjectId: id,
             standard,
             issuerAccountId: actor.accountId ?? 'vegcert.near',
+            expiresAt: expiresAt || undefined,
           }).then(() => {
             onSuccess?.();
           });
         }}
       >
+        <p className="text-sm text-muted-foreground">
+          Company review is about the producer. A lot stamp is what a café scans. Neither writes on the farm.
+        </p>
+        <div>
+          <FieldLabel>Subject</FieldLabel>
+          <select
+            className="h-12 w-full rounded-full border border-border bg-transparent px-4 text-sm"
+            value={subjectType}
+            onChange={(event) => {
+              const next = event.target.value as CertificateSubjectType;
+              setSubjectType(next);
+              setStandard(
+                next === 'org' ? 'VegCert Facility Standard 2026' : 'VegCert Vegan Standard 2026'
+              );
+            }}
+          >
+            <option value="lot">Lot stamp (what a café scans)</option>
+            <option value="org">Company review (profile + scan context)</option>
+          </select>
+        </div>
         {!subjectId && (
           <div>
-            <FieldLabel>Subject id</FieldLabel>
-            <Input value={id} onChange={(event) => setId(event.target.value)} required />
+            <FieldLabel>{isOrg ? 'Producer account' : 'Lot id'}</FieldLabel>
+            <Input
+              value={id}
+              onChange={(event) => setId(event.target.value)}
+              placeholder={isOrg ? 'green-valley.near' : 'lot-oatmilk-nordic-2403'}
+              required
+            />
           </div>
         )}
         <div>
           <FieldLabel>Standard</FieldLabel>
           <Input value={standard} onChange={(event) => setStandard(event.target.value)} required />
         </div>
+        <div>
+          <FieldLabel>{isOrg ? 'Review until (required)' : 'Expires (optional)'}</FieldLabel>
+          <Input
+            type="date"
+            value={expiresAt}
+            onChange={(event) => setExpiresAt(event.target.value)}
+            required={isOrg}
+          />
+        </div>
         {!allowed && <p className="text-sm text-orange">{actor.reason ?? 'Certifier role required.'}</p>}
-        {error && <p className="text-sm text-orange">{error}</p>}
+        {(formError || error) && <p className="text-sm text-orange">{formError ?? error}</p>}
         <Button type="submit" variant="verified" disabled={pending || actor.pending || !allowed || !id}>
-          {pending ? 'Saving…' : 'Issue certificate'}
+          {pending ? 'Saving…' : isOrg ? 'Issue company review' : 'Issue lot stamp'}
         </Button>
       </form>
     </FormChrome>

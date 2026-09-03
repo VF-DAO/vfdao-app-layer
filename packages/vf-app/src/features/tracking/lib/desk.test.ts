@@ -53,8 +53,15 @@ describe('desk lists', () => {
     expect(eventsForAccount(fixtures.events, FIXTURE_PROCESSOR_ID).every((event) => event.orgAccountId === FIXTURE_PROCESSOR_ID)).toBe(
       true
     );
-    expect(certificatesForAccount(fixtures.certificates, FIXTURE_CERTIFIER_ID)[0]?.subjectId).toBe(FIXTURE_LOT_ID);
-    expect(certificateBundleHref(fixtures.certificates[0])).toBe(lotBundleHref(FIXTURE_LOT_ID));
+    expect(certificatesForAccount(fixtures.certificates, FIXTURE_CERTIFIER_ID).map((item) => item.subjectType)).toEqual(
+      ['lot', 'org']
+    );
+    expect(certificateBundleHref(fixtures.certificates.find((item) => item.subjectType === 'lot')!)).toBe(
+      lotBundleHref(FIXTURE_LOT_ID)
+    );
+    expect(certificateBundleHref(fixtures.certificates.find((item) => item.subjectType === 'org')!)).toBe(
+      `/profile/${FIXTURE_PRODUCER_ID}`
+    );
     expect(eventBundleHref(fixtures.events[0])).toBe(lotBundleHref(fixtures.events[0].lotId));
   });
 

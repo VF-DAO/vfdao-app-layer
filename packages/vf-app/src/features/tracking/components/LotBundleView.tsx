@@ -43,11 +43,23 @@ export function LotBundleView({
 
       <IngredientList ingredients={bundle.product.ingredients} claims={bundle.product.claims} />
 
+      {(bundle.orgCertificates?.length ?? 0) > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-lg font-semibold text-foreground">Company review</h3>
+          <p className="text-sm text-muted-foreground">
+            About the producer — not this lot. A company review does not certify every SKU.
+          </p>
+          {bundle.orgCertificates?.map((certificate) => (
+            <CertificateBadge key={certificate.id} certificate={certificate} />
+          ))}
+        </div>
+      )}
+
       <div className="space-y-3">
-        <h3 className="text-lg font-semibold text-foreground">Certificates</h3>
+        <h3 className="text-lg font-semibold text-foreground">Lot certificates</h3>
         {bundle.certificates.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No certificates yet. Anyone can stamp as themselves; it will show as their account.
+            No lot certificates yet. Anyone can stamp as themselves; it will show as their account.
           </p>
         ) : (
           bundle.certificates.map((certificate) => (

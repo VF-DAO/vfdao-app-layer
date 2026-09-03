@@ -64,6 +64,18 @@ const listedBundle: LotBundle = {
       status: 'active',
     },
   ],
+  orgCertificates: [
+    {
+      id: 'cert-org-1',
+      subjectType: 'org',
+      subjectId: 'green-valley.near',
+      standard: 'VegCert Facility Standard 2026',
+      issuerAccountId: 'vegcert.near',
+      issuedAt: '2026-03-01T08:00:00.000Z',
+      expiresAt: '2027-03-01T08:00:00.000Z',
+      status: 'active',
+    },
+  ],
   producer: {
     accountId: 'green-valley.near',
     name: 'Green Valley Farms',
@@ -92,6 +104,13 @@ describe('LotBundleView', () => {
       'href',
       '/profile/plant-lab.near'
     );
+    expect(screen.getByRole('heading', { name: 'Company review' })).toBeInTheDocument();
+    expect(screen.getByText('VegCert Facility Standard 2026')).toBeInTheDocument();
+    expect(
+      screen.getByText('About the producer — not this lot. A company review does not certify every SKU.')
+    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Lot certificates' })).toBeInTheDocument();
+    expect(screen.getByText('VegCert Vegan Standard 2026')).toBeInTheDocument();
     expect(screen.queryByText('Not recorded yet')).not.toBeInTheDocument();
     expect(screen.queryByText('Verified vegan')).not.toBeInTheDocument();
   });
@@ -103,6 +122,7 @@ describe('LotBundleView', () => {
           ...listedBundle,
           vfListed: false,
           certificates: [],
+          orgCertificates: [],
           events: [],
           lot: { ...listedBundle.lot, producerAccountId: 'cashew.near' },
         }}
@@ -110,6 +130,7 @@ describe('LotBundleView', () => {
     );
 
     expect(screen.queryByText('On the VF shelf')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Company review' })).not.toBeInTheDocument();
     expect(screen.getByText('Spring harvest')).toBeInTheDocument();
     expect(screen.getByText('No stamps on this lot yet.')).toBeInTheDocument();
   });
