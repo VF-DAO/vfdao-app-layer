@@ -1,8 +1,20 @@
-// src/hooks/use-profile-editor.ts
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { type ProfileUpdateData, socialDBService } from '../services/social-db';
 import { useWallet } from '../features/wallet';
 import { useProfile } from './use-profile';
+import { buildCoreSetTransaction } from '@/features/onsocial/core-write';
+import { cidFromMediaRef, resolveOnSocialMediaUrl, toIpfsUri } from '@/features/onsocial/media';
+import {
+  buildProfileSetData,
+  editorFaceKind,
+  isDaoAccount,
+  type OnSocialProfile,
+  type ProfileKind,
+  type ProfileUpdate,
+} from '@/features/onsocial/profile';
+import { applyLocalProfileUpdate } from '@/features/onsocial/profile-service';
+import { getStoredSession } from '@/features/onsocial/session';
+import { getOnSocialConfig } from '@/features/tracking/api/onsocial/config';
+import { relayCoreSet } from '@/features/tracking/api/onsocial/gateway';
 
 export interface UseProfileEditorOptions {
   onSuccess?: (transactionHash?: string) => void;
@@ -11,16 +23,17 @@ export interface UseProfileEditorOptions {
 
 export interface ProfileEditorState {
   name: string;
-  description: string;
+  bio: string;
   imageUrl: string;
   imageIpfsCid: string;
   backgroundImageUrl: string;
   backgroundImageIpfsCid: string;
   website: string;
   location: string;
-  tagline: string;
-  tags: string; // Comma-separated tags
-  linktree: {
+  kind: 'person' | 'org';
+  industry: string;
+  tags: string;
+  links: {
     twitter?: string;
     github?: string;
     telegram?: string;
@@ -28,195 +41,199 @@ export interface ProfileEditorState {
   };
 }
 
+function mediaParts(value?: string): { url: string; cid: string } {
+  if (!value) return { url: '', cid: '' };
+  const cid = cidFromMediaRef(value);
+  if (cid) return { url: '', cid };
+  return { url: value, cid: '' };
+}
+
 export function useProfileEditor(options: UseProfileEditorOptions = {}) {
   const { wallet, accountId } = useWallet();
-  const { profile, loading: isLoadingProfile, refetch } = useProfile(accountId);
-  
+  const { profile, loading: isLoadingProfile, refetch, kind } = useProfile(accountId);
+  const daoLocked = isDaoAccount(accountId);
+
+  const getInitialState = useCallback((): ProfileEditorState => {
+    const avatar = mediaParts(profile?.avatar);
+    const banner = mediaParts(profile?.banner);
+    return {
+      name: profile?.name ?? '',
+      bio: profile?.bio ?? '',
+      imageUrl: avatar.url,
+      imageIpfsCid: avatar.cid,
+      backgroundImageUrl: banner.url,
+      backgroundImageIpfsCid: banner.cid,
+      website: profile?.links?.website ?? '',
+      location: profile?.location ?? '',
+      kind: daoLocked ? 'person' : editorFaceKind(profile?.kind ?? kind),
+      industry: profile?.industry ?? '',
+      tags: profile?.tags?.join(', ') ?? '',
+      links: {
+        twitter: profile?.links?.twitter ?? profile?.links?.x ?? '',
+        github: profile?.links?.github ?? '',
+        telegram: profile?.links?.telegram ?? '',
+        website: profile?.links?.website ?? '',
+      },
+    };
+  }, [daoLocked, kind, profile]);
+
+  const [formState, setFormState] = useState<ProfileEditorState>(getInitialState);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [transactionHash, setTransactionHash] = useState<string | null>(null);
-
-  // Initialize form state from current profile
-  const getInitialState = useCallback((): ProfileEditorState => {
-    const currentProfile = profile?.profile;
-    // Convert tags object to comma-separated string
-    const tagsString = currentProfile?.tags 
-      ? Object.keys(currentProfile.tags).join(', ')
-      : '';
-    return {
-      name: currentProfile?.name ?? '',
-      description: currentProfile?.description ?? '',
-      imageUrl: currentProfile?.image?.url ?? '',
-      imageIpfsCid: currentProfile?.image?.ipfs_cid ?? '',
-      backgroundImageUrl: currentProfile?.backgroundImage?.url ?? '',
-      backgroundImageIpfsCid: currentProfile?.backgroundImage?.ipfs_cid ?? '',
-      website: currentProfile?.website ?? '',
-      location: currentProfile?.location ?? '',
-      tagline: currentProfile?.tagline ?? '',
-      tags: tagsString,
-      linktree: {
-        twitter: currentProfile?.linktree?.twitter ?? '',
-        github: currentProfile?.linktree?.github ?? '',
-        telegram: currentProfile?.linktree?.telegram ?? '',
-        website: currentProfile?.linktree?.website ?? '',
-      },
-    };
-  }, [profile]);
-
-  const [formState, setFormState] = useState<ProfileEditorState>(getInitialState);
-  
-  // Track if we've synced with profile data
   const hasSyncedProfile = useRef(false);
 
-  // Sync form state when profile data loads for the first time
   useEffect(() => {
     if (profile && !hasSyncedProfile.current) {
       setFormState(getInitialState());
       hasSyncedProfile.current = true;
     }
-  }, [profile, getInitialState]);
+  }, [getInitialState, profile]);
 
-  // Reset form to current profile values
   const resetForm = useCallback(() => {
     setFormState(getInitialState());
     setError(null);
     setTransactionHash(null);
-    hasSyncedProfile.current = true; // Mark as synced after reset
+    hasSyncedProfile.current = true;
   }, [getInitialState]);
 
-  // Update a single field
   const updateField = useCallback(<K extends keyof ProfileEditorState>(
     field: K,
     value: ProfileEditorState[K]
   ) => {
-    setFormState(prev => ({ ...prev, [field]: value }));
+    setFormState((prev) => ({ ...prev, [field]: value }));
   }, []);
 
-  // Update linktree field
-  const updateLinktree = useCallback((
-    platform: keyof ProfileEditorState['linktree'],
-    value: string
-  ) => {
-    setFormState(prev => ({
+  const updateLink = useCallback((platform: keyof ProfileEditorState['links'], value: string) => {
+    setFormState((prev) => ({
       ...prev,
-      linktree: { ...prev.linktree, [platform]: value },
+      links: { ...prev.links, [platform]: value },
     }));
   }, []);
 
-  // Build profile update data from form state
-  // Social DB uses MERGE - only send changed fields
-  // Send null to DELETE a field, string to ADD/UPDATE
-  const buildProfileData = useCallback((): ProfileUpdateData => {
-    const data: ProfileUpdateData = {};
+  const buildUpdate = useCallback((): ProfileUpdate => {
+    const data: ProfileUpdate = {};
     const initial = getInitialState();
-
-    // Helper to check if field changed and return value or null for deletion
-    const getFieldUpdate = (current: string, original: string): string | null | undefined => {
-      const trimmedCurrent = current.trim();
-      const trimmedOriginal = original.trim();
-      
-      if (trimmedCurrent === trimmedOriginal) return undefined; // No change
-      if (trimmedCurrent) return trimmedCurrent; // Updated value
-      if (trimmedOriginal) return null; // Was set, now empty = delete
-      return undefined; // Both empty, no change
+    const changed = (current: string, original: string): string | null | undefined => {
+      const next = current.trim();
+      const prev = original.trim();
+      if (next === prev) return undefined;
+      if (next) return next;
+      return prev ? null : undefined;
     };
 
-    // Only include fields that changed
-    const nameUpdate = getFieldUpdate(formState.name, initial.name);
-    if (nameUpdate !== undefined) data.name = nameUpdate;
-    
-    const descUpdate = getFieldUpdate(formState.description, initial.description);
-    if (descUpdate !== undefined) data.description = descUpdate;
-    
-    const websiteUpdate = getFieldUpdate(formState.website, initial.website);
-    if (websiteUpdate !== undefined) data.website = websiteUpdate;
-    
-    const locationUpdate = getFieldUpdate(formState.location, initial.location);
-    if (locationUpdate !== undefined) data.location = locationUpdate;
-    
-    const taglineUpdate = getFieldUpdate(formState.tagline, initial.tagline);
-    if (taglineUpdate !== undefined) data.tagline = taglineUpdate;
+    const name = changed(formState.name, initial.name);
+    if (name !== undefined) data.name = name;
+    const bio = changed(formState.bio, initial.bio);
+    if (bio !== undefined) data.bio = bio;
+    const location = changed(formState.location, initial.location);
+    if (location !== undefined) data.location = location;
 
-    // Handle image - check if changed
-    const currentImageKey = formState.imageIpfsCid.trim() || formState.imageUrl.trim();
-    const initialImageKey = initial.imageIpfsCid.trim() || initial.imageUrl.trim();
-    
-    if (currentImageKey !== initialImageKey) {
-      if (formState.imageIpfsCid.trim()) {
-        data.image = { ipfs_cid: formState.imageIpfsCid.trim() };
-      } else if (formState.imageUrl.trim()) {
-        data.image = { url: formState.imageUrl.trim() };
-      } else if (initialImageKey) {
-        // Had image, now cleared = delete
-        data.image = null;
+    if (!daoLocked) {
+      if (formState.kind !== initial.kind) {
+        data.kind = formState.kind;
+      }
+      if (formState.kind === 'org') {
+        const industry = changed(formState.industry, initial.industry);
+        if (industry !== undefined) data.industry = industry;
+      } else if (initial.industry) {
+        data.industry = null;
       }
     }
 
-    // Handle background image - check if changed
-    const currentBgKey = formState.backgroundImageIpfsCid.trim() || formState.backgroundImageUrl.trim();
-    const initialBgKey = initial.backgroundImageIpfsCid.trim() || initial.backgroundImageUrl.trim();
-    
-    if (currentBgKey !== initialBgKey) {
-      if (formState.backgroundImageIpfsCid.trim()) {
-        data.backgroundImage = { ipfs_cid: formState.backgroundImageIpfsCid.trim() };
-      } else if (formState.backgroundImageUrl.trim()) {
-        data.backgroundImage = { url: formState.backgroundImageUrl.trim() };
-      } else if (initialBgKey) {
-        // Had bg image, now cleared = delete
-        data.backgroundImage = null;
-      }
+    const mediaValue = (cid: string, url: string): string | null | undefined => {
+      if (cid.trim()) return toIpfsUri(cid.trim());
+      if (url.trim()) return url.trim();
+      return null;
+    };
+    const currentAvatar = mediaValue(formState.imageIpfsCid, formState.imageUrl);
+    const initialAvatar = mediaValue(initial.imageIpfsCid, initial.imageUrl);
+    if ((currentAvatar ?? '') !== (initialAvatar ?? '')) {
+      data.avatar = currentAvatar;
+    }
+    const currentBanner = mediaValue(formState.backgroundImageIpfsCid, formState.backgroundImageUrl);
+    const initialBanner = mediaValue(initial.backgroundImageIpfsCid, initial.backgroundImageUrl);
+    if ((currentBanner ?? '') !== (initialBanner ?? '')) {
+      data.banner = currentBanner;
     }
 
-    // Handle tags - only if changed
     if (formState.tags !== initial.tags) {
-      if (formState.tags.trim()) {
-        const tagsObject: Record<string, string> = {};
-        formState.tags.split(',').forEach(tag => {
-          const trimmedTag = tag.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '');
-          if (trimmedTag) {
-            tagsObject[trimmedTag] = '';
-          }
-        });
-        if (Object.keys(tagsObject).length > 0) {
-          data.tags = tagsObject;
-        }
-      } else if (initial.tags.trim()) {
-        // Had tags, now empty = delete
-        data.tags = null;
-      }
+      const tags = formState.tags
+        .split(',')
+        .map((tag) => tag.trim().toLowerCase().replace(/[^a-z0-9-_]/g, ''))
+        .filter(Boolean);
+      data.tags = tags.length > 0 ? tags : initial.tags.trim() ? null : undefined;
     }
 
-    // Handle linktree - only include changed values
-    const linktreeUpdate: Record<string, string | null> = {};
-    let hasLinktreeChanges = false;
-    
-    Object.entries(formState.linktree).forEach(([key, value]) => {
-      const initialValue = initial.linktree[key as keyof typeof initial.linktree] ?? '';
-      const currentValue = value?.trim() ?? '';
-      const originalValue = initialValue?.trim() ?? '';
-      
-      if (currentValue !== originalValue) {
-        hasLinktreeChanges = true;
-        if (currentValue) {
-          linktreeUpdate[key] = currentValue;
-        } else if (originalValue) {
-          // Was set, now empty = delete
-          linktreeUpdate[key] = null;
-        }
+    const links: Record<string, string | null> = {};
+    let linksChanged = false;
+    const nextWebsite = formState.website.trim()
+      ? formState.website.trim()
+      : (formState.links.website?.trim() ?? '');
+    const prevWebsite = initial.website.trim()
+      ? initial.website.trim()
+      : (initial.links.website?.trim() ?? '');
+    if (nextWebsite !== prevWebsite) {
+      linksChanged = true;
+      links.website = nextWebsite || null;
+    }
+    (['twitter', 'github', 'telegram'] as const).forEach((key) => {
+      const next = formState.links[key]?.trim() ?? '';
+      const prev = initial.links[key]?.trim() ?? '';
+      if (next !== prev) {
+        linksChanged = true;
+        links[key] = next || null;
       }
     });
-    
-    if (hasLinktreeChanges) {
-      data.linktree = linktreeUpdate;
-    }
+    if (linksChanged) data.links = links;
 
     return data;
-  }, [formState, getInitialState]);
+  }, [daoLocked, formState, getInitialState]);
 
-  // Submit profile update
+  const toLocalProfile = useCallback(
+    (update: ProfileUpdate): OnSocialProfile => {
+      const links = { ...profile?.links };
+      if (update.links) {
+        Object.entries(update.links).forEach(([key, value]) => {
+          if (value) links[key] = value;
+          else delete links[key];
+        });
+      }
+      const nextKind: ProfileKind | undefined = daoLocked
+        ? 'dao'
+        : update.kind === null
+          ? undefined
+          : (update.kind ?? profile?.kind);
+      return {
+        accountId: accountId ?? '',
+        name: update.name === null ? undefined : (update.name ?? profile?.name),
+        bio: update.bio === null ? undefined : (update.bio ?? profile?.bio),
+        location: update.location === null ? undefined : (update.location ?? profile?.location),
+        industry:
+          nextKind === 'org'
+            ? update.industry === null
+              ? undefined
+              : (update.industry ?? profile?.industry)
+            : undefined,
+        kind: nextKind,
+        avatar: update.avatar === null ? undefined : (update.avatar ?? profile?.avatar),
+        banner: update.banner === null ? undefined : (update.banner ?? profile?.banner),
+        links,
+        tags: update.tags === null ? undefined : (update.tags ?? profile?.tags),
+      };
+    },
+    [accountId, daoLocked, profile]
+  );
+
   const submitProfile = useCallback(async () => {
-    if (!wallet || !accountId) {
+    if (!accountId) {
       setError('Wallet not connected');
+      return false;
+    }
+
+    const update = buildUpdate();
+    if (Object.keys(update).length === 0) {
+      setError('No profile data to update');
       return false;
     }
 
@@ -225,78 +242,84 @@ export function useProfileEditor(options: UseProfileEditorOptions = {}) {
     setTransactionHash(null);
 
     try {
-      const profileData = buildProfileData();
-      
-      if (Object.keys(profileData).length === 0) {
-        setError('No profile data to update');
-        setIsSubmitting(false);
-        return false;
+      applyLocalProfileUpdate(accountId, toLocalProfile(update));
+      const data = buildProfileSetData(update);
+      const stringData = Object.fromEntries(
+        Object.entries(data).filter((entry): entry is [string, string] => entry[1] !== null)
+      );
+      const session = getStoredSession();
+      const config = getOnSocialConfig();
+
+      if (session?.token && session.source === 'handoff') {
+        const result = await relayCoreSet(config, session.token, stringData);
+        if (!result.ok) {
+          throw new Error(result.message);
+        }
+      } else if (wallet) {
+        const result = await wallet.signAndSendTransaction(
+          buildCoreSetTransaction(config.coreContract, data)
+        );
+        const hash = result?.transaction?.hash ?? result?.transaction_outcome?.id;
+        setTransactionHash(hash ?? null);
+        options.onSuccess?.(hash);
+        refetch();
+        return true;
       }
 
-      const transactionParams = socialDBService.buildSetProfileTransaction(
-        accountId,
-        profileData
-      );
-
-      const result = await wallet.signAndSendTransaction(transactionParams);
-      
-      // Extract transaction hash
-      const hash = result?.transaction?.hash ?? result?.transaction_outcome?.id;
-      setTransactionHash(hash);
-
-      // Refetch profile to get updated data
       refetch();
-
-      options.onSuccess?.(hash);
+      options.onSuccess?.();
       return true;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update profile';
-      setError(errorMessage);
-      options.onError?.(err instanceof Error ? err : new Error(errorMessage));
+      const message = err instanceof Error ? err.message : 'Failed to update profile';
+      setError(message);
+      options.onError?.(err instanceof Error ? err : new Error(message));
       return false;
     } finally {
       setIsSubmitting(false);
     }
-  }, [wallet, accountId, buildProfileData, refetch, options]);
+  }, [accountId, buildUpdate, options, refetch, toLocalProfile, wallet]);
 
-  // Check if form has changes
   const hasChanges = useCallback((): boolean => {
     const initial = getInitialState();
     return (
       formState.name !== initial.name ||
-      formState.description !== initial.description ||
+      formState.bio !== initial.bio ||
       formState.imageUrl !== initial.imageUrl ||
       formState.imageIpfsCid !== initial.imageIpfsCid ||
       formState.backgroundImageUrl !== initial.backgroundImageUrl ||
       formState.backgroundImageIpfsCid !== initial.backgroundImageIpfsCid ||
       formState.website !== initial.website ||
       formState.location !== initial.location ||
-      formState.tagline !== initial.tagline ||
+      formState.kind !== initial.kind ||
+      formState.industry !== initial.industry ||
       formState.tags !== initial.tags ||
-      JSON.stringify(formState.linktree) !== JSON.stringify(initial.linktree)
+      JSON.stringify(formState.links) !== JSON.stringify(initial.links)
     );
   }, [formState, getInitialState]);
 
   return {
-    // Form state
     formState,
     updateField,
-    updateLinktree,
+    updateLinktree: updateLink,
+    updateLink,
     resetForm,
-    
-    // Submission
     submitProfile,
     isSubmitting,
     isLoadingProfile,
-    
-    // Status
     error,
     transactionHash,
     hasChanges: hasChanges(),
-    
-    // User info
     accountId,
-    isConnected: !!accountId,
+    isConnected: Boolean(accountId),
     currentProfile: profile,
+    daoLocked,
+    previewAvatarUrl:
+      formState.imageUrl ||
+      resolveOnSocialMediaUrl(formState.imageIpfsCid ? toIpfsUri(formState.imageIpfsCid) : null),
+    previewBannerUrl:
+      formState.backgroundImageUrl ||
+      resolveOnSocialMediaUrl(
+        formState.backgroundImageIpfsCid ? toIpfsUri(formState.backgroundImageIpfsCid) : null
+      ),
   };
 }

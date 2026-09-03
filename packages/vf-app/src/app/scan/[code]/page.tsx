@@ -36,7 +36,7 @@ export default function ScanResultPage({ params }: { params: Promise<{ code: str
       <Button asChild variant="ghost" size="sm">
         <Link href="/scan">
           <ArrowLeft className="h-4 w-4" />
-          Scan another
+          Scan another lot
         </Link>
       </Button>
       {loading && <p className="text-muted-foreground">Resolving lot…</p>}

@@ -135,7 +135,7 @@ export default tseslint.config(
   // ============================================================================
   // BLOCKCHAIN INTEGRATION OVERRIDES
   // 
-  // NEAR Protocol, Ref Finance SDK, and Social DB return untyped responses.
+  // NEAR Protocol, Ref Finance SDK, and OnSocial gateway JSON return untyped responses.
   // These overrides disable strict type-checking for files that directly
   // interact with blockchain APIs where `any` types are unavoidable.
   //
@@ -216,6 +216,7 @@ export default tseslint.config(
     // Product tracking - OnSocial gateway JSON and session-lane writes
     files: [
       'src/features/tracking/**/*.{ts,tsx}',
+      'src/features/onsocial/**/*.{ts,tsx}',
       'src/features/shell/**/*.{ts,tsx}',
       'src/features/home/**/*.{ts,tsx}',
     ],
@@ -229,7 +230,7 @@ export default tseslint.config(
   },
 
   {
-    // Services - Social DB and other NEAR contract calls
+    // Services - OnSocial / NEAR contract calls
     files: ['src/services/**/*.{ts,tsx}'],
     rules: {
       '@typescript-eslint/no-unsafe-assignment': 'off',

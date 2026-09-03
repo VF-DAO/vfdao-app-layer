@@ -76,12 +76,19 @@ export interface ScanRecord {
   accountId?: string;
 }
 
+export interface Listing {
+  orgAccountId: string;
+  listedAt: string;
+}
+
 export interface LotBundle {
   lot: Lot;
   product: Product;
   events: ChainEvent[];
   certificates: Certificate[];
   producer?: Org;
+  /** VF shelf promo only. Unlisted lots still resolve. */
+  vfListed?: boolean;
 }
 
 export interface RegisterProductInput {

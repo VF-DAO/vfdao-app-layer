@@ -37,14 +37,23 @@ export function createHttpTracker(): TrackerApi {
   return {
     status: () => request<TrackerStatus>('/api/tracking/status'),
     listProducts: () => request<Product[]>('/api/tracking/products'),
+    listProductsForAccount: (accountId) =>
+      request<Product[]>(`/api/tracking/products?producerAccountId=${encodeURIComponent(accountId)}`),
     getProduct: (productId) => request<Product | null>(`/api/tracking/products/${productId}`),
     listLots: (productId) => request<Lot[]>(`/api/tracking/products/${productId}/lots`),
+    listLotsForAccount: (accountId) =>
+      request<Lot[]>(`/api/tracking/lots?producerAccountId=${encodeURIComponent(accountId)}`),
     getLot: (lotId) => request<Lot | null>(`/api/tracking/lots/${lotId}`),
     getEvents: (lotId) => request<ChainEvent[]>(`/api/tracking/lots/${lotId}/events`),
+    listEventsForAccount: (accountId) =>
+      request<ChainEvent[]>(`/api/tracking/events?orgAccountId=${encodeURIComponent(accountId)}`),
     getCertificates: (subjectId) => request<Certificate[]>(`/api/tracking/certificates/${subjectId}`),
+    listCertificatesForAccount: (accountId) =>
+      request<Certificate[]>(`/api/tracking/certificates?issuerAccountId=${encodeURIComponent(accountId)}`),
     getLotBundle: (lotId) => request<LotBundle | null>(`/api/tracking/lots/${lotId}/bundle`),
     resolveScan: (code) => request<LotBundle | null>(`/api/tracking/scan/${encodeURIComponent(code)}`),
     getOrg: (accountId) => request<Org | null>(`/api/tracking/orgs/${accountId}`),
+    isListed: (accountId) => request<boolean>(`/api/tracking/orgs/${accountId}/listed`),
     listScans: (accountId) =>
       request<ScanRecord[]>(accountId ? `/api/tracking/scans?accountId=${accountId}` : '/api/tracking/scans'),
     registerProduct: (input: RegisterProductInput) =>

@@ -1,5 +1,11 @@
 import type { TrackerApi } from './tracker-api';
 import { cloneFixtures } from './fixtures';
+import {
+  certificatesForAccount,
+  eventsForAccount,
+  lotsForAccount,
+  productsForAccount,
+} from '../lib/desk';
 import { createId } from '../lib/ids';
 import { parseScanCode } from '../lib/qr';
 import type {
@@ -8,6 +14,7 @@ import type {
   ChainEvent,
   CreateLotInput,
   IssueCertificateInput,
+  Listing,
   Lot,
   LotBundle,
   Org,
@@ -27,6 +34,7 @@ interface TrackingStore {
   lots: Lot[];
   events: ChainEvent[];
   certificates: Certificate[];
+  listings: Listing[];
 }
 
 function canUseStorage(): boolean {
@@ -60,7 +68,14 @@ function loadStore(): TrackingStore {
     lots: mergeById(seeded.lots, saved.lots ?? []),
     events: mergeById(seeded.events, saved.events ?? []),
     certificates: mergeById(seeded.certificates, saved.certificates ?? []),
+    listings: mergeListings(seeded.listings, saved.listings ?? []),
   };
+}
+
+function mergeListings(base: Listing[], extra: Listing[]): Listing[] {
+  const map = new Map(base.map((item) => [item.orgAccountId, item]));
+  extra.forEach((item) => map.set(item.orgAccountId, item));
+  return [...map.values()];
 }
 
 function mergeById<T extends { id: string }>(base: T[], extra: T[]): T[] {
@@ -98,6 +113,7 @@ function toBundle(store: TrackingStore, lot: Lot): LotBundle {
     events,
     certificates,
     producer: store.orgs.find((org) => org.accountId === product.producerAccountId),
+    vfListed: store.listings.some((listing) => listing.orgAccountId === lot.producerAccountId),
   };
 }
 
@@ -121,6 +137,10 @@ export function createLocalTracker(): TrackerApi {
       return [...store.products].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
     },
 
+    async listProductsForAccount(accountId: string): Promise<Product[]> {
+      return productsForAccount(store.products, accountId);
+    },
+
     async getProduct(productId: string): Promise<Product | null> {
       return store.products.find((product) => product.id === productId) ?? null;
     },
@@ -129,6 +149,10 @@ export function createLocalTracker(): TrackerApi {
       return store.lots
         .filter((lot) => lot.productId === productId)
         .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+    },
+
+    async listLotsForAccount(accountId: string): Promise<Lot[]> {
+      return lotsForAccount(store.lots, accountId);
     },
 
     async getLot(lotId: string): Promise<Lot | null> {
@@ -141,8 +165,16 @@ export function createLocalTracker(): TrackerApi {
         .sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
     },
 
+    async listEventsForAccount(accountId: string): Promise<ChainEvent[]> {
+      return eventsForAccount(store.events, accountId);
+    },
+
     async getCertificates(subjectId: string): Promise<Certificate[]> {
       return store.certificates.filter((certificate) => certificate.subjectId === subjectId);
+    },
+
+    async listCertificatesForAccount(accountId: string): Promise<Certificate[]> {
+      return certificatesForAccount(store.certificates, accountId);
     },
 
     async getLotBundle(lotId: string): Promise<LotBundle | null> {
@@ -161,6 +193,10 @@ export function createLocalTracker(): TrackerApi {
 
     async getOrg(accountId: string): Promise<Org | null> {
       return store.orgs.find((org) => org.accountId === accountId) ?? null;
+    },
+
+    async isListed(accountId: string): Promise<boolean> {
+      return store.listings.some((listing) => listing.orgAccountId === accountId);
     },
 
     async listScans(accountId?: string): Promise<ScanRecord[]> {

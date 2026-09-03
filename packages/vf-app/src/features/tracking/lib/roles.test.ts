@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { canIssueCertificate, canRecordEvent, canRegisterProduct } from './roles';
+import { canCreateLot, canIssueCertificate, canRecordEvent, canRegisterProduct } from './roles';
 
 describe('org roles', () => {
-  it('lets producers register products', () => {
+  it('lets producers register products and open lots', () => {
     expect(canRegisterProduct('producer')).toBe(true);
+    expect(canCreateLot('producer')).toBe(true);
     expect(canRegisterProduct('certifier')).toBe(false);
+    expect(canCreateLot(null)).toBe(false);
   });
 
   it('lets the chain roles append events', () => {

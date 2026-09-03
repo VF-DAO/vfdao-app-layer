@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { ScanLine, Warehouse } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProductCard, TrackingBackendBadge, useProducts } from '@/features/tracking';
@@ -15,7 +16,7 @@ export default function ProductsPage() {
         <div className="space-y-3">
           <h1 className="text-3xl font-bold text-foreground sm:text-4xl md:text-5xl">Verified products</h1>
           <p className="max-w-2xl text-muted-foreground">
-            Scan a carton or open a product to see the farm-to-shelf record stored on OnSocial core.
+            Scan a carton or open a lot to see every stamp, labeled with the writer.
           </p>
           <TrackingBackendBadge />
         </div>
@@ -24,9 +25,11 @@ export default function ProductsPage() {
             <ScanLine className="h-4 w-4" />
             Scan
           </Button>
-          <Button variant="outline" onClick={() => openDrawer({ id: 'studio' })}>
-            <Warehouse className="h-4 w-4" />
-            Studio
+          <Button asChild variant="outline">
+            <Link href="/studio">
+              <Warehouse className="h-4 w-4" />
+              Studio
+            </Link>
           </Button>
         </div>
       </div>

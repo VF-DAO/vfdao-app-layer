@@ -24,7 +24,7 @@ interface ImageUploadProps {
 /**
  * ImageUpload - Drag & drop / click to upload image component
  * 
- * Uploads images to NEAR Social's IPFS gateway.
+ * Uploads images through the OnSocial media lane (`ipfs://` CID).
  */
 export function ImageUpload({
   currentImageUrl,
@@ -61,9 +61,7 @@ export function ImageUpload({
       // Upload to IPFS
       setIsUploading(true);
       const result = await uploadToIPFS(file);
-      
-      console.log('IPFS upload result:', result);
-      
+
       // Pass the data URL preview along with the IPFS result
       onUpload({ ...result, previewUrl: dataUrl });
       // Keep the preview for display until modal closes

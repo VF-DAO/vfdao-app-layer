@@ -19,16 +19,14 @@ vi.mock('@/features/tracking', () => ({
 }));
 
 describe('HomeHub', () => {
-  it('opens scan and studio in the shared overlay', async () => {
+  it('opens scan in the overlay and sends studio to the desk', async () => {
     const user = userEvent.setup();
     render(<HomeHub />);
 
     await user.click(screen.getByRole('button', { name: /scan a product/i }));
     expect(openDrawer).toHaveBeenCalledWith({ id: 'scan' });
 
-    await user.click(screen.getByRole('button', { name: /studio/i }));
-    expect(openDrawer).toHaveBeenCalledWith({ id: 'studio' });
-
+    expect(screen.getByRole('link', { name: /studio/i })).toHaveAttribute('href', '/studio');
     expect(screen.getByText('Oat Drink')).toBeInTheDocument();
   });
 });

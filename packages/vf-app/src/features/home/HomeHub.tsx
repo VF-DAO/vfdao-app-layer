@@ -48,12 +48,18 @@ export function HomeHub({ accountId }: { accountId?: string | null }) {
           description="Camera or lot code"
           onClick={() => openDrawer({ id: 'scan' })}
         />
-        <ActionCard
-          icon={<Warehouse className="h-5 w-5" />}
-          title="Studio"
-          description="Register, open a lot, certify"
-          onClick={() => openDrawer({ id: 'studio' })}
-        />
+        <Link
+          href="/studio"
+          className="flex w-full items-start gap-3 rounded-2xl border border-border bg-card p-4 text-left transition-colors hover:border-primary/30 hover:bg-muted/30"
+        >
+          <div className="mt-0.5 text-primary">
+            <Warehouse className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="font-semibold text-foreground">Studio</p>
+            <p className="text-sm text-muted-foreground">Your products, lots, and stamps</p>
+          </div>
+        </Link>
       </div>
 
       {recent.length > 0 && (

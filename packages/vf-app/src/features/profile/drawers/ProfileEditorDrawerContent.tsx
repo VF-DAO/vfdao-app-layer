@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ProfileAvatar } from '@/components/ui/profile-avatar';
 import { useAppDrawer } from '@/features/shell/drawer-context';
+import { PROFILE_INDUSTRY_OPTIONS } from '@/features/onsocial/profile';
 import { useProfileEditor } from '@/hooks/use-profile-editor';
 import { getIPFSUrl } from '@/services/ipfs-upload';
 
@@ -27,7 +28,8 @@ export function ProfileEditorDrawerContent() {
   const {
     formState,
     updateField,
-    updateLinktree,
+    updateLink,
+    daoLocked,
     resetForm,
     submitProfile,
     isSubmitting,
@@ -204,7 +206,7 @@ export function ProfileEditorDrawerContent() {
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-verified/10">
               <Check className="h-10 w-10 text-verified" />
             </div>
-            <p className="text-sm text-muted-foreground">Your profile has been successfully updated on NEAR Social.</p>
+            <p className="text-sm text-muted-foreground">Your profile has been saved on OnSocial.</p>
             <a
               href={`https://nearblocks.io/txns/${transactionHash}`}
               target="_blank"
@@ -235,10 +237,14 @@ export function ProfileEditorDrawerContent() {
                 {formState.name || 'Your Name'}
               </h2>
               {accountId && <p className="truncate text-sm text-muted-foreground">@{accountId}</p>}
-              {formState.tagline ? (
-                <p className="truncate pt-0.5 text-sm text-muted-foreground">{formState.tagline}</p>
+              {formState.kind === 'org' ? (
+                <p className="truncate pt-0.5 text-sm text-muted-foreground">
+                  {formState.industry.trim() || 'Organization'}
+                </p>
+              ) : daoLocked ? (
+                <p className="truncate pt-0.5 text-sm text-muted-foreground">DAO</p>
               ) : (
-                <p className="truncate pt-0.5 text-sm italic text-muted-foreground/50">Add a tagline...</p>
+                <p className="truncate pt-0.5 text-sm italic text-muted-foreground/50">Person</p>
               )}
               <div className="flex flex-wrap items-center gap-2 pt-0.5">
                 {formState.location && (
@@ -297,46 +303,73 @@ export function ProfileEditorDrawerContent() {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="tagline" className="flex items-center gap-2 text-sm font-medium">
-              Tagline
-              {formState.tagline && (
-                <span className={`text-xs ${formState.tagline.length > 100 ? 'text-orange' : 'text-muted-foreground'}`}>
-                  ({formState.tagline.length}/100)
-                </span>
-              )}
-            </Label>
-            <Input
-              id="tagline"
-              value={formState.tagline}
-              onChange={(event) => {
-                if (event.target.value.length <= 100) {
-                  updateField('tagline', event.target.value);
-                }
-              }}
-              placeholder="A short tagline about you"
-              maxLength={100}
-              disabled={isSubmitting}
-            />
-          </div>
+          {!daoLocked && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Face</Label>
+              <div className="flex gap-2">
+                {(
+                  [
+                    ['person', 'Person'],
+                    ['org', 'Organization'],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => updateField('kind', value)}
+                    disabled={isSubmitting}
+                    className={`rounded-full px-3 py-1.5 text-sm transition-colors ${
+                      formState.kind === value
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {formState.kind === 'org' && !daoLocked && (
+            <div className="space-y-2">
+              <Label htmlFor="industry" className="text-sm font-medium">
+                Industry
+              </Label>
+              <select
+                id="industry"
+                value={formState.industry}
+                onChange={(event) => updateField('industry', event.target.value)}
+                disabled={isSubmitting}
+                className="w-full rounded-2xl border border-border bg-transparent px-4 py-3 text-sm"
+              >
+                <option value="">Organization</option>
+                {PROFILE_INDUSTRY_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="description" className="flex items-center gap-2 text-sm font-medium">
-              Bio / Description
-              {formState.description && (
+              Bio
+              {formState.bio && (
                 <span
-                  className={`text-xs ${formState.description.length > 280 ? 'text-orange' : formState.description.length > 240 ? 'text-orange/70' : 'text-muted-foreground'}`}
+                  className={`text-xs ${formState.bio.length > 280 ? 'text-orange' : formState.bio.length > 240 ? 'text-orange/70' : 'text-muted-foreground'}`}
                 >
-                  ({formState.description.length}/280)
+                  ({formState.bio.length}/280)
                 </span>
               )}
             </Label>
             <textarea
               id="description"
-              value={formState.description}
+              value={formState.bio}
               onChange={(event) => {
                 if (event.target.value.length <= 280) {
-                  updateField('description', event.target.value);
+                  updateField('bio', event.target.value);
                 }
               }}
               rows={3}
@@ -573,8 +606,8 @@ export function ProfileEditorDrawerContent() {
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">@</span>
               <Input
                 id="twitter"
-                value={formState.linktree.twitter ?? ''}
-                onChange={(event) => updateLinktree('twitter', event.target.value.replace(/^@/, ''))}
+                value={formState.links.twitter ?? ''}
+                onChange={(event) => updateLink('twitter', event.target.value.replace(/^@/, ''))}
                 placeholder="username"
                 disabled={isSubmitting}
                 className="pl-8"
@@ -589,8 +622,8 @@ export function ProfileEditorDrawerContent() {
             </Label>
             <Input
               id="github"
-              value={formState.linktree.github ?? ''}
-              onChange={(event) => updateLinktree('github', event.target.value)}
+              value={formState.links.github ?? ''}
+              onChange={(event) => updateLink('github', event.target.value)}
               placeholder="username"
               disabled={isSubmitting}
             />
@@ -603,8 +636,8 @@ export function ProfileEditorDrawerContent() {
             </Label>
             <Input
               id="telegram"
-              value={formState.linktree.telegram ?? ''}
-              onChange={(event) => updateLinktree('telegram', event.target.value)}
+              value={formState.links.telegram ?? ''}
+              onChange={(event) => updateLink('telegram', event.target.value)}
               placeholder="username"
               disabled={isSubmitting}
             />
@@ -621,16 +654,8 @@ export function ProfileEditorDrawerContent() {
           <div className="flex items-start gap-3">
             <LinkIcon className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
             <div className="text-sm text-muted-foreground">
-              Your profile is stored on{' '}
-              <a
-                href="https://github.com/NearSocial/social-db"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
-              >
-                NEAR Social DB
-              </a>
-              . A small storage deposit (~0.05 NEAR) is required for new data.
+              Your profile lives on OnSocial core at <span className="font-mono text-xs">profile/</span>
+              . Organization is a face on the same account — not a group and not a VF tracker role.
             </div>
           </div>
         </div>

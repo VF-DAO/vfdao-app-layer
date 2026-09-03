@@ -5,6 +5,7 @@ export type {
   CreateLotInput,
   EventKind,
   IssueCertificateInput,
+  Listing,
   Lot,
   LotBundle,
   Org,
@@ -21,22 +22,30 @@ export type { TrackerApi } from './api/tracker-api';
 export { getClientTracker, getServerTracker } from './api/resolve-tracker';
 export { FIXTURE_LOT_ID, FIXTURE_PRODUCT_ID } from './api/fixtures';
 export { encodeLotQr, parseScanCode, scanHref } from './lib/qr';
-export { deriveVerificationStatus } from './lib/status';
+export { isCertificateActive } from './lib/status';
+export { useStudioActor } from './hooks/use-studio-actor';
 export {
+  useCertificatesForAccount,
+  useEventsForAccount,
   useLotBundle,
   useLots,
+  useLotsForAccount,
   useOrgRole,
   useProduct,
   useProducts,
+  useProductsForAccount,
   useScanHistory,
+  useVfListed,
   useScanResolve,
   useTrackerStatus,
 } from './hooks/use-tracker';
 export { useTrackingMutations } from './hooks/use-tracking-mutations';
+export { DeskView } from './components/DeskView';
 export { ProductCard } from './components/ProductCard';
 export { ProductHeader } from './components/ProductHeader';
 export { IngredientList } from './components/IngredientList';
 export { LotBundleView } from './components/LotBundleView';
+export { LotQrCard } from './components/LotQrCard';
 export { QrScanner } from './components/QrScanner';
 export { TrackingBackendBadge } from './components/TrackingBackendBadge';
 export {

@@ -8,7 +8,9 @@ import { useAppDrawer } from '@/features/shell/drawer-context';
 import type { TrackingDrawerAction } from '@/features/shell/drawer-types';
 import { FIXTURE_LOT_ID } from '../api/fixtures';
 import { QrScanner } from '../components/QrScanner';
+import { useStudioActor } from '../hooks/use-studio-actor';
 import { encodeLotQr } from '../lib/qr';
+import { canCreateLot, canIssueCertificate, canRecordEvent, canRegisterProduct } from '../lib/roles';
 import {
   CreateLotForm,
   IssueCertificateForm,
@@ -44,7 +46,7 @@ function ChoiceButton({
 
 export function TrackingDrawerContent({ action }: { action: TrackingDrawerAction }) {
   const router = useRouter();
-  const { openDrawer, closeDrawer } = useAppDrawer();
+  const { closeDrawer } = useAppDrawer();
   const demoCode = encodeLotQr(FIXTURE_LOT_ID);
 
   if (action.id === 'scan') {
@@ -71,34 +73,7 @@ export function TrackingDrawerContent({ action }: { action: TrackingDrawerAction
   }
 
   if (action.id === 'studio') {
-    return (
-      <div className="space-y-3">
-        <ChoiceButton
-          icon={<PackagePlus className="h-5 w-5" />}
-          title="Register product"
-          description="Add a SKU to the catalog"
-          onClick={() => openDrawer({ id: 'register-product' })}
-        />
-        <ChoiceButton
-          icon={<Warehouse className="h-5 w-5" />}
-          title="Open a lot"
-          description="Start a production batch"
-          onClick={() => openDrawer({ id: 'create-lot' })}
-        />
-        <ChoiceButton
-          icon={<StickyNote className="h-5 w-5" />}
-          title="Record event"
-          description="Append a farm-to-shelf step"
-          onClick={() => openDrawer({ id: 'record-event' })}
-        />
-        <ChoiceButton
-          icon={<Award className="h-5 w-5" />}
-          title="Issue certificate"
-          description="Certifier stamp for a lot or product"
-          onClick={() => openDrawer({ id: 'issue-certificate' })}
-        />
-      </div>
-    );
+    return <StudioChoices />;
   }
 
   if (action.id === 'register-product') {
@@ -184,6 +159,66 @@ export function drawerCopy(action: TrackingDrawerAction): {
         icon: <Award className="h-5 w-5 text-primary" />,
       };
   }
+}
+
+function StudioChoices() {
+  const { openDrawer } = useAppDrawer();
+  const actor = useStudioActor();
+  const choices = [
+    {
+      id: 'register-product' as const,
+      icon: <PackagePlus className="h-5 w-5" />,
+      title: 'Register product',
+      description: 'Add a SKU to the catalog',
+      show: canRegisterProduct(actor.role),
+    },
+    {
+      id: 'create-lot' as const,
+      icon: <Warehouse className="h-5 w-5" />,
+      title: 'Open a lot',
+      description: 'Start a production batch',
+      show: canCreateLot(actor.role),
+    },
+    {
+      id: 'record-event' as const,
+      icon: <StickyNote className="h-5 w-5" />,
+      title: 'Record event',
+      description: 'Add a stamp on your path',
+      show: canRecordEvent(actor.role),
+    },
+    {
+      id: 'issue-certificate' as const,
+      icon: <Award className="h-5 w-5" />,
+      title: 'Issue certificate',
+      description: 'Certifier stamp for a lot or product',
+      show: canIssueCertificate(actor.role),
+    },
+  ];
+  const visible = choices.filter((choice) => choice.show);
+
+  return (
+    <div className="space-y-3">
+      {actor.usingDemoProducer && (
+        <p className="text-sm text-muted-foreground">
+          Demo producer · Green Valley Farms. Connect an org wallet to write as yourself.
+        </p>
+      )}
+      {actor.pending && <p className="text-sm text-muted-foreground">Checking org role…</p>}
+      {actor.reason && <p className="text-sm text-orange">{actor.reason}</p>}
+      {visible.map((choice) => (
+        <ChoiceButton
+          key={choice.id}
+          icon={choice.icon}
+          title={choice.title}
+          description={choice.description}
+          onClick={() => openDrawer({ id: choice.id })}
+        />
+      ))}
+      {!actor.pending && visible.length === 0 && !actor.reason && (
+        <p className="text-sm text-muted-foreground">No studio actions for this role.</p>
+      )}
+    </div>
+  );
 }
 
 export function DrawerBackToStudio() {

@@ -1,6 +1,7 @@
 'use client';
 
 import { User } from 'lucide-react';
+import { profileAvatarShapeForAccount } from '@/features/onsocial/profile';
 import { useProfile } from '@/hooks/use-profile';
 import { cn } from '@/lib/utils';
 
@@ -31,15 +32,14 @@ const sizeClasses: Record<ProfileAvatarSize, { container: string; icon: string }
   xl: { container: 'w-12 h-12', icon: 'w-8 h-8' },
 };
 
+const shapeClass = {
+  circle: 'rounded-full',
+  squircle: 'rounded-[28%]',
+  square: 'rounded-[18%]',
+} as const;
+
 /**
- * ProfileAvatar - A reusable component for displaying NEAR Social profile images
- * 
- * Features:
- * - Fetches profile image from Social DB automatically
- * - Handles IPFS image loading and errors gracefully
- * - Shows a fallback User icon when no image available
- * - Multiple size presets
- * - Can accept pre-fetched profileImageUrl to avoid duplicate fetches
+ * ProfileAvatar — OnSocial profile image with person / org / dao face shape.
  * 
  * @example
  * // Basic usage - will fetch profile automatically
@@ -59,13 +59,14 @@ export function ProfileAvatar({
   isLoading: externalLoading,
 }: ProfileAvatarProps) {
   // Only fetch if we don't have a pre-loaded URL
-  const { profileImageUrl: fetchedImageUrl, loading: internalLoading } = useProfile(
+  const { profileImageUrl: fetchedImageUrl, loading: internalLoading, kind } = useProfile(
     preloadedImageUrl === undefined ? accountId : null
   );
 
   const imageUrl = preloadedImageUrl ?? fetchedImageUrl;
   const isLoading = externalLoading ?? (preloadedImageUrl === undefined && internalLoading);
   const { container, icon } = sizeClasses[size];
+  const radius = shapeClass[profileAvatarShapeForAccount(kind, accountId)];
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const img = e.target as HTMLImageElement;
@@ -84,19 +85,19 @@ export function ProfileAvatar({
   // Show pulsing placeholder while loading
   if (isLoading) {
     return (
-      <div className={cn('relative flex-shrink-0 rounded-full bg-muted/50 animate-pulse', container, className)} />
+      <div className={cn('relative flex-shrink-0 bg-muted/50 animate-pulse', radius, container, className)} />
     );
   }
 
   return (
-    <div className={cn('relative flex-shrink-0 rounded-full overflow-hidden flex items-center justify-center', container, className)}>
+    <div className={cn('relative flex-shrink-0 overflow-hidden flex items-center justify-center', radius, container, className)}>
       {imageUrl ? (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={imageUrl}
             alt=""
-            className="w-full h-full rounded-full object-cover"
+            className={cn('w-full h-full object-cover', radius)}
             onError={handleImageError}
           />
           <User
@@ -117,7 +118,7 @@ export function ProfileAvatar({
 }
 
 /**
- * ProfileName - A component for displaying NEAR Social profile name with fallback
+ * ProfileName — OnSocial display name with account-id fallback
  * 
  * @example
  * <ProfileName accountId="alice.near" />

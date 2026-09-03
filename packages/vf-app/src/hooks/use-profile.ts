@@ -1,10 +1,19 @@
-// src/hooks/use-profile.ts
 import { useEffect, useState } from 'react';
-import { socialDBService } from '../services/social-db';
-import type { NearSocialProfileData } from '../types/profile';
+import {
+  displayNameFor,
+  isDaoAccount,
+  type OnSocialProfile,
+  resolveDisplayProfileKind,
+} from '@/features/onsocial/profile';
+import {
+  fetchMultipleProfiles,
+  fetchProfile,
+  getProfileDescription,
+  getProfileImageUrl,
+} from '@/features/onsocial/profile-service';
 
 export function useProfile(accountId: string | null | undefined) {
-  const [profile, setProfile] = useState<NearSocialProfileData | null>(null);
+  const [profile, setProfile] = useState<OnSocialProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,54 +27,51 @@ export function useProfile(accountId: string | null | undefined) {
 
     let mounted = true;
 
-    const fetchProfile = async () => {
+    const load = async () => {
       setLoading(true);
       setError(null);
-
       try {
-        const profileData = await socialDBService.getProfile(accountId);
-        if (mounted) {
-          setProfile(profileData);
-        }
+        const next = await fetchProfile(accountId);
+        if (mounted) setProfile(next);
       } catch (err) {
         if (mounted) {
           setError(err instanceof Error ? err.message : 'Failed to fetch profile');
         }
       } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+        if (mounted) setLoading(false);
       }
     };
 
-    void fetchProfile();
-
+    void load();
     return () => {
       mounted = false;
     };
   }, [accountId]);
 
-  const displayName = accountId ? socialDBService.getDisplayName(accountId, profile) : '';
-  const profileImageUrl = socialDBService.getProfileImageUrl(profile);
-  const description = socialDBService.getProfileDescription(profile);
+  const displayName = accountId ? displayNameFor(accountId, profile) : '';
+  const profileImageUrl = getProfileImageUrl(profile);
+  const description = getProfileDescription(profile);
+  const kind = resolveDisplayProfileKind(profile?.kind, isDaoAccount(accountId));
 
   return {
     profile,
     displayName,
     profileImageUrl,
     description,
+    kind,
+    industry: profile?.industry ?? null,
     loading,
     error,
     refetch: () => {
       if (accountId) {
-        socialDBService.getProfile(accountId).then(setProfile).catch(setError);
+        void fetchProfile(accountId).then(setProfile).catch(setError);
       }
-    }
+    },
   };
 }
 
 export function useMultipleProfiles(accountIds: (string | null | undefined)[]) {
-  const [profiles, setProfiles] = useState<Record<string, NearSocialProfileData | null>>({});
+  const [profiles, setProfiles] = useState<Record<string, OnSocialProfile | null>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -81,54 +87,41 @@ export function useMultipleProfiles(accountIds: (string | null | undefined)[]) {
 
     let mounted = true;
 
-    const fetchProfiles = async () => {
+    const load = async () => {
       setLoading(true);
       setError(null);
-
       try {
-        const profilesData = await socialDBService.getMultipleProfiles(validAccountIds);
-        if (mounted) {
-          setProfiles(profilesData);
-        }
+        const next = await fetchMultipleProfiles(validAccountIds);
+        if (mounted) setProfiles(next);
       } catch (err) {
         if (mounted) {
           setError(err instanceof Error ? err.message : 'Failed to fetch profiles');
         }
       } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+        if (mounted) setLoading(false);
       }
     };
 
-    void fetchProfiles();
-
+    void load();
     return () => {
       mounted = false;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [validAccountIds.join(',')]); // Join to create a stable dependency
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [validAccountIds.join(',')]);
 
-  const getDisplayName = (accountId: string) => {
-    const profile = profiles[accountId];
-    return socialDBService.getDisplayName(accountId, profile);
-  };
-
-  const getProfileImageUrl = (accountId: string) => {
-    const profile = profiles[accountId];
-    return socialDBService.getProfileImageUrl(profile);
-  };
+  const getDisplayName = (id: string) => displayNameFor(id, profiles[id]);
+  const getProfileImageUrlFor = (id: string) => getProfileImageUrl(profiles[id]);
 
   return {
     profiles,
     getDisplayName,
-    getProfileImageUrl,
+    getProfileImageUrl: getProfileImageUrlFor,
     loading,
     error,
     refetch: () => {
       if (validAccountIds.length > 0) {
-        socialDBService.getMultipleProfiles(validAccountIds).then(setProfiles).catch(setError);
+        void fetchMultipleProfiles(validAccountIds).then(setProfiles).catch(setError);
       }
-    }
+    },
   };
 }
