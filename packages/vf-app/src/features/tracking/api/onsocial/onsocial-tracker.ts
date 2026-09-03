@@ -13,6 +13,7 @@ import type {
   ChainEvent,
   CreateLotInput,
   IssueCertificateInput,
+  Listing,
   Lot,
   LotBundle,
   Org,
@@ -28,7 +29,7 @@ import {
   lotsForAccount,
   productsForAccount,
 } from '../../lib/desk';
-import { isListingForOrg } from '../../lib/listing';
+import { asListing, isListingForOrg } from '../../lib/listing';
 import { cloneFixtures } from '../fixtures';
 import { createLocalTracker } from '../local-tracker';
 import type { TrackerApi } from '../tracker-api';
@@ -320,6 +321,24 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
 
     async isListed(accountId: string): Promise<boolean> {
       return isVfListed(accountId);
+    },
+
+    async listListed(): Promise<Listing[]> {
+      try {
+        const rows = await client.queryByPrefix('listed');
+        const listings = rows
+          .map((row) => asListing(row.value))
+          .filter((item): item is Listing => Boolean(item));
+        if (listings.length > 0) {
+          return listings;
+        }
+        if (live) {
+          return [];
+        }
+      } catch (error) {
+        console.warn('[tracking] OnSocial listed shelf fell back to local fixtures', error);
+      }
+      return local.listListed();
     },
 
     async getOrg(accountId: string): Promise<Org | null> {

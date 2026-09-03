@@ -95,6 +95,11 @@ export function useVfListed(accountId: string | null | undefined) {
   );
 }
 
+export function useVfShelf() {
+  const tracker = useTracker();
+  return useAsyncValue(() => tracker.listListed(), [tracker]);
+}
+
 export function useScanHistory(accountId?: string) {
   const tracker = useTracker();
   return useAsyncValue(() => tracker.listScans(accountId), [tracker, accountId]);
