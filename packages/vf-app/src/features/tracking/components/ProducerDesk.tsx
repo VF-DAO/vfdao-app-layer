@@ -55,7 +55,7 @@ export function ProducerDesk({ products, lots }: { products: Product[]; lots: Lo
       <section className="grid grid-cols-3 gap-2 sm:gap-3">
         <SummaryCard label="Products" value={String(counts.productCount)} />
         <SummaryCard label="Lots" value={String(counts.lotCount)} />
-        <SummaryCard label="Last harvest" value={harvestLabel(counts.lastHarvestedAt)} />
+        <SummaryCard label="Harvest" value={harvestLabel(counts.lastHarvestedAt)} />
       </section>
 
       {recent.length > 0 && !query.trim() && (
@@ -217,9 +217,9 @@ export function ProducerDesk({ products, lots }: { products: Product[]; lots: Lo
 
 function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-border bg-card px-3 py-3 sm:px-4">
+    <div className="rounded-2xl border border-border bg-card px-2.5 py-3 sm:px-4">
       <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground sm:text-xs">{label}</p>
-      <p className="mt-1 truncate text-base font-semibold text-foreground sm:text-lg">{value}</p>
+      <p className="mt-1 text-sm font-semibold leading-tight text-foreground sm:text-lg">{value}</p>
     </div>
   );
 }

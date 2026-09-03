@@ -39,7 +39,7 @@ describe('DeskView', () => {
     const user = userEvent.setup();
     render(<DeskView />);
     expect(screen.getByRole('heading', { name: 'Producer desk' })).toBeInTheDocument();
-    expect(screen.getByText('Last harvest')).toBeInTheDocument();
+    expect(screen.getByText('Harvest')).toBeInTheDocument();
     expect(screen.getAllByText('2026-03-12').length).toBeGreaterThan(0);
     expect(screen.queryByRole('heading', { name: 'Stamps' })).not.toBeInTheDocument();
 

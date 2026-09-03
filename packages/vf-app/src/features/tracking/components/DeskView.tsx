@@ -50,29 +50,55 @@ export function DeskView() {
       </div>
 
       {actor.allowed && (
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+        <div className="flex flex-wrap gap-2">
           {canRegisterProduct(actor.role) && (
-            <Button variant="outline" size="sm" onClick={() => openDrawer({ id: 'register-product' })}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 sm:flex-none"
+              aria-label="Register product"
+              onClick={() => openDrawer({ id: 'register-product' })}
+            >
               <PackagePlus className="h-4 w-4" />
-              Register product
+              <span className="sm:hidden">Register</span>
+              <span className="hidden sm:inline">Register product</span>
             </Button>
           )}
           {canCreateLot(actor.role) && (
-            <Button variant="outline" size="sm" onClick={() => openDrawer({ id: 'create-lot' })}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 sm:flex-none"
+              onClick={() => openDrawer({ id: 'create-lot' })}
+            >
               <PackagePlus className="h-4 w-4" />
               Open lot
             </Button>
           )}
           {canRecordEvent(actor.role) && (
-            <Button variant="outline" size="sm" onClick={() => openDrawer({ id: 'record-event' })}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 sm:flex-none"
+              aria-label="Record event"
+              onClick={() => openDrawer({ id: 'record-event' })}
+            >
               <StickyNote className="h-4 w-4" />
-              Record event
+              <span className="sm:hidden">Stamp</span>
+              <span className="hidden sm:inline">Record event</span>
             </Button>
           )}
           {canIssueCertificate(actor.role) && (
-            <Button variant="outline" size="sm" onClick={() => openDrawer({ id: 'issue-certificate' })}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 sm:flex-none"
+              aria-label="Issue certificate"
+              onClick={() => openDrawer({ id: 'issue-certificate' })}
+            >
               <Award className="h-4 w-4" />
-              Issue certificate
+              <span className="sm:hidden">Certify</span>
+              <span className="hidden sm:inline">Issue certificate</span>
             </Button>
           )}
         </div>
