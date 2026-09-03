@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Circle } from 'lucide-react';
 import { type ChainEvent } from '../types';
 import { eventKindLabel } from '../lib/status';
@@ -21,7 +22,13 @@ export function StampTimeline({ events }: { events: ChainEvent[] }) {
             <p className="text-sm font-semibold text-foreground">{eventKindLabel(event.kind)}</p>
             <p className="text-sm text-muted-foreground">{event.note}</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {new Date(event.at).toLocaleString()} · stamped by {event.orgAccountId}
+              {new Date(event.at).toLocaleString()} · stamped by{' '}
+              <Link
+                href={`/profile/${encodeURIComponent(event.orgAccountId)}`}
+                className="font-medium text-foreground hover:text-primary"
+              >
+                {event.orgAccountId}
+              </Link>
             </p>
           </div>
         </li>

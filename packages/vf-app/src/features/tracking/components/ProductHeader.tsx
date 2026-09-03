@@ -1,4 +1,8 @@
+'use client';
+
+import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
+import { StandWithButton } from '@/components/ui/stand-with-button';
 import type { Org, Product } from '../types';
 
 export function ProductHeader({
@@ -19,9 +23,18 @@ export function ProductHeader({
       <h1 className="text-3xl font-bold text-foreground sm:text-4xl md:text-5xl">{product.name}</h1>
       <p className="max-w-2xl text-muted-foreground">{product.description}</p>
       {producer && (
-        <p className="text-sm text-muted-foreground">
-          Producer: <span className="font-medium text-foreground">{producer.name}</span> · {producer.accountId}
-        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-sm text-muted-foreground">
+            Producer:{' '}
+            <Link
+              href={`/profile/${encodeURIComponent(producer.accountId)}`}
+              className="font-medium text-foreground hover:text-primary"
+            >
+              {producer.name}
+            </Link>
+          </p>
+          <StandWithButton targetAccountId={producer.accountId} showCount={false} size="sm" />
+        </div>
       )}
     </div>
   );

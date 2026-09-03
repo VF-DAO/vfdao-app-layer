@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { ShieldCheck } from 'lucide-react';
 import type { Certificate } from '../types';
@@ -13,7 +14,15 @@ export function CertificateBadge({ certificate }: { certificate: Certificate }) 
           <p className="font-semibold text-foreground">{certificate.standard}</p>
           <Badge variant={active ? 'verified' : 'orange'}>{active ? 'Active' : certificate.status}</Badge>
         </div>
-        <p className="text-sm text-muted-foreground">Stamped by {certificate.issuerAccountId}</p>
+        <p className="text-sm text-muted-foreground">
+          Stamped by{' '}
+          <Link
+            href={`/profile/${encodeURIComponent(certificate.issuerAccountId)}`}
+            className="font-medium text-foreground hover:text-primary"
+          >
+            {certificate.issuerAccountId}
+          </Link>
+        </p>
         {certificate.expiresAt && (
           <p className="text-xs text-muted-foreground">
             Expires {new Date(certificate.expiresAt).toLocaleDateString()}
