@@ -35,6 +35,7 @@ export {
   useProducts,
   useProductsForAccount,
   useScanHistory,
+  useVfListed,
   useScanResolve,
   useTrackerStatus,
 } from './hooks/use-tracker';

@@ -73,6 +73,8 @@ Company face is `{account}/profile/` on core:
 
 `kind=org` is a look. It does **not** grant tracker writes. VF role stays `{owner}/apps/vf-tracker/org/{id}`.
 
+Hub profile is that same face: `name` + `bio` (the OnSocial description), standing, optional `listed/` shelf mark, and a Studio door on your own writer profile. Not inventory. Not fake activity KPIs.
+
 Standing is protocol-level, next to profile — the same edge OnSocial reads:
 
 ```

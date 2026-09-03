@@ -18,6 +18,14 @@ function seedProfiles(): ProfileStore {
       kind: 'org',
       industry:
         org.role === 'producer' ? 'Agriculture' : org.role === 'processor' ? 'Manufacturing' : 'Nonprofit',
+      ...(org.role === 'producer'
+        ? {
+            bio: 'Family farm in Kalmar. We grow oats and log every lot from field to carton.',
+            location: 'Kalmar County, Sweden',
+          }
+        : org.role === 'processor'
+          ? { bio: 'Plant mill. We stamp the lots we process — on our path, not the farm’s.' }
+          : { bio: 'Independent vegan certifier. We stamp lots as ourselves.' }),
     };
   });
   store['vegan-friends.sputnik-dao.near'] = {

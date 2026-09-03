@@ -1,25 +1,22 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { ProfileAvatar } from '@/components/ui/profile-avatar';
-import { useAppDrawer } from '@/features/shell';
-import { FloatingHeader } from '@/components/ui/floating-header';
-import { Divider } from '@/components/ui/divider';
-import { StandingCount, StandWithButton } from '@/components/ui/stand-with-button';
-import { 
-  Check,
-  Copy, 
-  Edit3,
-  Github,
-  Globe,
-  MapPin, 
-  Send,
-  Share2,
-} from 'lucide-react';
+import Link from 'next/link';
+import { ArrowRight, Check, Copy, Edit3, Github, Globe, MapPin, Send, Share2 } from 'lucide-react';
 import { FaXTwitter } from 'react-icons/fa6';
-import { profileAvatarShapeForAccount, profileKindFaceLabel, profileOrgLineLabel } from '@/features/onsocial/profile';
+import { Button } from '@/components/ui/button';
+import { Divider } from '@/components/ui/divider';
+import { FloatingHeader } from '@/components/ui/floating-header';
+import { ProfileAvatar } from '@/components/ui/profile-avatar';
+import { StandingCount, StandWithButton } from '@/components/ui/stand-with-button';
+import {
+  profileAvatarShapeForAccount,
+  profileKindFaceLabel,
+  profileOrgLineLabel,
+} from '@/features/onsocial/profile';
 import { getBannerUrl } from '@/features/onsocial/profile-service';
+import { useAppDrawer } from '@/features/shell';
+import { useOrgRole, useScanHistory, useVfListed } from '@/features/tracking';
 import { useProfile } from '@/hooks/use-profile';
 
 interface ProfileViewProps {
@@ -27,13 +24,64 @@ interface ProfileViewProps {
   isOwnProfile?: boolean;
 }
 
+function truncateAddress(address: string) {
+  if (address.length <= 20) return address;
+  return `${address.slice(0, 8)}...${address.slice(-6)}`;
+}
+
+function profileLinks(links: Record<string, string> | undefined) {
+  const website = links?.website;
+  return [
+    links?.twitter && {
+      icon: FaXTwitter,
+      href: `https://x.com/${links.twitter}`,
+      label: links.twitter,
+    },
+    links?.github && {
+      icon: Github,
+      href: `https://github.com/${links.github}`,
+      label: links.github,
+    },
+    links?.telegram && {
+      icon: Send,
+      href: `https://t.me/${links.telegram}`,
+      label: links.telegram,
+    },
+    website && {
+      icon: Globe,
+      href: website.startsWith('http') ? website : `https://${website}`,
+      label: new URL(website.startsWith('http') ? website : `https://${website}`).hostname.replace(
+        'www.',
+        ''
+      ),
+    },
+  ].filter(Boolean) as {
+    icon: React.ComponentType<{ className?: string; size?: number }>;
+    href: string;
+    label: string;
+  }[];
+}
+
 export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProps) {
   const { profile, loading, refetch, kind } = useProfile(accountId);
+  const org = useOrgRole(accountId);
+  const listed = useVfListed(accountId);
+  const scans = useScanHistory(accountId);
   const [copied, setCopied] = useState(false);
   const { openDrawer } = useAppDrawer();
   const faceShape = profileAvatarShapeForAccount(kind, accountId);
   const faceRadius =
     faceShape === 'squircle' ? 'rounded-[28%]' : faceShape === 'square' ? 'rounded-[18%]' : 'rounded-full';
+  const displayName = profile?.name ?? truncateAddress(accountId);
+  const orgLine = kind === 'org' ? profileOrgLineLabel(profile?.industry) : profileKindFaceLabel(kind);
+  const socialLinksList = profileLinks(profile?.links);
+  const tags = profile?.tags?.slice(0, 6) ?? [];
+  const bannerUrl = getBannerUrl(profile);
+  const recentScans = isOwnProfile ? (scans.data?.slice(0, 3) ?? []) : [];
+  const showStudio = isOwnProfile && Boolean(org.data);
+  const showShelf = Boolean(listed.data);
+  const showTrail = recentScans.length > 0;
+  const showVfMarks = showShelf || showStudio || showTrail;
 
   const handleCopyAddress = () => {
     void navigator.clipboard.writeText(accountId);
@@ -45,7 +93,7 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
     const url = `${window.location.origin}/profile/${encodeURIComponent(accountId)}`;
     if (navigator.share) {
       try {
-        await navigator.share({ title: profile?.name ?? accountId, url });
+        await navigator.share({ title: displayName, url });
       } catch {
         void navigator.clipboard.writeText(url);
       }
@@ -56,40 +104,15 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
     }
   };
 
-  const truncateAddress = (address: string) => {
-    if (address.length <= 20) return address;
-    return `${address.slice(0, 8)}...${address.slice(-6)}`;
-  };
-
-  const socialLinks = profile?.links ?? {};
-  const website = socialLinks.website;
-  const bannerUrl = getBannerUrl(profile);
-  const orgLine = kind === 'org' ? profileOrgLineLabel(profile?.industry) : profileKindFaceLabel(kind);
-
-  // Count social links for layout
-  const socialLinksList = [
-    socialLinks.twitter && { icon: FaXTwitter, href: `https://x.com/${socialLinks.twitter}`, label: socialLinks.twitter },
-    socialLinks.github && { icon: Github, href: `https://github.com/${socialLinks.github}`, label: socialLinks.github },
-    socialLinks.telegram && { icon: Send, href: `https://t.me/${socialLinks.telegram}`, label: socialLinks.telegram },
-    website && { icon: Globe, href: website.startsWith('http') ? website : `https://${website}`, label: new URL(website.startsWith('http') ? website : `https://${website}`).hostname.replace('www.', '') },
-  ].filter(Boolean) as { icon: React.ComponentType<{ className?: string; size?: number }>; href: string; label: string }[];
-
-  // Get tags as array
-  const tags = profile?.tags?.slice(0, 6) ?? [];
-
   if (loading) {
     return (
       <div className="min-h-screen">
-        {/* Banner skeleton */}
-        <div className="h-48 md:h-64 lg:h-72 bg-gradient-to-br from-primary/10 via-muted/20 to-verified/10 animate-pulse" />
-        
-        <div className="max-w-3xl mx-auto px-6 -mt-20">
-          {/* Avatar skeleton */}
-          <div className={`w-28 h-28 md:w-36 md:h-36 ${faceRadius} bg-muted border-4 border-background animate-pulse`} />
-          
-          <div className="mt-6 space-y-4">
-            <div className="h-10 w-56 bg-muted rounded-lg animate-pulse" />
-            <div className="h-5 w-40 bg-muted rounded animate-pulse" />
+        <div className="h-40 md:h-56 bg-muted/30 animate-pulse" />
+        <div className="max-w-2xl mx-auto px-6 -mt-16">
+          <div className={`w-28 h-28 md:w-32 md:h-32 ${faceRadius} bg-muted border-4 border-background animate-pulse`} />
+          <div className="mt-6 space-y-3">
+            <div className="h-9 w-56 bg-muted rounded-lg animate-pulse" />
+            <div className="h-4 w-40 bg-muted rounded animate-pulse" />
             <div className="h-4 w-full max-w-md bg-muted rounded animate-pulse" />
           </div>
         </div>
@@ -99,7 +122,6 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
 
   return (
     <div className="min-h-screen pb-24">
-      {/* Floating Header */}
       <FloatingHeader
         accountId={accountId}
         displayName={profile?.name}
@@ -108,9 +130,9 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
         actions={
           <>
             {isOwnProfile && (
-              <Button 
-                variant="floating" 
-                size="sm" 
+              <Button
+                variant="floating"
+                size="sm"
                 className="gap-2"
                 onClick={() => openDrawer({ id: 'edit-profile', onSuccess: () => refetch() })}
               >
@@ -118,9 +140,9 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
                 <span className="hidden sm:inline">Edit</span>
               </Button>
             )}
-            <Button 
-              variant="floating" 
-              size="icon" 
+            <Button
+              variant="floating"
+              size="icon"
               onClick={() => {
                 void handleShare();
               }}
@@ -131,49 +153,35 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
         }
       />
 
-      {/* Banner - Full bleed */}
-      <div className="relative h-48 md:h-64 lg:h-72 overflow-hidden">
+      <div className="relative h-40 md:h-56 overflow-hidden">
         {bannerUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- remote OnSocial / IPFS banners
-          <img 
-            src={bannerUrl} 
-            alt="" 
-            className="w-full h-full object-cover"
-          />
+          <img src={bannerUrl} alt="" className="w-full h-full object-cover" />
         ) : (
-          /* Subtle fallback with dot pattern */
           <div className="w-full h-full bg-muted/30 relative">
             <div className="absolute inset-0 bg-[radial-gradient(circle,hsl(var(--muted-foreground)/0.08)_1px,transparent_1px)] bg-[size:24px_24px]" />
           </div>
         )}
       </div>
 
-      {/* Profile Content */}
-      <div className="max-w-3xl mx-auto px-6">
-        {/* Avatar - Overlapping banner */}
-        <div className="-mt-20 md:-mt-24 mb-6 relative z-10">
-          <div className="relative inline-block">
-            <ProfileAvatar
-              accountId={accountId}
-              size="xl"
-              className={`w-28 h-28 md:w-36 md:h-36 ${faceRadius} shadow-xl ring-4 ring-background`}
-            />
-          </div>
+      <div className="max-w-2xl mx-auto px-6">
+        <div className="-mt-16 md:-mt-20 mb-6 relative z-10">
+          <ProfileAvatar
+            accountId={accountId}
+            size="xl"
+            className={`w-28 h-28 md:w-32 md:h-32 ${faceRadius} shadow-xl ring-4 ring-background`}
+          />
         </div>
 
-        {/* Name & Identity */}
         <div className="space-y-4">
-          {/* Display Name */}
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight">
-            {profile?.name ?? truncateAddress(accountId)}
-          </h1>
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{displayName}</h1>
 
-          {/* Account ID - Clickable */}
-          <button 
+          <button
+            type="button"
             onClick={handleCopyAddress}
-            className="group flex items-center gap-2 text-muted-foreground hover:text-foreground transition-all"
+            className="group flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
-            <span className="text-sm font-mono border border-border bg-muted/30 px-3 py-1.5 rounded-full group-hover:border-verified/50 group-hover:bg-verified/5 transition-all">
+            <span className="text-sm font-mono border border-border bg-muted/30 px-3 py-1.5 rounded-full">
               {truncateAddress(accountId)}
             </span>
             {copied ? (
@@ -183,40 +191,42 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
             )}
           </button>
 
-          {orgLine && (
-            <p className="text-lg text-muted-foreground max-w-xl">{orgLine}</p>
+          {orgLine && <p className="text-sm text-muted-foreground">{orgLine}</p>}
+
+          {profile?.bio && (
+            <p className="text-base md:text-lg text-foreground/85 leading-relaxed max-w-xl whitespace-pre-wrap">
+              {profile.bio}
+            </p>
           )}
 
-          {/* Meta row - Location + Links */}
-          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-            {profile?.location && (
-              <span className="flex items-center gap-1.5">
-                <MapPin className="w-4 h-4" />
-                {profile.location}
-              </span>
-            )}
-            
-            {/* Social Links - Inline icons */}
-            {socialLinksList.map((link, i) => (
-              <a
-                key={i}
-                href={link.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 hover:text-foreground transition-colors group"
-              >
-                <link.icon className="w-4 h-4" />
-                <span className="group-hover:underline underline-offset-4">{link.label}</span>
-              </a>
-            ))}
-          </div>
+          {(profile?.location || socialLinksList.length > 0) && (
+            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+              {profile?.location && (
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4" />
+                  {profile.location}
+                </span>
+              )}
+              {socialLinksList.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+                >
+                  <link.icon className="w-4 h-4" />
+                  <span className="underline-offset-4 hover:underline">{link.label}</span>
+                </a>
+              ))}
+            </div>
+          )}
 
-          {/* Tags */}
           {tags.length > 0 && (
-            <div className="flex flex-wrap gap-2 pt-2">
+            <div className="flex flex-wrap gap-2">
               {tags.map((tag) => (
-                <span 
-                  key={tag} 
+                <span
+                  key={tag}
                   className="px-3 py-1 text-xs font-medium border border-verified/30 bg-verified/10 text-primary rounded-full"
                 >
                   {tag}
@@ -225,62 +235,62 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
             </div>
           )}
 
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-4">
-            {!isOwnProfile && <StandWithButton targetAccountId={accountId} size="md" />}
-            <StandingCount targetAccountId={accountId} />
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            {!isOwnProfile && <StandWithButton targetAccountId={accountId} showCount={false} size="md" />}
+            <StandingCount targetAccountId={accountId} subject={isOwnProfile ? 'you' : 'them'} />
           </div>
         </div>
 
-        {/* Divider */}
-        <div className="py-8">
-          <Divider />
-        </div>
+        {showVfMarks && (
+          <>
+            <div className="py-8">
+              <Divider />
+            </div>
 
-        {/* Bio Section */}
-        {profile?.bio && (
-          <section className="mb-12">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">
-              About
-            </h2>
-            <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap max-w-2xl">
-              {profile.bio}
-            </p>
-          </section>
+            <div className="space-y-5">
+              {(showShelf || showStudio) && (
+                <div className="flex flex-wrap items-center gap-3">
+                  {showShelf && (
+                    <span className="px-3 py-1 text-xs font-medium border border-verified/30 bg-verified/10 text-primary rounded-full">
+                      On the VF shelf
+                    </span>
+                  )}
+                  {showStudio && (
+                    <Link
+                      href="/studio"
+                      className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline underline-offset-4"
+                    >
+                      Studio
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  )}
+                </div>
+              )}
+
+              {showTrail && (
+                <section className="space-y-3">
+                  <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Your trail
+                  </h2>
+                  <ul className="space-y-2">
+                    {recentScans.map((scan) => (
+                      <li key={scan.id}>
+                        <Link
+                          href={`/scan/${encodeURIComponent(scan.code)}`}
+                          className="flex items-center justify-between rounded-xl border border-border/60 bg-muted/20 px-4 py-3 transition-colors hover:border-primary/30"
+                        >
+                          <span className="font-mono text-sm text-foreground">{scan.code}</span>
+                          <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+            </div>
+          </>
         )}
-
-        {/* Stats Grid - Placeholder for future */}
-        <section className="relative">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-6">
-            Activity
-          </h2>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { label: 'DAO Votes', value: '—' },
-              { label: 'Proposals', value: '—' },
-              { label: 'Transactions', value: '—' },
-              { label: 'Reputation', value: '—' },
-            ].map((stat) => (
-              <div 
-                key={stat.label} 
-                className="text-center p-4 rounded-xl border border-border/50 bg-muted/20 hover:border-verified/30 hover:bg-verified/5 transition-all"
-              >
-                <div className="text-2xl md:text-3xl font-bold text-muted-foreground/40">
-                  {stat.value}
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {stat.label}
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          <p className="text-sm text-muted-foreground mt-6 text-center">
-            Activity stats coming soon
-          </p>
-        </section>
       </div>
-
     </div>
   );
 }

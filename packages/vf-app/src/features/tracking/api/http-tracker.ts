@@ -53,6 +53,7 @@ export function createHttpTracker(): TrackerApi {
     getLotBundle: (lotId) => request<LotBundle | null>(`/api/tracking/lots/${lotId}/bundle`),
     resolveScan: (code) => request<LotBundle | null>(`/api/tracking/scan/${encodeURIComponent(code)}`),
     getOrg: (accountId) => request<Org | null>(`/api/tracking/orgs/${accountId}`),
+    isListed: (accountId) => request<boolean>(`/api/tracking/orgs/${accountId}/listed`),
     listScans: (accountId) =>
       request<ScanRecord[]>(accountId ? `/api/tracking/scans?accountId=${accountId}` : '/api/tracking/scans'),
     registerProduct: (input: RegisterProductInput) =>

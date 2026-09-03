@@ -87,6 +87,14 @@ export function useOrgRole(accountId: string | null | undefined) {
   ]);
 }
 
+export function useVfListed(accountId: string | null | undefined) {
+  const tracker = useTracker();
+  return useAsyncValue(
+    () => (accountId ? tracker.isListed(accountId) : Promise.resolve(false)),
+    [tracker, accountId]
+  );
+}
+
 export function useScanHistory(accountId?: string) {
   const tracker = useTracker();
   return useAsyncValue(() => tracker.listScans(accountId), [tracker, accountId]);

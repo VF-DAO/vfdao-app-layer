@@ -195,6 +195,10 @@ export function createLocalTracker(): TrackerApi {
       return store.orgs.find((org) => org.accountId === accountId) ?? null;
     },
 
+    async isListed(accountId: string): Promise<boolean> {
+      return store.listings.some((listing) => listing.orgAccountId === accountId);
+    },
+
     async listScans(accountId?: string): Promise<ScanRecord[]> {
       const scans = loadScans();
       return scans

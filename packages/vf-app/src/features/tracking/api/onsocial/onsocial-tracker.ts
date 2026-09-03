@@ -318,6 +318,10 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
       return this.getLotBundle(parsed.lotId);
     },
 
+    async isListed(accountId: string): Promise<boolean> {
+      return isVfListed(accountId);
+    },
+
     async getOrg(accountId: string): Promise<Org | null> {
       try {
         const row = await client.queryByPath(recordPath('org', accountId, config.appId));

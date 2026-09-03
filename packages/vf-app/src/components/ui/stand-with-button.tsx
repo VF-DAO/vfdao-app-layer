@@ -62,28 +62,45 @@ export function StandWithButton({
 
 export function StandingCount({
   targetAccountId,
+  subject = 'them',
   className,
 }: {
   targetAccountId: string;
+  subject?: 'them' | 'you';
   className?: string;
 }) {
-  const { incoming, isLoading } = useStanding(targetAccountId);
+  const { incoming, outgoing, isLoading } = useStanding(targetAccountId);
 
   if (isLoading) {
     return <span className={cn('text-muted-foreground', className)}>...</span>;
   }
 
-  if (incoming === 0) {
+  const incomingLabel =
+    incoming === 1
+      ? subject === 'you'
+        ? 'stands with you'
+        : 'stands with them'
+      : subject === 'you'
+        ? 'stand with you'
+        : 'stand with them';
+
+  if (incoming === 0 && (subject !== 'you' || outgoing === 0)) {
     return null;
   }
 
   return (
-    <div className={cn('flex items-center gap-1.5 text-muted-foreground', className)}>
-      <Users className="w-4 h-4" />
-      <span className="text-sm">
-        <strong className="text-foreground">{incoming}</strong>{' '}
-        {incoming === 1 ? 'stands with them' : 'stand with them'}
-      </span>
+    <div className={cn('flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground', className)}>
+      {incoming > 0 && (
+        <span className="flex items-center gap-1.5 text-sm">
+          <Users className="w-4 h-4" />
+          <strong className="text-foreground">{incoming}</strong> {incomingLabel}
+        </span>
+      )}
+      {subject === 'you' && outgoing > 0 && (
+        <span className="text-sm">
+          You stand with <strong className="text-foreground">{outgoing}</strong>
+        </span>
+      )}
     </div>
   );
 }

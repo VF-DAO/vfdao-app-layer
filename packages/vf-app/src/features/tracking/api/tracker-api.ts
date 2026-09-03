@@ -29,6 +29,7 @@ export interface TrackerApi {
   getLotBundle(lotId: string): Promise<LotBundle | null>;
   resolveScan(code: string): Promise<LotBundle | null>;
   getOrg(accountId: string): Promise<Org | null>;
+  isListed(accountId: string): Promise<boolean>;
   listScans(accountId?: string): Promise<ScanRecord[]>;
   registerProduct(input: RegisterProductInput): Promise<Product>;
   createLot(input: CreateLotInput): Promise<Lot>;

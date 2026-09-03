@@ -73,6 +73,8 @@ describe('local tracker', () => {
     expect(mill.length).toBeGreaterThan(0);
     expect(certs[0]?.issuerAccountId).toBe('vegcert.near');
     expect(await tracker.listProductsForAccount('vegcert.near')).toEqual([]);
+    expect(await tracker.isListed('green-valley.near')).toBe(true);
+    expect(await tracker.isListed('cashew.near')).toBe(false);
   });
 });
 
