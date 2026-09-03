@@ -6,7 +6,7 @@ import { ProfileAvatar } from '@/components/ui/profile-avatar';
 import { useAppDrawer } from '@/features/shell';
 import { FloatingHeader } from '@/components/ui/floating-header';
 import { Divider } from '@/components/ui/divider';
-import { WithYouButton, WithYouCount } from '@/components/ui/with-you-button';
+import { StandingCount, StandWithButton } from '@/components/ui/stand-with-button';
 import { 
   Check,
   Copy, 
@@ -225,18 +225,9 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
             </div>
           )}
 
-          {/* I'm With You Section */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-4">
-            {/* Button only on other people's profiles */}
-            {!isOwnProfile && (
-              <WithYouButton 
-                targetAccountId={accountId} 
-                context={{ type: 'profile' }}
-                size="md"
-              />
-            )}
-            {/* Count shows on all profiles */}
-            <WithYouCount targetAccountId={accountId} />
+            {!isOwnProfile && <StandWithButton targetAccountId={accountId} size="md" />}
+            <StandingCount targetAccountId={accountId} />
           </div>
         </div>
 

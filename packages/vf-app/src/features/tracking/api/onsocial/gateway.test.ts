@@ -4,6 +4,8 @@ import {
   queryRecordByPath,
   queryRecordsByAppJsonContains,
   queryRecordsByAppPrefix,
+  queryStandingAccountIds,
+  queryStandingStats,
 } from './gateway';
 
 const config: OnSocialConfig = {
@@ -92,5 +94,50 @@ describe('OnSocial indexed gateway queries', () => {
     const row = await queryRecordByPath(config, 'apps/vf-tracker/lot/lot-1');
     expect(row?.accountId).toBe('green-valley.near');
     expect((row?.value as { id?: string }).id).toBe('lot-1');
+  });
+
+  it('reads standing from standingsCurrent, not apps/vf', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: {
+          standingCounts: [{ standingWithCount: 2 }],
+          standingOutCounts: [{ standingWithOthersCount: 1 }],
+          viewerEdge: [{ accountId: 'alice.near' }],
+        },
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const stats = await queryStandingStats(config, 'green-valley.near', 'alice.near');
+    const posted = postedQuery(fetchMock);
+
+    expect(posted.query).toMatch(/standingsCurrent/);
+    expect(posted.query).not.toMatch(/apps\/vf/);
+    expect(posted.query).not.toMatch(/dataType/);
+    expect(posted.variables).toEqual({ id: 'green-valley.near', viewer: 'alice.near' });
+    expect(stats).toEqual({ incoming: 2, outgoing: 1, viewerStandsWith: true });
+  });
+
+  it('lists incoming standers by targetAccount', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: {
+          standingsCurrent: [
+            { accountId: 'alice.near', targetAccount: 'green-valley.near' },
+            { accountId: 'bob.near', targetAccount: 'green-valley.near' },
+          ],
+        },
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const ids = await queryStandingAccountIds(config, 'green-valley.near', 'incoming');
+    const posted = postedQuery(fetchMock);
+
+    expect(posted.query).toMatch(/targetAccount:\s*\{\s*_eq:\s*\$id/);
+    expect(posted.query).not.toMatch(/dataType/);
+    expect(ids).toEqual(['alice.near', 'bob.near']);
   });
 });

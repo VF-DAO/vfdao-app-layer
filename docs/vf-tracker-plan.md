@@ -73,7 +73,13 @@ Company face is `{account}/profile/` on core:
 
 `kind=org` is a look. It does **not** grant tracker writes. VF role stays `{owner}/apps/vf-tracker/org/{id}`.
 
-Solidarity (“I’m with you”) is `{from}/apps/vf/withyou/{to}` on the same core. Not `social.near`.
+Standing is protocol-level, next to profile — the same edge OnSocial reads:
+
+```
+{from}/standing/{to}  →  { v: 1, since }
+```
+
+Indexed as `standingsCurrent` / `standingCounts` / `standingOutCounts`. Not `social.near` follow. Not `{from}/apps/vf/withyou/{to}`. Not a VF contract. Endorse / Boost stay VF spend later; standing is free and does not rank Explore.
 
 ---
 
@@ -196,7 +202,7 @@ Hub identity reads:
 
 - Profile → `profilesCurrent` (`profile/name`, `bio`, `kind`, `industry`, `avatar`, `banner`, `links`)
 - Face shape → `kind` + DAO workspace heuristic
-- WithYou → `apps/vf/withyou/{to}` (`dataType=apps`, `dataId=vf`)
+- Standing → `standingsCurrent` (`{from}/standing/{to}`, `{ v: 1, since }`). Counts from `standingCounts` / `standingOutCounts`. Not `dataType=apps`.
 
 ---
 

@@ -16,6 +16,13 @@ export type {
   OnSocialWriteResult,
 } from './types';
 export type { OnSocialProfile, ProfileKind } from './profile';
+export type { StandingStats, StandingV1 } from './standing';
+export {
+  buildStandingRemoveData,
+  buildStandingSetData,
+  standingFullPath,
+  standingPath,
+} from './standing';
 export {
   editorFaceKind,
   isDaoAccount,

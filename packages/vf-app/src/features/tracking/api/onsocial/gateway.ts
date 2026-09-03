@@ -186,24 +186,85 @@ export async function queryProfilesCurrentMany(
   return data.profilesCurrent ?? [];
 }
 
-export async function queryAppRowsById(
+export interface StandingStatsRow {
+  incoming: number;
+  outgoing: number;
+  viewerStandsWith: boolean;
+}
+
+export async function queryStandingStats(
   config: OnSocialConfig,
-  appId: string
-): Promise<GatewayRecord[]> {
-  const data = await graphql<{ dataUpdates?: DataUpdateRow[] }>(
+  accountId: string,
+  viewerAccountId: string | null
+): Promise<StandingStatsRow> {
+  const viewer = viewerAccountId?.trim() ?? '';
+  const data = await graphql<{
+    standingCounts?: { standingWithCount?: number }[];
+    standingOutCounts?: { standingWithOthersCount?: number }[];
+    viewerEdge?: { accountId?: string }[];
+  }>(
     config,
-    `query AppRows($dataType: String!, $appId: String!) {
-      dataUpdates(
-        where: { _and: [{ dataType: { _eq: $dataType } }, { dataId: { _eq: $appId } }] }
-        limit: 400
-        orderBy: [{ blockHeight: DESC }]
+    viewer
+      ? `query StandingStats($id: String!, $viewer: String!) {
+          standingCounts(where: { accountId: { _eq: $id } }) {
+            standingWithCount
+          }
+          standingOutCounts(where: { accountId: { _eq: $id } }) {
+            standingWithOthersCount
+          }
+          viewerEdge: standingsCurrent(
+            where: { accountId: { _eq: $viewer }, targetAccount: { _eq: $id } }
+            limit: 1
+          ) {
+            accountId
+          }
+        }`
+      : `query StandingCounts($id: String!) {
+          standingCounts(where: { accountId: { _eq: $id } }) {
+            standingWithCount
+          }
+          standingOutCounts(where: { accountId: { _eq: $id } }) {
+            standingWithOthersCount
+          }
+        }`,
+    viewer ? { id: accountId, viewer } : { id: accountId }
+  );
+
+  return {
+    incoming: Number(data.standingCounts?.[0]?.standingWithCount ?? 0),
+    outgoing: Number(data.standingOutCounts?.[0]?.standingWithOthersCount ?? 0),
+    viewerStandsWith: Boolean(data.viewerEdge?.length),
+  };
+}
+
+export async function queryStandingAccountIds(
+  config: OnSocialConfig,
+  accountId: string,
+  direction: 'incoming' | 'outgoing'
+): Promise<string[]> {
+  const field = direction === 'incoming' ? 'targetAccount' : 'accountId';
+  const data = await graphql<{
+    standingsCurrent?: { accountId?: string; targetAccount?: string }[];
+  }>(
+    config,
+    `query StandingList($id: String!) {
+      standingsCurrent(
+        where: { ${field}: { _eq: $id } }
+        limit: 200
+        orderBy: [{ blockTimestamp: DESC }]
       ) {
-        ${DATA_FIELDS}
+        accountId targetAccount
       }
     }`,
-    { dataType: APP_DATA_TYPE, appId }
+    { id: accountId }
   );
-  return toRecords(data.dataUpdates);
+
+  const ids = new Set<string>();
+  for (const row of data.standingsCurrent ?? []) {
+    const id = direction === 'incoming' ? row.accountId : row.targetAccount;
+    if (id) ids.add(id);
+  }
+  return [...ids];
 }
 
 export async function queryRecordByPath(
