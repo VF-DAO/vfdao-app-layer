@@ -95,7 +95,9 @@ describe('LotBundleView', () => {
       '/profile/green-valley.near'
     );
     expect(screen.getByRole('button', { name: 'Stand with green-valley.near' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'vegcert.near' })).toHaveAttribute('href', '/profile/vegcert.near');
+    const vegcertLinks = screen.getAllByRole('link', { name: 'vegcert.near' });
+    expect(vegcertLinks).toHaveLength(2);
+    expect(vegcertLinks.every((link) => link.getAttribute('href') === '/profile/vegcert.near')).toBe(true);
     expect(screen.getByRole('link', { name: 'nordic-mill.near' })).toHaveAttribute(
       'href',
       '/profile/nordic-mill.near'
