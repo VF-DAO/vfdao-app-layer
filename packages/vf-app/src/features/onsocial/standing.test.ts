@@ -3,6 +3,7 @@ import {
   buildStandingRemoveData,
   buildStandingSetData,
   parseStandingEdge,
+  resolveStandingRead,
   standingFullPath,
   standingPath,
   standingStatsFromRows,
@@ -39,5 +40,12 @@ describe('OnSocial standing', () => {
       outgoing: 1,
       viewerStandsWith: true,
     });
+  });
+
+  it('keeps the local graph when OnSocial is not configured', () => {
+    const live = { incoming: 0, outgoing: 0, viewerStandsWith: false };
+    const local = { incoming: 2, outgoing: 1, viewerStandsWith: true };
+    expect(resolveStandingRead(live, local, 'local')).toEqual(local);
+    expect(resolveStandingRead(live, local, 'gateway')).toEqual(live);
   });
 });

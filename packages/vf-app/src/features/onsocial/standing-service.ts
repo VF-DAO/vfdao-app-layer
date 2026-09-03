@@ -12,9 +12,15 @@ import {
   getLocalStandingStats,
   putLocalStanding,
   removeLocalStanding,
+  resolveStandingRead,
   standingPath,
+  type StandingSource,
   type StandingStats,
 } from './standing';
+
+function standingSourceFromResponse(response: Response): StandingSource {
+  return response.headers.get('x-onsocial-source') === 'gateway' ? 'gateway' : 'local';
+}
 
 export function buildStandingAddTransaction(toAccountId: string, since = Date.now()) {
   return buildCoreSetTransaction(getOnSocialConfig().coreContract, buildStandingSetData(toAccountId, since));
@@ -77,7 +83,14 @@ export async function fetchStandingStats(
       const params = new URLSearchParams({ accountId });
       if (viewerAccountId) params.set('viewer', viewerAccountId);
       const response = await fetch(`/api/onsocial/standing?${params.toString()}`, { cache: 'no-store' });
-      if (response.ok) return (await response.json()) as StandingStats;
+      if (response.ok) {
+        const live = (await response.json()) as StandingStats;
+        return resolveStandingRead(
+          live,
+          getLocalStandingStats(accountId, viewerAccountId),
+          standingSourceFromResponse(response)
+        );
+      }
     } catch (error) {
       console.warn('[onsocial] standing stats api failed', error);
     }
@@ -93,7 +106,14 @@ export async function fetchStandingIncoming(accountId: string): Promise<string[]
         `/api/onsocial/standing?accountId=${encodeURIComponent(accountId)}&list=incoming`,
         { cache: 'no-store' }
       );
-      if (response.ok) return (await response.json()) as string[];
+      if (response.ok) {
+        const live = (await response.json()) as string[];
+        return resolveStandingRead(
+          live,
+          getLocalStandingIncoming(accountId),
+          standingSourceFromResponse(response)
+        );
+      }
     } catch (error) {
       console.warn('[onsocial] standing incoming api failed', error);
     }
@@ -109,7 +129,14 @@ export async function fetchStandingOutgoing(accountId: string): Promise<string[]
         `/api/onsocial/standing?accountId=${encodeURIComponent(accountId)}&list=outgoing`,
         { cache: 'no-store' }
       );
-      if (response.ok) return (await response.json()) as string[];
+      if (response.ok) {
+        const live = (await response.json()) as string[];
+        return resolveStandingRead(
+          live,
+          getLocalStandingOutgoing(accountId),
+          standingSourceFromResponse(response)
+        );
+      }
     } catch (error) {
       console.warn('[onsocial] standing outgoing api failed', error);
     }

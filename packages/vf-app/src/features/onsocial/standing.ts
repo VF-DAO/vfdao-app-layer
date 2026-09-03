@@ -27,6 +27,12 @@ export interface StandingStats {
   viewerStandsWith: boolean;
 }
 
+export type StandingSource = 'gateway' | 'local';
+
+export function resolveStandingRead<T>(live: T | null, local: T, source: StandingSource): T {
+  return source === 'gateway' && live !== null ? live : local;
+}
+
 export function standingPath(toAccountId: string): string {
   return `standing/${toAccountId}`;
 }
