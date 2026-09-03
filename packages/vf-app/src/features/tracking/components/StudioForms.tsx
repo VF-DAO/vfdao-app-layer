@@ -8,9 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { EVENT_KINDS, type EventKind, type Product } from '../types';
 import { useStudioActor } from '../hooks/use-studio-actor';
-import { useProducts } from '../hooks/use-tracker';
+import { useLotsForAccount, useProductsForAccount } from '../hooks/use-tracker';
 import { useTrackingMutations } from '../hooks/use-tracking-mutations';
-import { encodeLotQr } from '../lib/qr';
+import { encodeLotQr, scanHref } from '../lib/qr';
 import { canCreateLot, canIssueCertificate, canRecordEvent, canRegisterProduct } from '../lib/roles';
 
 interface FormChromeProps {
@@ -116,7 +116,7 @@ export function CreateLotForm({
 }) {
   const router = useRouter();
   const actor = useStudioActor();
-  const catalog = useProducts();
+  const catalog = useProductsForAccount(actor.accountId);
   const list = useMemo(() => products ?? catalog.data ?? [], [catalog.data, products]);
   const { createLot, pending, error } = useTrackingMutations();
   const allowed = canCreateLot(actor.role);
@@ -147,7 +147,7 @@ export function CreateLotForm({
             producerAccountId: actor.accountId ?? 'demo.near',
           }).then((lot) => {
             onSuccess?.();
-            router.push(`/products/${lot.productId}/lots/${lot.id}`);
+            router.push(scanHref(lot.id));
           });
         }}
       >
@@ -204,11 +204,15 @@ export function RecordEventForm({
 }) {
   const router = useRouter();
   const actor = useStudioActor();
+  const mine = useLotsForAccount(actor.accountId);
+  const catalog = useProductsForAccount(actor.accountId);
   const { addEvent, pending, error } = useTrackingMutations();
   const [selectedLot, setSelectedLot] = useState(lotId ?? '');
   const [kind, setKind] = useState<EventKind>('sourced');
   const [note, setNote] = useState('');
   const allowed = canRecordEvent(actor.role);
+  const lotChoices = mine.data ?? [];
+  const useLotSelect = !lotId && lotChoices.length > 0;
 
   return (
     <FormChrome chrome={chrome} title="Record event">
@@ -228,7 +232,29 @@ export function RecordEventForm({
           });
         }}
       >
-        {!lotId && (
+        {!lotId && useLotSelect && (
+          <div>
+            <FieldLabel>Lot</FieldLabel>
+            <select
+              className="h-12 w-full rounded-full border border-border bg-transparent px-4 text-sm"
+              value={selectedLot}
+              onChange={(event) => setSelectedLot(event.target.value)}
+              required
+            >
+              <option value="">Select a lot</option>
+              {lotChoices.map((lot) => {
+                const product = catalog.data?.find((item) => item.id === lot.productId);
+                return (
+                  <option key={lot.id} value={lot.id}>
+                    {lot.label}
+                    {product ? ` · ${product.name}` : ''}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        )}
+        {!lotId && !useLotSelect && (
           <div>
             <FieldLabel>Lot id</FieldLabel>
             <Input value={selectedLot} onChange={(event) => setSelectedLot(event.target.value)} required />

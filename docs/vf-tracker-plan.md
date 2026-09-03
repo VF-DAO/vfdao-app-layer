@@ -160,7 +160,7 @@ Do **not** use cleanup as a chance to add product-option paths or a second compo
 
 1. **Scan / lot compose** — attestation graph. QR → `getLotBundle`. Writer on every stamp. VF shelf optional. (this is the first build)
 2. Seam + studio role UX + lot QR + indexed `apps/` reads — done in vf-app
-3. Producer / certifier / mill desks — lists on the same compose (`getLotBundle`), not a second graph. `/studio` is the desk; the drawer is write-only. — done in vf-app
+3. Producer / certifier / mill desks — lists on the same compose (`getLotBundle`), not a second graph. `/studio` is the desk; the drawer is write-only. Producer desk is product-first (search, lots under each SKU). — done in vf-app
 4. Live session handoff when `@onsocial/sdk` ships
 5. Explore = VF listing group (`listed/{org}` already read on scan)
 6. Deploy VF Boost + VF social-spend (`veganfriends.tkn.near`)

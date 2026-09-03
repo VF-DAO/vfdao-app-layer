@@ -1,13 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { FIXTURE_CERTIFIER_ID, FIXTURE_LOT_ID, FIXTURE_PROCESSOR_ID, FIXTURE_PRODUCER_ID, cloneFixtures } from '../api/fixtures';
+import {
+  cloneFixtures,
+  FIXTURE_CERTIFIER_ID,
+  FIXTURE_LOT_ID,
+  FIXTURE_PROCESSOR_ID,
+  FIXTURE_PRODUCER_ID,
+  FIXTURE_PRODUCT_BAR_ID,
+  FIXTURE_PRODUCT_CREAM_ID,
+  FIXTURE_PRODUCT_ID,
+} from '../api/fixtures';
 import {
   certificateBundleHref,
   certificatesForAccount,
+  deskCounts,
   deskTitle,
   eventBundleHref,
   eventsForAccount,
+  filterProductDeskRows,
   lotBundleHref,
   lotsForAccount,
+  productDeskRows,
   productsForAccount,
 } from './desk';
 
@@ -16,11 +28,31 @@ describe('desk lists', () => {
 
   it('filters products and lots to the producer wallet', () => {
     expect(productsForAccount(fixtures.products, FIXTURE_PRODUCER_ID).map((item) => item.id)).toEqual([
-      fixtures.products[0].id,
+      FIXTURE_PRODUCT_BAR_ID,
+      FIXTURE_PRODUCT_ID,
+      FIXTURE_PRODUCT_CREAM_ID,
     ]);
     expect(lotsForAccount(fixtures.lots, FIXTURE_PROCESSOR_ID)).toEqual([]);
     expect(lotsForAccount(fixtures.lots, FIXTURE_PRODUCER_ID)[0]?.id).toBe(FIXTURE_LOT_ID);
     expect(lotBundleHref(FIXTURE_LOT_ID)).toBe(`/scan/${encodeURIComponent(`vf:lot:${FIXTURE_LOT_ID}`)}`);
+  });
+
+  it('groups lots under each product and searches across SKU fields', () => {
+    const rows = productDeskRows(
+      productsForAccount(fixtures.products, FIXTURE_PRODUCER_ID),
+      lotsForAccount(fixtures.lots, FIXTURE_PRODUCER_ID)
+    );
+    const barista = rows.find((row) => row.product.id === FIXTURE_PRODUCT_ID);
+    const bar = rows.find((row) => row.product.id === FIXTURE_PRODUCT_BAR_ID);
+    expect(barista?.lots).toHaveLength(2);
+    expect(bar?.lots).toHaveLength(0);
+    expect(deskCounts(fixtures.products, fixtures.lots)).toMatchObject({
+      productCount: 3,
+      lotCount: 3,
+      lastHarvestedAt: '2026-03-12',
+    });
+    expect(filterProductDeskRows(rows, 'cream').map((row) => row.product.id)).toEqual([FIXTURE_PRODUCT_CREAM_ID]);
+    expect(filterProductDeskRows(rows, '2403').map((row) => row.product.id)).toEqual([FIXTURE_PRODUCT_ID]);
   });
 
   it('filters stamps and certs to the writer wallet', () => {

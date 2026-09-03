@@ -12,14 +12,10 @@ import {
   useLotsForAccount,
   useProductsForAccount,
 } from '../hooks/use-tracker';
-import {
-  certificateBundleHref,
-  deskTitle,
-  eventBundleHref,
-  lotBundleHref,
-} from '../lib/desk';
+import { certificateBundleHref, deskTitle, eventBundleHref } from '../lib/desk';
 import { canCreateLot, canIssueCertificate, canRecordEvent, canRegisterProduct, roleLabel } from '../lib/roles';
 import { eventKindLabel } from '../lib/status';
+import { ProducerDesk } from './ProducerDesk';
 import { TrackingBackendBadge } from './TrackingBackendBadge';
 
 export function DeskView() {
@@ -29,21 +25,17 @@ export function DeskView() {
   const lots = useLotsForAccount(actor.accountId);
   const events = useEventsForAccount(actor.accountId);
   const certificates = useCertificatesForAccount(actor.accountId);
-  const productName = (productId: string) =>
-    products.data?.find((product) => product.id === productId)?.name;
-
-  const showProducts = canRegisterProduct(actor.role);
-  const showLots = canCreateLot(actor.role);
-  const showEvents = canRecordEvent(actor.role);
+  const isProducer = actor.role === 'producer';
+  const showEvents = !isProducer && canRecordEvent(actor.role);
   const showCerts = canIssueCertificate(actor.role);
   const loading = products.loading || lots.loading || events.loading || certificates.loading;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <div className="space-y-3">
-        <h1 className="text-3xl font-bold text-foreground sm:text-4xl">{deskTitle(actor.role)}</h1>
+        <h1 className="text-2xl font-bold text-foreground sm:text-3xl md:text-4xl">{deskTitle(actor.role)}</h1>
         {actor.org && (
-          <p className="text-muted-foreground">
+          <p className="text-sm text-muted-foreground sm:text-base">
             {actor.org.name} · {roleLabel(actor.org.role)} · {actor.org.accountId}
           </p>
         )}
@@ -58,7 +50,7 @@ export function DeskView() {
       </div>
 
       {actor.allowed && (
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           {canRegisterProduct(actor.role) && (
             <Button variant="outline" size="sm" onClick={() => openDrawer({ id: 'register-product' })}>
               <PackagePlus className="h-4 w-4" />
@@ -88,40 +80,8 @@ export function DeskView() {
 
       {loading && <p className="text-muted-foreground">Loading your stamps…</p>}
 
-      {showProducts && (
-        <section className="space-y-3">
-          <h2 className="text-xl font-semibold text-foreground">Products</h2>
-          {products.data?.map((product) => (
-            <Card key={product.id} className="border border-border p-5">
-              <Link href={`/products/${product.id}`} className="block">
-                <p className="text-sm text-muted-foreground">{product.brand}</p>
-                <h3 className="text-lg font-semibold text-foreground">{product.name}</h3>
-              </Link>
-            </Card>
-          ))}
-          {products.data?.length === 0 && !products.loading && (
-            <p className="text-sm text-muted-foreground">No products yet. Register one to start a lot.</p>
-          )}
-        </section>
-      )}
-
-      {showLots && (
-        <section className="space-y-3">
-          <h2 className="text-xl font-semibold text-foreground">Lots</h2>
-          {lots.data?.map((lot) => (
-            <Card key={lot.id} className="border border-border p-5">
-              <Link href={lotBundleHref(lot.id)} className="block">
-                <h3 className="text-lg font-semibold text-foreground">{lot.label}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {productName(lot.productId) ?? lot.productId} · {lot.quantity} · {lot.site}
-                </p>
-              </Link>
-            </Card>
-          ))}
-          {lots.data?.length === 0 && !lots.loading && (
-            <p className="text-sm text-muted-foreground">No lots yet. Open one, then scan the QR.</p>
-          )}
-        </section>
+      {isProducer && products.data && lots.data && (
+        <ProducerDesk products={products.data} lots={lots.data} />
       )}
 
       {showCerts && (
@@ -132,7 +92,7 @@ export function DeskView() {
               <Link href={certificateBundleHref(certificate)} className="block">
                 <h3 className="text-lg font-semibold text-foreground">{certificate.standard}</h3>
                 <p className="text-sm text-muted-foreground">
-                  {certificate.subjectType} {certificate.subjectId} · {certificate.status}
+                  {certificate.subjectType} {certificate.subjectId} · {certificate.status} · {certificate.issuedAt}
                 </p>
               </Link>
             </Card>
@@ -151,7 +111,7 @@ export function DeskView() {
               <Link href={eventBundleHref(event)} className="block">
                 <h3 className="text-lg font-semibold text-foreground">{eventKindLabel(event.kind)}</h3>
                 <p className="text-sm text-muted-foreground">
-                  {event.lotId} · {event.note}
+                  {event.note} · {event.at}
                 </p>
               </Link>
             </Card>

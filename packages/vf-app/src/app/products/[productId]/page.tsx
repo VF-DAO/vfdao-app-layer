@@ -30,12 +30,17 @@ export default function ProductDetailPage({ params }: { params: Promise<{ produc
 
   return (
     <div className="mx-auto max-w-4xl space-y-8 px-4 py-8 md:py-12">
-      <Button asChild variant="ghost" size="sm">
-        <Link href="/products">
-          <ArrowLeft className="h-4 w-4" />
-          All products
-        </Link>
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button asChild variant="ghost" size="sm">
+          <Link href="/studio">
+            <ArrowLeft className="h-4 w-4" />
+            Studio
+          </Link>
+        </Button>
+        <Button asChild variant="ghost" size="sm">
+          <Link href="/products">All products</Link>
+        </Button>
+      </div>
 
       <ProductHeader product={product} />
       <IngredientList ingredients={product.ingredients} claims={product.claims} />
@@ -63,17 +68,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ produc
                   </p>
                   <p className="mt-1 font-mono text-xs text-muted-foreground">{encodeLotQr(lot.id)}</p>
                 </div>
-                <div className="flex gap-2">
-                  <Button asChild variant="outline" size="sm">
-                    <Link href={`/products/${product.id}/lots/${lot.id}`}>Timeline</Link>
-                  </Button>
-                  <Button asChild variant="verified" size="sm">
-                    <Link href={scanHref(lot.id)}>
-                      <QrCode className="h-4 w-4" />
-                      Scan view
-                    </Link>
-                  </Button>
-                </div>
+                <Button asChild variant="verified" size="sm">
+                  <Link href={scanHref(lot.id)}>
+                    <QrCode className="h-4 w-4" />
+                    Scan view
+                  </Link>
+                </Button>
               </div>
             </Card>
           ))}

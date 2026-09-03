@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { FIXTURE_LOT_ID, FIXTURE_PRODUCT_ID, cloneFixtures } from '../api/fixtures';
+import userEvent from '@testing-library/user-event';
+import { cloneFixtures, FIXTURE_LOT_ID, FIXTURE_PRODUCT_BAR_ID, FIXTURE_PRODUCT_ID } from '../api/fixtures';
 import { DeskView } from './DeskView';
 
 const fixtures = cloneFixtures();
@@ -34,15 +35,30 @@ vi.mock('../hooks/use-tracker', () => ({
 }));
 
 describe('DeskView', () => {
-  it('lists the producer lots and opens the existing scan compose', () => {
+  it('groups lots under products and opens the existing scan compose', async () => {
+    const user = userEvent.setup();
     render(<DeskView />);
     expect(screen.getByRole('heading', { name: 'Producer desk' })).toBeInTheDocument();
-    expect(screen.getByText(fixtures.products[0].name)).toBeInTheDocument();
-    const lotLink = screen.getByRole('link', { name: new RegExp(fixtures.lots[0].label) });
-    expect(lotLink).toHaveAttribute('href', `/scan/${encodeURIComponent(`vf:lot:${FIXTURE_LOT_ID}`)}`);
-    expect(screen.getByRole('link', { name: /nordic plant/i })).toHaveAttribute(
+    expect(screen.getByText('Last harvest')).toBeInTheDocument();
+    expect(screen.getAllByText('2026-03-12').length).toBeGreaterThan(0);
+    expect(screen.queryByRole('heading', { name: 'Stamps' })).not.toBeInTheDocument();
+
+    const lotLinks = screen.getAllByRole('link', { name: /Spring harvest 2026/ });
+    expect(lotLinks.length).toBeGreaterThan(0);
+    for (const link of lotLinks) {
+      expect(link).toHaveAttribute('href', `/scan/${encodeURIComponent(`vf:lot:${FIXTURE_LOT_ID}`)}`);
+    }
+    expect(screen.getByRole('link', { name: 'View Barista Oat Drink' })).toHaveAttribute(
       'href',
       `/products/${FIXTURE_PRODUCT_ID}`
     );
+
+    await user.type(screen.getByLabelText('Search products and lots'), 'cream');
+    expect(screen.getByText('Oat Cooking Cream')).toBeInTheDocument();
+    expect(screen.queryByText('Barista Oat Drink')).not.toBeInTheDocument();
+
+    await user.clear(screen.getByLabelText('Search products and lots'));
+    await user.click(screen.getByRole('button', { name: 'Open lot for Kalmar Oat Bar' }));
+    expect(openDrawer).toHaveBeenCalledWith({ id: 'create-lot', productId: FIXTURE_PRODUCT_BAR_ID });
   });
 });
