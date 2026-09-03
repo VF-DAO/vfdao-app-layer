@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { cloneFixtures, FIXTURE_LOT_ID, FIXTURE_PRODUCT_BAR_ID, FIXTURE_PRODUCT_ID } from '../api/fixtures';
+import { cloneFixtures, FIXTURE_LOT_ID, FIXTURE_PRODUCT_BAR_ID } from '../api/fixtures';
 import { DeskView } from './DeskView';
 
 const fixtures = cloneFixtures();
@@ -35,27 +35,25 @@ vi.mock('../hooks/use-tracker', () => ({
 }));
 
 describe('DeskView', () => {
-  it('groups lots under products and opens the existing scan compose', async () => {
+  it('keeps lots under products, one compose, and writes on the row', async () => {
     const user = userEvent.setup();
     render(<DeskView />);
     expect(screen.getByRole('heading', { name: 'Producer desk' })).toBeInTheDocument();
-    expect(screen.getByText('Harvest')).toBeInTheDocument();
-    expect(screen.getAllByText('2026-03-12').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'Register product' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Record event' })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Stamps' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Recent lots' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Spring harvest 2026/ })).not.toBeInTheDocument();
 
-    const lotLinks = screen.getAllByRole('link', { name: /Spring harvest 2026/ });
-    expect(lotLinks.length).toBeGreaterThan(0);
-    for (const link of lotLinks) {
-      expect(link).toHaveAttribute('href', `/scan/${encodeURIComponent(`vf:lot:${FIXTURE_LOT_ID}`)}`);
-    }
-    expect(screen.getByRole('link', { name: 'View Barista Oat Drink' })).toHaveAttribute(
-      'href',
-      `/products/${FIXTURE_PRODUCT_ID}`
-    );
+    await user.click(screen.getByRole('button', { name: /Barista Oat Drink/, expanded: false }));
+    const lotLink = screen.getByRole('link', { name: /Spring harvest 2026/ });
+    expect(lotLink).toHaveAttribute('href', `/scan/${encodeURIComponent(`vf:lot:${FIXTURE_LOT_ID}`)}`);
+    expect(screen.queryByRole('link', { name: /scan/i })).not.toBeInTheDocument();
 
     await user.type(screen.getByLabelText('Search products and lots'), 'cream');
     expect(screen.getByText('Oat Cooking Cream')).toBeInTheDocument();
     expect(screen.queryByText('Barista Oat Drink')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Winter cook 2026/ })).toBeInTheDocument();
 
     await user.clear(screen.getByLabelText('Search products and lots'));
     await user.click(screen.getByRole('button', { name: 'Open lot for Kalmar Oat Bar' }));

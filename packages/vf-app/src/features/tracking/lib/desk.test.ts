@@ -12,7 +12,6 @@ import {
 import {
   certificateBundleHref,
   certificatesForAccount,
-  deskCounts,
   deskTitle,
   eventBundleHref,
   eventsForAccount,
@@ -46,11 +45,6 @@ describe('desk lists', () => {
     const bar = rows.find((row) => row.product.id === FIXTURE_PRODUCT_BAR_ID);
     expect(barista?.lots).toHaveLength(2);
     expect(bar?.lots).toHaveLength(0);
-    expect(deskCounts(fixtures.products, fixtures.lots)).toMatchObject({
-      productCount: 3,
-      lotCount: 3,
-      lastHarvestedAt: '2026-03-12',
-    });
     expect(filterProductDeskRows(rows, 'cream').map((row) => row.product.id)).toEqual([FIXTURE_PRODUCT_CREAM_ID]);
     expect(filterProductDeskRows(rows, '2403').map((row) => row.product.id)).toEqual([FIXTURE_PRODUCT_ID]);
   });

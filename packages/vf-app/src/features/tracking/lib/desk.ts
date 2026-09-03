@@ -7,12 +7,6 @@ export interface ProductDeskRow {
   lastHarvestedAt: string | null;
 }
 
-export interface DeskCounts {
-  productCount: number;
-  lotCount: number;
-  lastHarvestedAt: string | null;
-}
-
 export function productsForAccount(products: Product[], accountId: string): Product[] {
   return products
     .filter((product) => product.producerAccountId === accountId)
@@ -55,21 +49,6 @@ export function filterProductDeskRows(rows: ProductDeskRow[], query: string): Pr
   const needle = query.trim().toLowerCase();
   if (!needle) return rows;
   return rows.filter((row) => rowHaystack(row).includes(needle));
-}
-
-export function recentLots(lots: Lot[], limit = 3): Lot[] {
-  return [...lots]
-    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
-    .slice(0, limit);
-}
-
-export function deskCounts(products: Product[], lots: Lot[]): DeskCounts {
-  const latest = [...lots].sort((a, b) => Date.parse(b.harvestedAt) - Date.parse(a.harvestedAt))[0];
-  return {
-    productCount: products.length,
-    lotCount: lots.length,
-    lastHarvestedAt: latest?.harvestedAt ?? null,
-  };
 }
 
 export function countLabel(count: number, singular: string): string {

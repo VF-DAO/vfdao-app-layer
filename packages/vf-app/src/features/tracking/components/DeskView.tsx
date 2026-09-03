@@ -13,7 +13,7 @@ import {
   useProductsForAccount,
 } from '../hooks/use-tracker';
 import { certificateBundleHref, deskTitle, eventBundleHref } from '../lib/desk';
-import { canCreateLot, canIssueCertificate, canRecordEvent, canRegisterProduct, roleLabel } from '../lib/roles';
+import { canIssueCertificate, canRecordEvent, canRegisterProduct, roleLabel } from '../lib/roles';
 import { eventKindLabel } from '../lib/status';
 import { ProducerDesk } from './ProducerDesk';
 import { TrackingBackendBadge } from './TrackingBackendBadge';
@@ -40,11 +40,6 @@ export function DeskView() {
           </p>
         )}
         <TrackingBackendBadge />
-        {actor.usingDemoProducer && (
-          <p className="text-sm text-muted-foreground">
-            Demo producer · Green Valley Farms. Connect an org wallet to see your own desk.
-          </p>
-        )}
         {actor.pending && <p className="text-sm text-muted-foreground">Checking org role…</p>}
         {actor.reason && <p className="text-sm text-orange">{actor.reason}</p>}
       </div>
@@ -64,18 +59,7 @@ export function DeskView() {
               <span className="hidden sm:inline">Register product</span>
             </Button>
           )}
-          {canCreateLot(actor.role) && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1 sm:flex-none"
-              onClick={() => openDrawer({ id: 'create-lot' })}
-            >
-              <PackagePlus className="h-4 w-4" />
-              Open lot
-            </Button>
-          )}
-          {canRecordEvent(actor.role) && (
+          {!isProducer && canRecordEvent(actor.role) && (
             <Button
               variant="outline"
               size="sm"
@@ -104,7 +88,7 @@ export function DeskView() {
         </div>
       )}
 
-      {loading && <p className="text-muted-foreground">Loading your stamps…</p>}
+      {loading && <p className="text-muted-foreground">Loading…</p>}
 
       {isProducer && products.data && lots.data && (
         <ProducerDesk products={products.data} lots={lots.data} />
