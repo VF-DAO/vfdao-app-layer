@@ -88,6 +88,16 @@ describe('local OnSocial client', () => {
     );
   });
 
+  it('lists desk rows by account through the same json-contains path', async () => {
+    const tracker = createOnSocialTracker(createLocalOnSocialClient());
+    const lots = await tracker.listLotsForAccount('green-valley.near');
+    const certs = await tracker.listCertificatesForAccount('vegcert.near');
+    const mill = await tracker.listEventsForAccount('nordic-mill.near');
+    expect(lots[0]?.id).toBe(FIXTURE_LOT_ID);
+    expect(certs[0]?.issuerAccountId).toBe('vegcert.near');
+    expect(mill.every((event) => event.orgAccountId === 'nordic-mill.near')).toBe(true);
+  });
+
   it('rejects writes from the wrong org role', async () => {
     const tracker = createOnSocialTracker(createLocalOnSocialClient());
     await expect(

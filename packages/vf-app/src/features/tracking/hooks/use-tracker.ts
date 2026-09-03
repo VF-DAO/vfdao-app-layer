@@ -18,6 +18,38 @@ export function useProducts() {
   return useAsyncValue(() => tracker.listProducts(), [tracker]);
 }
 
+export function useProductsForAccount(accountId: string | null | undefined) {
+  const tracker = useTracker();
+  return useAsyncValue(
+    () => (accountId ? tracker.listProductsForAccount(accountId) : Promise.resolve([])),
+    [tracker, accountId]
+  );
+}
+
+export function useLotsForAccount(accountId: string | null | undefined) {
+  const tracker = useTracker();
+  return useAsyncValue(
+    () => (accountId ? tracker.listLotsForAccount(accountId) : Promise.resolve([])),
+    [tracker, accountId]
+  );
+}
+
+export function useEventsForAccount(accountId: string | null | undefined) {
+  const tracker = useTracker();
+  return useAsyncValue(
+    () => (accountId ? tracker.listEventsForAccount(accountId) : Promise.resolve([])),
+    [tracker, accountId]
+  );
+}
+
+export function useCertificatesForAccount(accountId: string | null | undefined) {
+  const tracker = useTracker();
+  return useAsyncValue(
+    () => (accountId ? tracker.listCertificatesForAccount(accountId) : Promise.resolve([])),
+    [tracker, accountId]
+  );
+}
+
 export function useProduct(productId: string | undefined) {
   const tracker = useTracker();
   return useAsyncValue(() => (productId ? tracker.getProduct(productId) : Promise.resolve(null)), [

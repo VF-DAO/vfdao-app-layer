@@ -2,8 +2,12 @@ import { NextResponse } from 'next/server';
 import { getServerTracker } from '@/features/tracking';
 import type { RegisterProductInput } from '@/features/tracking';
 
-export async function GET() {
+export async function GET(request: Request) {
   const tracker = getServerTracker();
+  const producerAccountId = new URL(request.url).searchParams.get('producerAccountId')?.trim();
+  if (producerAccountId) {
+    return NextResponse.json(await tracker.listProductsForAccount(producerAccountId));
+  }
   return NextResponse.json(await tracker.listProducts());
 }
 

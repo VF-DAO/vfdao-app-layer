@@ -1,5 +1,11 @@
 import type { TrackerApi } from './tracker-api';
 import { cloneFixtures } from './fixtures';
+import {
+  certificatesForAccount,
+  eventsForAccount,
+  lotsForAccount,
+  productsForAccount,
+} from '../lib/desk';
 import { createId } from '../lib/ids';
 import { parseScanCode } from '../lib/qr';
 import type {
@@ -131,6 +137,10 @@ export function createLocalTracker(): TrackerApi {
       return [...store.products].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
     },
 
+    async listProductsForAccount(accountId: string): Promise<Product[]> {
+      return productsForAccount(store.products, accountId);
+    },
+
     async getProduct(productId: string): Promise<Product | null> {
       return store.products.find((product) => product.id === productId) ?? null;
     },
@@ -139,6 +149,10 @@ export function createLocalTracker(): TrackerApi {
       return store.lots
         .filter((lot) => lot.productId === productId)
         .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+    },
+
+    async listLotsForAccount(accountId: string): Promise<Lot[]> {
+      return lotsForAccount(store.lots, accountId);
     },
 
     async getLot(lotId: string): Promise<Lot | null> {
@@ -151,8 +165,16 @@ export function createLocalTracker(): TrackerApi {
         .sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
     },
 
+    async listEventsForAccount(accountId: string): Promise<ChainEvent[]> {
+      return eventsForAccount(store.events, accountId);
+    },
+
     async getCertificates(subjectId: string): Promise<Certificate[]> {
       return store.certificates.filter((certificate) => certificate.subjectId === subjectId);
+    },
+
+    async listCertificatesForAccount(accountId: string): Promise<Certificate[]> {
+      return certificatesForAccount(store.certificates, accountId);
     },
 
     async getLotBundle(lotId: string): Promise<LotBundle | null> {

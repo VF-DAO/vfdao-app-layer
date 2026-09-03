@@ -63,4 +63,16 @@ describe('local tracker', () => {
     const listed = await tracker.listProducts();
     expect(listed.some((item) => item.id === product.id)).toBe(true);
   });
+
+  it('lists desk rows by the writer account', async () => {
+    const tracker = createLocalTracker();
+    const mine = await tracker.listLotsForAccount('green-valley.near');
+    const mill = await tracker.listEventsForAccount('nordic-mill.near');
+    const certs = await tracker.listCertificatesForAccount('vegcert.near');
+    expect(mine.map((lot) => lot.id)).toContain(FIXTURE_LOT_ID);
+    expect(mill.length).toBeGreaterThan(0);
+    expect(certs[0]?.issuerAccountId).toBe('vegcert.near');
+    expect(await tracker.listProductsForAccount('vegcert.near')).toEqual([]);
+  });
 });
+

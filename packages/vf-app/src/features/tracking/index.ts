@@ -25,16 +25,21 @@ export { encodeLotQr, parseScanCode, scanHref } from './lib/qr';
 export { isCertificateActive } from './lib/status';
 export { useStudioActor } from './hooks/use-studio-actor';
 export {
+  useCertificatesForAccount,
+  useEventsForAccount,
   useLotBundle,
   useLots,
+  useLotsForAccount,
   useOrgRole,
   useProduct,
   useProducts,
+  useProductsForAccount,
   useScanHistory,
   useScanResolve,
   useTrackerStatus,
 } from './hooks/use-tracker';
 export { useTrackingMutations } from './hooks/use-tracking-mutations';
+export { DeskView } from './components/DeskView';
 export { ProductCard } from './components/ProductCard';
 export { ProductHeader } from './components/ProductHeader';
 export { IngredientList } from './components/IngredientList';

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { ScanLine, Warehouse } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProductCard, TrackingBackendBadge, useProducts } from '@/features/tracking';
@@ -24,9 +25,11 @@ export default function ProductsPage() {
             <ScanLine className="h-4 w-4" />
             Scan
           </Button>
-          <Button variant="outline" onClick={() => openDrawer({ id: 'studio' })}>
-            <Warehouse className="h-4 w-4" />
-            Studio
+          <Button asChild variant="outline">
+            <Link href="/studio">
+              <Warehouse className="h-4 w-4" />
+              Studio
+            </Link>
           </Button>
         </div>
       </div>

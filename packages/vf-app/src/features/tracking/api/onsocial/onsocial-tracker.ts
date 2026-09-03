@@ -22,6 +22,12 @@ import type {
   ScanRecord,
   TrackerStatus,
 } from '../../types';
+import {
+  certificatesForAccount,
+  eventsForAccount,
+  lotsForAccount,
+  productsForAccount,
+} from '../../lib/desk';
 import { isListingForOrg } from '../../lib/listing';
 import { cloneFixtures } from '../fixtures';
 import { createLocalTracker } from '../local-tracker';
@@ -148,6 +154,23 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
       }
     },
 
+    async listProductsForAccount(accountId: string): Promise<Product[]> {
+      try {
+        const rows = await client.queryByJsonContains({ producerAccountId: accountId });
+        const products = productsForAccount(
+          rows
+            .filter((row) => kindFromPath(row.path) === 'product')
+            .map((row) => asProduct(row.value))
+            .filter((item): item is Product => Boolean(item)),
+          accountId
+        );
+        return products.length > 0 ? products : await local.listProductsForAccount(accountId);
+      } catch (error) {
+        console.warn('[tracking] OnSocial producer products fell back to local fixtures', error);
+        return local.listProductsForAccount(accountId);
+      }
+    },
+
     async getProduct(productId: string): Promise<Product | null> {
       try {
         const row = await client.queryByPath(recordPath('product', productId, config.appId));
@@ -172,6 +195,23 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
       } catch (error) {
         console.warn('[tracking] OnSocial lot list fell back to local fixtures', error);
         return local.listLots(productId);
+      }
+    },
+
+    async listLotsForAccount(accountId: string): Promise<Lot[]> {
+      try {
+        const rows = await client.queryByJsonContains({ producerAccountId: accountId });
+        const lots = lotsForAccount(
+          rows
+            .filter((row) => kindFromPath(row.path) === 'lot')
+            .map((row) => asLot(row.value))
+            .filter((item): item is Lot => Boolean(item)),
+          accountId
+        );
+        return lots.length > 0 ? lots : await local.listLotsForAccount(accountId);
+      } catch (error) {
+        console.warn('[tracking] OnSocial producer lots fell back to local fixtures', error);
+        return local.listLotsForAccount(accountId);
       }
     },
 
@@ -203,6 +243,23 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
       }
     },
 
+    async listEventsForAccount(accountId: string): Promise<ChainEvent[]> {
+      try {
+        const rows = await client.queryByJsonContains({ orgAccountId: accountId });
+        const events = eventsForAccount(
+          rows
+            .filter((row) => kindFromPath(row.path) === 'event')
+            .map((row) => asEvent(row.value))
+            .filter((item): item is ChainEvent => Boolean(item)),
+          accountId
+        );
+        return events.length > 0 ? events : await local.listEventsForAccount(accountId);
+      } catch (error) {
+        console.warn('[tracking] OnSocial org events fell back to local fixtures', error);
+        return local.listEventsForAccount(accountId);
+      }
+    },
+
     async getCertificates(subjectId: string): Promise<Certificate[]> {
       try {
         const rows = await client.queryByJsonContains({ subjectId });
@@ -213,6 +270,23 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
       } catch (error) {
         console.warn('[tracking] OnSocial certificates fell back to local fixtures', error);
         return local.getCertificates(subjectId);
+      }
+    },
+
+    async listCertificatesForAccount(accountId: string): Promise<Certificate[]> {
+      try {
+        const rows = await client.queryByJsonContains({ issuerAccountId: accountId });
+        const certificates = certificatesForAccount(
+          rows
+            .filter((row) => kindFromPath(row.path) === 'certificate')
+            .map((row) => asCertificate(row.value))
+            .filter((item): item is Certificate => Boolean(item)),
+          accountId
+        );
+        return certificates.length > 0 ? certificates : await local.listCertificatesForAccount(accountId);
+      } catch (error) {
+        console.warn('[tracking] OnSocial issuer certs fell back to local fixtures', error);
+        return local.listCertificatesForAccount(accountId);
       }
     },
 
