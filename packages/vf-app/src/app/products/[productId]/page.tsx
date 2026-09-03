@@ -2,10 +2,9 @@
 
 import { use } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Plus, QrCode } from 'lucide-react';
+import { ArrowLeft, QrCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { useAppDrawer } from '@/features/shell';
 import {
   encodeLotQr,
   IngredientList,
@@ -19,7 +18,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ produc
   const { productId } = use(params);
   const { data: product, loading, error } = useProduct(productId);
   const lots = useLots(productId);
-  const { openDrawer } = useAppDrawer();
 
   if (loading) {
     return <div className="mx-auto max-w-4xl px-4 py-12 text-muted-foreground">Loading product…</div>;
@@ -37,25 +35,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ produc
             Studio
           </Link>
         </Button>
-        <Button asChild variant="ghost" size="sm">
-          <Link href="/products">All products</Link>
-        </Button>
       </div>
 
       <ProductHeader product={product} />
       <IngredientList ingredients={product.ingredients} claims={product.claims} />
 
       <div>
-        <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="mb-4">
           <h2 className="text-2xl font-semibold">Lots</h2>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => openDrawer({ id: 'create-lot', productId: product.id })}
-          >
-            <Plus className="h-4 w-4" />
-            Open lot
-          </Button>
+          <p className="text-sm text-muted-foreground">Open a lot in Studio. Scan still composes the graph.</p>
         </div>
         <div className="space-y-3">
           {lots.data?.map((lot) => (
