@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import { HomeHub } from '@/features/home';
 import { useWallet } from '@/features/wallet';
 import { useProfile } from '@/hooks/use-profile';
@@ -8,6 +9,7 @@ import { useDaoMembership, useVfBalance } from '@/hooks/use-vf-dao';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { HomeFloatingHeader } from '@/components/ui/home-floating-header';
 import { useAppDrawer } from '@/features/shell';
+import { useVfShelf, vfShelfCountLabel } from '@/features/tracking';
 import { FaXTwitter } from 'react-icons/fa6';
 import { Github, Send } from 'lucide-react';
 import Logo from '@/components/ui/logo';
@@ -18,6 +20,8 @@ export default function Home() {
   const { vfBalance, vfIcon } = useVfBalance();
   const { isMember } = useDaoMembership();
   const { openDrawer } = useAppDrawer();
+  const shelf = useVfShelf();
+  const shelfCount = shelf.data?.length ?? 0;
   
   // Extract and format username from accountId (remove .near extension, capitalize first letter, truncate if too long) - fallback
   const username = accountId ? accountId.split('.')[0] : null;
@@ -92,11 +96,23 @@ export default function Home() {
                     <span className="text-primary">Vegan</span><span className="text-verified">Friends</span>
                   </motion.h1>
                   <motion.div 
-                    className="w-24 h-1 bg-verified mx-auto rounded-full mb-8"
+                    className="w-24 h-1 bg-verified mx-auto rounded-full mb-6"
                     initial={{ opacity: 0, scaleX: 0 }}
                     animate={{ opacity: 1, scaleX: 1 }}
                     transition={{ duration: 0.3, delay: 0.1, ease: "easeOut" }}
                   />
+                  {shelfCount > 0 && (
+                    <motion.p
+                      className="text-sm text-muted-foreground"
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: 0.15, ease: 'easeOut' }}
+                    >
+                      <Link href="/explore" className="hover:text-foreground">
+                        {vfShelfCountLabel(shelfCount)}
+                      </Link>
+                    </motion.p>
+                  )}
                 </div>
               )}
             </motion.div>

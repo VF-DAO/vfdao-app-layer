@@ -22,6 +22,7 @@ export type { TrackerApi } from './api/tracker-api';
 export { getClientTracker, getServerTracker } from './api/resolve-tracker';
 export { FIXTURE_LOT_ID, FIXTURE_PRODUCT_ID } from './api/fixtures';
 export { encodeLotQr, parseScanCode, scanHref } from './lib/qr';
+export { vfShelfCountLabel } from './lib/listing';
 export { isCertificateActive } from './lib/status';
 export { useStudioActor } from './hooks/use-studio-actor';
 export {

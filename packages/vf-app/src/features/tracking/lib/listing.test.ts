@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { asListing, isListingForOrg } from './listing';
+import { asListing, isListingForOrg, vfShelfCountLabel } from './listing';
 
 describe('VF listing records', () => {
   it('treats a listed org record as promo only for that account', () => {
@@ -16,5 +16,11 @@ describe('VF listing records', () => {
       listedAt: '2026-03-01T08:00:00.000Z',
     });
     expect(asListing({ orgAccountId: 'green-valley.near', status: 'revoked' })).toBeNull();
+  });
+
+  it('names the shelf by how many orgs are listed, not by catalogue size', () => {
+    expect(vfShelfCountLabel(0)).toBe('0 on the VF shelf');
+    expect(vfShelfCountLabel(1)).toBe('1 on the VF shelf');
+    expect(vfShelfCountLabel(3)).toBe('3 on the VF shelf');
   });
 });
