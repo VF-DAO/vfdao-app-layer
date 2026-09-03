@@ -149,6 +149,63 @@ export async function queryRecordsByAppJsonContains(
   return toRecords(data.dataUpdates);
 }
 
+export async function queryProfilesCurrent(
+  config: OnSocialConfig,
+  accountId: string
+): Promise<{ accountId?: string; field?: string; value?: string }[]> {
+  const data = await graphql<{
+    profilesCurrent?: { accountId?: string; field?: string; value?: string }[];
+  }>(
+    config,
+    `query OnSocialProfile($id: String!) {
+      profilesCurrent(where: { accountId: { _eq: $id } }) {
+        accountId field value
+      }
+    }`,
+    { id: accountId }
+  );
+  return data.profilesCurrent ?? [];
+}
+
+export async function queryProfilesCurrentMany(
+  config: OnSocialConfig,
+  accountIds: string[]
+): Promise<{ accountId?: string; field?: string; value?: string }[]> {
+  if (accountIds.length === 0) return [];
+  const data = await graphql<{
+    profilesCurrent?: { accountId?: string; field?: string; value?: string }[];
+  }>(
+    config,
+    `query OnSocialProfiles($ids: [String!]!) {
+      profilesCurrent(where: { accountId: { _in: $ids } }) {
+        accountId field value
+      }
+    }`,
+    { ids: accountIds }
+  );
+  return data.profilesCurrent ?? [];
+}
+
+export async function queryAppRowsById(
+  config: OnSocialConfig,
+  appId: string
+): Promise<GatewayRecord[]> {
+  const data = await graphql<{ dataUpdates?: DataUpdateRow[] }>(
+    config,
+    `query AppRows($dataType: String!, $appId: String!) {
+      dataUpdates(
+        where: { _and: [{ dataType: { _eq: $dataType } }, { dataId: { _eq: $appId } }] }
+        limit: 400
+        orderBy: [{ blockHeight: DESC }]
+      ) {
+        ${DATA_FIELDS}
+      }
+    }`,
+    { dataType: APP_DATA_TYPE, appId }
+  );
+  return toRecords(data.dataUpdates);
+}
+
 export async function queryRecordByPath(
   config: OnSocialConfig,
   path: string

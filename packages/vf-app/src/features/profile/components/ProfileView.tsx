@@ -8,16 +8,18 @@ import { FloatingHeader } from '@/components/ui/floating-header';
 import { Divider } from '@/components/ui/divider';
 import { WithYouButton, WithYouCount } from '@/components/ui/with-you-button';
 import { 
+  Check,
   Copy, 
-  Check, 
-  MapPin, 
-  Globe,
-  Github,
-  Send,
   Edit3,
+  Github,
+  Globe,
+  MapPin, 
+  Send,
   Share2,
 } from 'lucide-react';
 import { FaXTwitter } from 'react-icons/fa6';
+import { profileAvatarShapeForAccount, profileKindFaceLabel, profileOrgLineLabel } from '@/features/onsocial/profile';
+import { getBannerUrl } from '@/features/onsocial/profile-service';
 import { useProfile } from '@/hooks/use-profile';
 
 interface ProfileViewProps {
@@ -26,15 +28,15 @@ interface ProfileViewProps {
 }
 
 export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProps) {
-  const { profile: profileData, loading, refetch } = useProfile(accountId);
+  const { profile, loading, refetch, kind } = useProfile(accountId);
   const [copied, setCopied] = useState(false);
   const { openDrawer } = useAppDrawer();
-
-  // Extract the nested profile object
-  const profile = profileData?.profile;
+  const faceShape = profileAvatarShapeForAccount(kind, accountId);
+  const faceRadius =
+    faceShape === 'squircle' ? 'rounded-[28%]' : faceShape === 'square' ? 'rounded-[18%]' : 'rounded-full';
 
   const handleCopyAddress = () => {
-    navigator.clipboard.writeText(accountId);
+    void navigator.clipboard.writeText(accountId);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -43,12 +45,12 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
     const url = `${window.location.origin}/profile/${encodeURIComponent(accountId)}`;
     if (navigator.share) {
       try {
-        await navigator.share({ title: profile?.name || accountId, url });
+        await navigator.share({ title: profile?.name ?? accountId, url });
       } catch {
-        navigator.clipboard.writeText(url);
+        void navigator.clipboard.writeText(url);
       }
     } else {
-      navigator.clipboard.writeText(url);
+      void navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -59,19 +61,10 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
     return `${address.slice(0, 8)}...${address.slice(-6)}`;
   };
 
-  // Get social links from profile
-  const socialLinks = profile?.linktree || {};
-  const website = profile?.website || socialLinks.website;
-
-  // Get banner image URL (supports both IPFS and direct URL)
-  const getBannerUrl = () => {
-    const bg = profile?.backgroundImage;
-    if (!bg) return null;
-    if (bg.ipfs_cid) return `https://ipfs.near.social/ipfs/${bg.ipfs_cid}`;
-    if (bg.url) return bg.url;
-    return null;
-  };
-  const bannerUrl = getBannerUrl();
+  const socialLinks = profile?.links ?? {};
+  const website = socialLinks.website;
+  const bannerUrl = getBannerUrl(profile);
+  const orgLine = kind === 'org' ? profileOrgLineLabel(profile?.industry) : profileKindFaceLabel(kind);
 
   // Count social links for layout
   const socialLinksList = [
@@ -82,7 +75,7 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
   ].filter(Boolean) as { icon: React.ComponentType<{ className?: string; size?: number }>; href: string; label: string }[];
 
   // Get tags as array
-  const tags = profile?.tags ? Object.keys(profile.tags).slice(0, 6) : [];
+  const tags = profile?.tags?.slice(0, 6) ?? [];
 
   if (loading) {
     return (
@@ -92,7 +85,7 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
         
         <div className="max-w-3xl mx-auto px-6 -mt-20">
           {/* Avatar skeleton */}
-          <div className="w-28 h-28 md:w-36 md:h-36 rounded-full bg-muted border-4 border-background animate-pulse" />
+          <div className={`w-28 h-28 md:w-36 md:h-36 ${faceRadius} bg-muted border-4 border-background animate-pulse`} />
           
           <div className="mt-6 space-y-4">
             <div className="h-10 w-56 bg-muted rounded-lg animate-pulse" />
@@ -128,7 +121,9 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
             <Button 
               variant="floating" 
               size="icon" 
-              onClick={handleShare}
+              onClick={() => {
+                void handleShare();
+              }}
             >
               <Share2 className="w-4 h-4" />
             </Button>
@@ -139,6 +134,7 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
       {/* Banner - Full bleed */}
       <div className="relative h-48 md:h-64 lg:h-72 overflow-hidden">
         {bannerUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- remote OnSocial / IPFS banners
           <img 
             src={bannerUrl} 
             alt="" 
@@ -160,7 +156,7 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
             <ProfileAvatar
               accountId={accountId}
               size="xl"
-              className="w-28 h-28 md:w-36 md:h-36 rounded-full shadow-xl ring-4 ring-background"
+              className={`w-28 h-28 md:w-36 md:h-36 ${faceRadius} shadow-xl ring-4 ring-background`}
             />
           </div>
         </div>
@@ -169,7 +165,7 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
         <div className="space-y-4">
           {/* Display Name */}
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight">
-            {profile?.name || truncateAddress(accountId)}
+            {profile?.name ?? truncateAddress(accountId)}
           </h1>
 
           {/* Account ID - Clickable */}
@@ -187,11 +183,8 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
             )}
           </button>
 
-          {/* Tagline */}
-          {profile?.tagline && (
-            <p className="text-lg text-muted-foreground max-w-xl">
-              {profile.tagline}
-            </p>
+          {orgLine && (
+            <p className="text-lg text-muted-foreground max-w-xl">{orgLine}</p>
           )}
 
           {/* Meta row - Location + Links */}
@@ -253,13 +246,13 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
         </div>
 
         {/* Bio Section */}
-        {profile?.description && (
+        {profile?.bio && (
           <section className="mb-12">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">
               About
             </h2>
             <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap max-w-2xl">
-              {profile.description}
+              {profile.bio}
             </p>
           </section>
         )}

@@ -39,11 +39,10 @@ export interface WithYouStats {
 }
 
 /**
- * Data structure for Social DB storage
- * Stored at: accountId/vfdao/withyou/targetAccountId
+ * Data stored at `{from}/apps/vf/withyou/{to}` on OnSocial core.
  */
 export interface WithYouData {
-  /** Timestamp as string for Social DB */
+  /** Timestamp as string */
   since: string;
   /** Optional context type */
   context?: string;

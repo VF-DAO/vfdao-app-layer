@@ -20,3 +20,9 @@ export const lotSetExample = {
     producerAccountId: 'green-valley.near',
   }),
 };
+
+export const profileSetExample = {
+  'profile/kind': 'org',
+  'profile/name': 'Green Valley Farms',
+  'profile/industry': 'Agriculture',
+};

@@ -8,10 +8,19 @@ export {
   getStoredSession,
   storeSession,
 } from './session';
-export { lotSetExample, productSetExample } from './schema-examples';
+export { lotSetExample, productSetExample, profileSetExample } from './schema-examples';
 export type {
   OnSocialClient,
   OnSocialRecord,
   OnSocialSession,
   OnSocialWriteResult,
 } from './types';
+export type { OnSocialProfile, ProfileKind } from './profile';
+export {
+  editorFaceKind,
+  isDaoAccount,
+  profileAvatarShapeForAccount,
+  profileKindFaceLabel,
+  profileOrgLineLabel,
+  resolveDisplayProfileKind,
+} from './profile';

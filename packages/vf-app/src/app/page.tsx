@@ -26,8 +26,7 @@ export default function Home() {
     ? (username.length > 15 ? username.substring(0, 15) + '...' : username.charAt(0).toUpperCase() + username.slice(1))
     : null;
   
-  // Only use display name from social-db if profile exists and has a name, otherwise use formatted account ID
-  const displayUsername = profile?.profile?.name ? displayName : formattedUsernameFallback;
+  const displayUsername = profile?.name ? displayName : formattedUsernameFallback;
 
   return (
     <>

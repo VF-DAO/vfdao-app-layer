@@ -62,6 +62,21 @@ Ingredients, claims, category: **fields on the product**. Never path branches. N
 
 ---
 
+## Identity (OnSocial profile, not SocialDB)
+
+Company face is `{account}/profile/` on core:
+
+- Optional `profile/kind`: `person` | `org` | `dao` (omit = person)
+- Optional `profile/industry` when `kind` is `org`
+- Avatar / banner stored as `ipfs://` and shown from `cdn.onsocial.id`
+- DAO workspace (`.sputnik-dao.near`) always squares; people pick Person or Organization only
+
+`kind=org` is a look. It does **not** grant tracker writes. VF role stays `{owner}/apps/vf-tracker/org/{id}`.
+
+Solidarity (“I’m with you”) is `{from}/apps/vf/withyou/{to}` on the same core. Not `social.near`.
+
+---
+
 ## Permissions (on-chain, CLI included)
 
 UI is not a lock.
@@ -114,7 +129,7 @@ Optional later: featured boost, larger bond to be **featured** as an issuer (sti
 
 1. **Scan / lot page** — first product surface. Compose by `lotId`. Show **every** stamp (do not collapse to one per kind). Label the writer on each. VF shelf badge only if `listed/{org}`. Unlisted lots still resolve. Dashboards later reuse `getLotBundle`.
 2. **Studio** — one schema. Session account is the writer. Producer: product/lot. Chain: event. Certifier: certificate on **their** path.
-3. **OnSocial seam** — `queryByPrefix` / `queryByJsonContains` / `queryByPath` / `set` / `completeAppHandoff({ appId: 'vf-tracker' })`. Indexed reads, not RPC. Local mock until SDK is live.
+3. **OnSocial seam** — `queryByPrefix` / `queryByJsonContains` / `queryByPath` / `set` / `completeAppHandoff({ appId: 'vf-tracker' })`. Indexed reads, not RPC. Local mock until SDK is live. Names, avatars, `kind`, and `industry` read/write `{account}/profile/` on core — not `social.near`.
 4. **Explore** — VF group listings only. Unlisted lots still resolve by QR.
 5. **Later** — org’s own core group for staff wallets; VF Boost + social-spend; listing bond → grant.
 
@@ -136,7 +151,7 @@ Do **not** use cleanup as a chance to add product-option paths or a second compo
 - Certifier grants on producer folders
 - All inventory inside the VF DAO group
 - Replacing Sputnik for treasury
-- Replacing NEAR Social wholesale for names (dual-read later)
+- Dual-reading NEAR Social for names (profiles are OnSocial `profile/` only)
 - OnAPI key in the browser (`ONSOCIAL_API_KEY` is server-only, reads/index only)
 
 ---
@@ -176,6 +191,12 @@ Hub reads:
 - Do **not** query `dataType: vf-tracker-lot`
 
 Optional protocol-wide follow-up (any app, not VF-only): `app_relpath` + `os.query.raw.byAppPrefix`. Not required to ship scan.
+
+Hub identity reads:
+
+- Profile → `profilesCurrent` (`profile/name`, `bio`, `kind`, `industry`, `avatar`, `banner`, `links`)
+- Face shape → `kind` + DAO workspace heuristic
+- WithYou → `apps/vf/withyou/{to}` (`dataType=apps`, `dataId=vf`)
 
 ---
 
