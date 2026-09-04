@@ -26,3 +26,24 @@ export const profileSetExample = {
   'profile/name': 'Green Valley Farms',
   'profile/industry': 'Agriculture',
 };
+
+export const sproutSetExample = {
+  'apps/vf-tracker/sprout/product/prd-oatmilk-nordic/cafe.near': JSON.stringify({
+    id: 'product/prd-oatmilk-nordic/cafe.near',
+    subjectType: 'product',
+    subjectId: 'prd-oatmilk-nordic',
+    accountId: 'cafe.near',
+    at: '2026-09-04T11:00:00.000Z',
+  }),
+};
+
+export const noteSetExample = {
+  'apps/vf-tracker/note/note-taste-1': JSON.stringify({
+    id: 'note-taste-1',
+    subjectType: 'lot',
+    subjectId: 'lot-oatmilk-nordic-2403',
+    body: 'Steams well for cappuccinos.',
+    accountId: 'cafe.near',
+    at: '2026-09-04T11:05:00.000Z',
+  }),
+};

@@ -14,6 +14,18 @@ vi.mock('@/components/ui/stand-with-button', () => ({
   ),
 }));
 
+vi.mock('./SproutButton', () => ({
+  SproutButton: () => <button type="button">Sprout</button>,
+}));
+
+vi.mock('./LotNotes', () => ({
+  LotNotes: () => (
+    <section>
+      <h3>Notes on this lot</h3>
+    </section>
+  ),
+}));
+
 const listedBundle: LotBundle = {
   lot: {
     id: FIXTURE_LOT_ID,
@@ -94,6 +106,7 @@ describe('LotBundleView', () => {
       'href',
       '/profile/green-valley.near'
     );
+    expect(screen.getByText('this drink')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Stand with green-valley.near' })).toBeInTheDocument();
     const vegcertLinks = screen.getAllByRole('link', { name: 'vegcert.near' });
     expect(vegcertLinks).toHaveLength(2);
@@ -112,6 +125,8 @@ describe('LotBundleView', () => {
       screen.getByText('About the producer — not this lot. A company review does not certify every SKU.')
     ).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Lot certificates' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sprout' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Notes on this lot' })).toBeInTheDocument();
     expect(screen.getByText('VegCert Vegan Standard 2026')).toBeInTheDocument();
     expect(screen.queryByText('Not recorded yet')).not.toBeInTheDocument();
     expect(screen.queryByText('Verified vegan')).not.toBeInTheDocument();

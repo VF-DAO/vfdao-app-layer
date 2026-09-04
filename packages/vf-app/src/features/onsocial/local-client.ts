@@ -13,6 +13,7 @@ export const LOCAL_KV_KEY = 'vf.onsocial.kv.v1';
 const LEGACY_KEY = 'vf.tracking.v1';
 
 type KvStore = Record<string, OnSocialRecord>;
+const memoryStores = new Map<string, KvStore>();
 
 function canUseStorage(): boolean {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
@@ -82,11 +83,18 @@ function importLegacy(store: KvStore, appId: string): void {
 }
 
 function loadKv(appId: string): KvStore {
-  const saved = readJson<KvStore | null>(LOCAL_KV_KEY, null);
-  if (saved && Object.keys(saved).length > 0) return saved;
+  if (canUseStorage()) {
+    const saved = readJson<KvStore | null>(LOCAL_KV_KEY, null);
+    if (saved && Object.keys(saved).length > 0) return saved;
+    const seeded = seedFromFixtures(appId);
+    importLegacy(seeded, appId);
+    writeJson(LOCAL_KV_KEY, seeded);
+    return seeded;
+  }
+  const cached = memoryStores.get(appId);
+  if (cached) return cached;
   const seeded = seedFromFixtures(appId);
-  importLegacy(seeded, appId);
-  writeJson(LOCAL_KV_KEY, seeded);
+  memoryStores.set(appId, seeded);
   return seeded;
 }
 
@@ -116,6 +124,10 @@ export function createLocalOnSocialClient(appId = DEFAULT_APP_ID): OnSocialClien
           value = JSON.parse(raw);
         } catch {
           value = raw;
+        }
+        if (value === null) {
+          delete store[path];
+          return;
         }
         put(store, path, value, session.actorId);
       });

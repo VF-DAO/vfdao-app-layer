@@ -108,5 +108,31 @@ describe('local tracker', () => {
       'green-valley.near',
     ]);
   });
+
+  it('toggles a product sprout and replies on a lot note without seeding fixtures', async () => {
+    const tracker = createLocalTracker();
+    expect(await tracker.listSprouts('product', FIXTURE_PRODUCT_ID)).toEqual([]);
+    expect(await tracker.listNotes('lot', FIXTURE_LOT_ID)).toEqual([]);
+    const sprouted = await tracker.toggleSprout({
+      subjectType: 'product',
+      subjectId: FIXTURE_PRODUCT_ID,
+      accountId: 'cafe.near',
+    });
+    expect(sprouted.count).toBe(1);
+    const note = await tracker.addNote({
+      subjectType: 'lot',
+      subjectId: FIXTURE_LOT_ID,
+      accountId: 'cafe.near',
+      body: 'Creamy',
+    });
+    await tracker.addNote({
+      subjectType: 'lot',
+      subjectId: FIXTURE_LOT_ID,
+      accountId: 'green-valley.near',
+      body: 'Thanks',
+      parentId: note.id,
+    });
+    expect(await tracker.listNotes('lot', FIXTURE_LOT_ID)).toHaveLength(2);
+  });
 });
 

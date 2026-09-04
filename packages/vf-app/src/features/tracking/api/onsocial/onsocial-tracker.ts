@@ -10,6 +10,7 @@ import {
 } from '../../lib/roles';
 import type {
   AddEventInput,
+  AddNoteInput,
   Certificate,
   ChainEvent,
   CreateLotInput,
@@ -17,12 +18,17 @@ import type {
   Listing,
   Lot,
   LotBundle,
+  Note,
   Org,
   Product,
   RecordScanInput,
   RegisterProductInput,
   ScanRecord,
+  Sprout,
+  SproutStats,
+  ToggleSproutInput,
   TrackerStatus,
+  VoiceSubjectType,
 } from '../../types';
 import {
   certificatesForAccount,
@@ -31,6 +37,12 @@ import {
   productsForAccount,
 } from '../../lib/desk';
 import { asListing, isListingForOrg } from '../../lib/listing';
+import {
+  assertVoiceSubjectType,
+  isVoiceSubjectType,
+  normalizeNoteBody,
+  sproutRecordId,
+} from '../../lib/voice';
 import { cloneFixtures } from '../fixtures';
 import { createLocalTracker } from '../local-tracker';
 import type { TrackerApi } from '../tracker-api';
@@ -77,6 +89,35 @@ function asScan(value: unknown): ScanRecord | null {
   const record = asRecord(value);
   if (!record || typeof record.id !== 'string' || typeof record.lotId !== 'string') return null;
   return record as unknown as ScanRecord;
+}
+
+function asSprout(value: unknown): Sprout | null {
+  const record = asRecord(value);
+  if (
+    !record ||
+    typeof record.id !== 'string' ||
+    typeof record.subjectId !== 'string' ||
+    typeof record.accountId !== 'string' ||
+    !isVoiceSubjectType(record.subjectType)
+  ) {
+    return null;
+  }
+  return record as unknown as Sprout;
+}
+
+function asNote(value: unknown): Note | null {
+  const record = asRecord(value);
+  if (
+    !record ||
+    typeof record.id !== 'string' ||
+    typeof record.subjectId !== 'string' ||
+    typeof record.accountId !== 'string' ||
+    typeof record.body !== 'string' ||
+    !isVoiceSubjectType(record.subjectType)
+  ) {
+    return null;
+  }
+  return record as unknown as Note;
 }
 
 export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
@@ -483,6 +524,102 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
       };
       await write(recordPath('scan', scan.id, config.appId), scan);
       return scan;
+    },
+
+    async listSprouts(subjectType: VoiceSubjectType, subjectId: string): Promise<Sprout[]> {
+      try {
+        const rows = await client.queryByJsonContains({ subjectId, subjectType });
+        return rows
+          .filter((row) => kindFromPath(row.path) === 'sprout')
+          .map((row) => asSprout(row.value))
+          .filter((item): item is Sprout => item !== null && item.subjectId === subjectId);
+      } catch (error) {
+        console.warn('[tracking] OnSocial sprouts failed; not using fixtures', error);
+        return [];
+      }
+    },
+
+    async getSproutStats(
+      subjectType: VoiceSubjectType,
+      subjectId: string,
+      viewerAccountId?: string
+    ): Promise<SproutStats> {
+      const sprouts = await this.listSprouts(subjectType, subjectId);
+      return {
+        subjectType,
+        subjectId,
+        count: sprouts.length,
+        viewerSprouted: Boolean(viewerAccountId && sprouts.some((item) => item.accountId === viewerAccountId)),
+      };
+    },
+
+    async toggleSprout(input: ToggleSproutInput): Promise<SproutStats> {
+      const subjectType = assertVoiceSubjectType(input.subjectType);
+      const accountId = input.accountId.trim();
+      if (!accountId) {
+        throw new Error('Connect a wallet to sprout.');
+      }
+      const id = sproutRecordId(subjectType, input.subjectId, accountId);
+      const path = recordPath('sprout', id, config.appId);
+      const row = await client.queryByPath(path);
+      const existing = asSprout(row?.value);
+      if (existing && existing.accountId === accountId) {
+        await write(path, null);
+      } else {
+        const sprout: Sprout = {
+          id,
+          subjectType,
+          subjectId: input.subjectId,
+          accountId,
+          at: new Date().toISOString(),
+        };
+        await write(path, sprout);
+      }
+      return this.getSproutStats(subjectType, input.subjectId, accountId);
+    },
+
+    async listNotes(subjectType: VoiceSubjectType, subjectId: string): Promise<Note[]> {
+      try {
+        const rows = await client.queryByJsonContains({ subjectId, subjectType });
+        return rows
+          .filter((row) => kindFromPath(row.path) === 'note')
+          .map((row) => asNote(row.value))
+          .filter((item): item is Note => item !== null && item.subjectId === subjectId)
+          .sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+      } catch (error) {
+        console.warn('[tracking] OnSocial notes failed; not using fixtures', error);
+        return [];
+      }
+    },
+
+    async addNote(input: AddNoteInput): Promise<Note> {
+      const subjectType = assertVoiceSubjectType(input.subjectType);
+      const accountId = input.accountId.trim();
+      if (!accountId) {
+        throw new Error('Connect a wallet to leave a note.');
+      }
+      const body = normalizeNoteBody(input.body);
+      if (input.parentId) {
+        const notes = await this.listNotes(subjectType, input.subjectId);
+        const parent = notes.find((item) => item.id === input.parentId);
+        if (!parent) {
+          throw new Error('That note is gone.');
+        }
+        if (parent.parentId) {
+          throw new Error('Reply to the original note.');
+        }
+      }
+      const note: Note = {
+        id: createId('note'),
+        subjectType,
+        subjectId: input.subjectId,
+        parentId: input.parentId,
+        body,
+        accountId,
+        at: new Date().toISOString(),
+      };
+      await write(recordPath('note', note.id, config.appId), note);
+      return note;
     },
   };
 }

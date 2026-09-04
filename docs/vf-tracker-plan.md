@@ -134,10 +134,22 @@ Optional later: featured boost, larger bond to be **featured** as an issuer (sti
 
 ## Community
 
-- Upvote / rate = **VF social-spend** on a lot or org (costs VF). Free stars do not rank the hub.
+- **Stand with** = protocol `{from}/standing/{to}` on an **account**. Free. Does not rank Explore.
+- **Sprout** = app-path like on a **product or lot**. Free. Sprout icon, not stars. Does not rank Explore. Not org “fans” — that is standing.
+- **Note** = app-path text on a product or lot, with one-level replies. Not a “review” (company review is the VegCert org cert).
+- Upvote / rank = **VF social-spend** later (costs VF). Free sprouts and notes do not rank the hub.
 - Boost = lock VF so a listing stays visible.
 - Endorse / support = paid signal; split can go to the org and to Boost infra/rewards.
 - DAO votes fees, slashes listing bonds, features — not every farm and not “who may certify.”
+
+Voice writes stay under the app so they do not enter the OnSocial feed:
+
+```
+{from}/apps/vf-tracker/sprout/{subjectType}/{subjectId}/{accountId}
+{from}/apps/vf-tracker/note/{noteId}
+```
+
+Compose on scan with `queryByJsonContains({ subjectId, subjectType })`. Everyone stamps their own path. Same `Set` the SDK will use. Do **not** dual-write OnSocial loves. Do **not** sprout orgs.
 
 ---
 
@@ -169,6 +181,9 @@ Do **not** use cleanup as a chance to add product-option paths or a second compo
 - Replacing Sputnik for treasury
 - Dual-reading NEAR Social for names (profiles are OnSocial `profile/` only)
 - OnAPI key in the browser (`ONSOCIAL_API_KEY` is server-only, reads/index only)
+- OnSocial feed loves / comments for products (voice stays under `apps/vf-tracker`)
+- A second org “fan” graph next to standing
+- Calling consumer notes “reviews” (company review is the org cert)
 
 ---
 
@@ -177,7 +192,7 @@ Do **not** use cleanup as a chance to add product-option paths or a second compo
 1. **Scan / lot compose** — attestation graph. QR → `getLotBundle`. Writer on every stamp. VF shelf optional. (this is the first build)
 2. Seam + studio role UX + lot QR + indexed `apps/` reads — done in vf-app
 3. Producer / certifier / mill desks — lists on the same compose (`getLotBundle`), not a second graph. `/studio` is the desk; the drawer is write-only. Producer desk is product-first: search, lots under each SKU, writes on the row. — done in vf-app
-4. Live session handoff when `@onsocial/sdk` ships
+4. Live session handoff when `@onsocial/sdk` ships — same `Set` already used for Studio, sprouts, and notes
 5. Explore = VF listing group (`listed/{org}` already read on scan)
 6. Deploy VF Boost + VF social-spend (`veganfriends.tkn.near`)
 7. Listing bond → `listed/` grant

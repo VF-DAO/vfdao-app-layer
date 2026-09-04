@@ -93,6 +93,14 @@ describe('OnSocial tracker fixture fallback', () => {
     expect((await tracker.status()).note).toMatch(/TRACKER_ALLOW_FIXTURES/);
   });
 
+  it('does not invent sprouts or notes when a live read is empty', async () => {
+    vi.stubEnv('ONSOCIAL_API_KEY', 'test-key');
+    const tracker = createOnSocialTracker(emptyClient());
+    expect(await tracker.listSprouts('product', FIXTURE_PRODUCT_ID)).toEqual([]);
+    expect(await tracker.listNotes('lot', FIXTURE_LOT_ID)).toEqual([]);
+    expect((await tracker.getSproutStats('product', FIXTURE_PRODUCT_ID, 'cafe.near')).count).toBe(0);
+  });
+
   it('turns fixtures off with TRACKER_ALLOW_FIXTURES=0', async () => {
     vi.stubEnv('TRACKER_ALLOW_FIXTURES', '0');
     const tracker = createOnSocialTracker(emptyClient());

@@ -8,7 +8,13 @@ export {
   getStoredSession,
   storeSession,
 } from './session';
-export { lotSetExample, productSetExample, profileSetExample } from './schema-examples';
+export {
+  lotSetExample,
+  noteSetExample,
+  productSetExample,
+  profileSetExample,
+  sproutSetExample,
+} from './schema-examples';
 export type {
   OnSocialClient,
   OnSocialRecord,

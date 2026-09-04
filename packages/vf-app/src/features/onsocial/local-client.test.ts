@@ -98,6 +98,60 @@ describe('local OnSocial client', () => {
     expect(mill.every((event) => event.orgAccountId === 'nordic-mill.near')).toBe(true);
   });
 
+  it('sprouts a product and notes a lot on the app path, not the feed', async () => {
+    const tracker = createOnSocialTracker(createLocalOnSocialClient());
+    const first = await tracker.toggleSprout({
+      subjectType: 'product',
+      subjectId: FIXTURE_PRODUCT_ID,
+      accountId: 'cafe.near',
+    });
+    expect(first.count).toBe(1);
+    expect(first.viewerSprouted).toBe(true);
+    const again = await tracker.toggleSprout({
+      subjectType: 'product',
+      subjectId: FIXTURE_PRODUCT_ID,
+      accountId: 'cafe.near',
+    });
+    expect(again.count).toBe(0);
+    await tracker.toggleSprout({
+      subjectType: 'product',
+      subjectId: FIXTURE_PRODUCT_ID,
+      accountId: 'cafe.near',
+    });
+    await tracker.toggleSprout({
+      subjectType: 'product',
+      subjectId: FIXTURE_PRODUCT_ID,
+      accountId: 'shop.near',
+    });
+    expect((await tracker.getSproutStats('product', FIXTURE_PRODUCT_ID, 'cafe.near')).count).toBe(2);
+
+    const note = await tracker.addNote({
+      subjectType: 'lot',
+      subjectId: FIXTURE_LOT_ID,
+      accountId: 'cafe.near',
+      body: 'Steams well',
+    });
+    await tracker.addNote({
+      subjectType: 'lot',
+      subjectId: FIXTURE_LOT_ID,
+      accountId: 'green-valley.near',
+      body: 'Glad it held',
+      parentId: note.id,
+    });
+    await expect(
+      tracker.addNote({
+        subjectType: 'org',
+        subjectId: 'green-valley.near',
+        accountId: 'cafe.near',
+        body: 'Fans',
+      })
+    ).rejects.toThrow(/Stand with the org/);
+    const notes = await tracker.listNotes('lot', FIXTURE_LOT_ID);
+    expect(notes).toHaveLength(2);
+    expect(notes[0]?.body).toBe('Steams well');
+    expect(notes[1]?.parentId).toBe(note.id);
+  });
+
   it('rejects writes from the wrong org role', async () => {
     const tracker = createOnSocialTracker(createLocalOnSocialClient());
     await expect(
