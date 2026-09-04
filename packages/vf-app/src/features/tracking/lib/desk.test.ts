@@ -19,6 +19,7 @@ import {
   lotBundleHref,
   lotsForAccount,
   productDeskRows,
+  productsAliasHref,
   productsForAccount,
 } from './desk';
 
@@ -62,7 +63,23 @@ describe('desk lists', () => {
     expect(certificateBundleHref(fixtures.certificates.find((item) => item.subjectType === 'org')!)).toBe(
       `/profile/${FIXTURE_PRODUCER_ID}`
     );
+    expect(
+      certificateBundleHref({
+        id: 'cert-product',
+        subjectType: 'product',
+        subjectId: FIXTURE_PRODUCT_ID,
+        standard: 'VegCert',
+        issuerAccountId: FIXTURE_CERTIFIER_ID,
+        issuedAt: '2026-03-01T00:00:00.000Z',
+        status: 'active',
+      })
+    ).toBe('/studio');
     expect(eventBundleHref(fixtures.events[0])).toBe(lotBundleHref(fixtures.events[0].lotId));
+  });
+
+  it('sends leftover catalog URLs to Studio or Scan', () => {
+    expect(productsAliasHref([FIXTURE_PRODUCT_ID])).toBe('/studio');
+    expect(productsAliasHref([FIXTURE_PRODUCT_ID, 'lots', FIXTURE_LOT_ID])).toBe(lotBundleHref(FIXTURE_LOT_ID));
   });
 
   it('names the desk from the VF org role, not profile kind', () => {

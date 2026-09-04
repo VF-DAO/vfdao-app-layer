@@ -44,7 +44,6 @@ export {
 } from './hooks/use-tracker';
 export { useTrackingMutations } from './hooks/use-tracking-mutations';
 export { DeskView } from './components/DeskView';
-export { ProductCard } from './components/ProductCard';
 export { ProductHeader } from './components/ProductHeader';
 export { IngredientList } from './components/IngredientList';
 export { LotBundleView } from './components/LotBundleView';

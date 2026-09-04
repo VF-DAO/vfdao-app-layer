@@ -82,7 +82,15 @@ export function certificateBundleHref(certificate: Certificate): string {
   if (certificate.subjectType === 'org') {
     return `/profile/${encodeURIComponent(certificate.subjectId)}`;
   }
-  return `/products/${certificate.subjectId}`;
+  return '/studio';
+}
+
+/** Old public catalog URLs. Inventory is Studio; a lot opens on Scan. */
+export function productsAliasHref(slug: string[]): string {
+  if (slug[1] === 'lots' && slug[2]) {
+    return scanHref(slug[2]);
+  }
+  return '/studio';
 }
 
 export function eventBundleHref(event: ChainEvent): string {

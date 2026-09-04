@@ -1,5 +1,3 @@
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import type { LotBundle } from '../types';
 import { encodeLotQr } from '../lib/qr';
@@ -9,13 +7,7 @@ import { LotQrCard } from './LotQrCard';
 import { ProductHeader } from './ProductHeader';
 import { StampTimeline } from './StampTimeline';
 
-export function LotBundleView({
-  bundle,
-  showProductLink = true,
-}: {
-  bundle: LotBundle;
-  showProductLink?: boolean;
-}) {
+export function LotBundleView({ bundle }: { bundle: LotBundle }) {
   const qr = encodeLotQr(bundle.lot.id);
 
   return (
@@ -72,12 +64,6 @@ export function LotBundleView({
         <h3 className="mb-4 text-lg font-semibold text-foreground">Stamps</h3>
         <StampTimeline events={bundle.events} />
       </Card>
-
-      {showProductLink && (
-        <Button asChild variant="outline">
-          <Link href={`/products/${bundle.product.id}`}>All lots for this product</Link>
-        </Button>
-      )}
     </div>
   );
 }
