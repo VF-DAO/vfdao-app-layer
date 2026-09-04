@@ -64,7 +64,7 @@ export function CertificateBadge({
           <Badge variant={chrome.badge}>{certificateStateLabel(state, certificate.subjectType)}</Badge>
         </div>
         {detail}
-        <p className="text-sm text-muted-foreground">
+        <div className="text-sm text-muted-foreground">
           Stamped by{' '}
           <Link
             href={`/profile/${encodeURIComponent(certificate.issuerAccountId)}`}
@@ -73,7 +73,7 @@ export function CertificateBadge({
             <ProfileAvatar accountId={certificate.issuerAccountId} size="xs" />
             <ProfileName accountId={certificate.issuerAccountId} />
           </Link>
-        </p>
+        </div>
         {until && <p className="text-xs text-muted-foreground">{until}</p>}
         {evidenceUrl && (
           <a

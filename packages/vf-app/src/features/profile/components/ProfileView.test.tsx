@@ -100,10 +100,9 @@ describe('ProfileView', () => {
     expect(screen.getByRole('heading', { name: 'Company review' })).toBeInTheDocument();
     expect(screen.getByText('VegCert Facility Standard 2026')).toBeInTheDocument();
     expect(screen.getByText('Until 1 Mar 2027')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'VegCert International' })).toHaveAttribute(
-      'href',
-      '/profile/vegcert.near'
-    );
+    const issuerLinks = screen.getAllByRole('link', { name: 'VegCert International' });
+    expect(issuerLinks.length).toBeGreaterThan(0);
+    expect(issuerLinks.every((link) => link.getAttribute('href') === '/profile/vegcert.near')).toBe(true);
     expect(screen.getByText('Earlier reviews')).toBeInTheDocument();
     expect(screen.getByText('VegCert Facility Standard 2025')).toBeInTheDocument();
     expect(

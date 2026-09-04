@@ -38,16 +38,14 @@ export function orgCertificatesFor(certificates: Certificate[], accountId: strin
     .sort((a, b) => Date.parse(b.issuedAt) - Date.parse(a.issuedAt));
 }
 
+const REVIEW_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
+
 /** Day-month-year in UTC so a Kalmar carton does not show 3/1/2027. */
 export function formatReviewDay(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
-  return new Intl.DateTimeFormat('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'UTC',
-  }).format(date);
+  const month = REVIEW_MONTHS[date.getUTCMonth()];
+  return `${date.getUTCDate()} ${month} ${date.getUTCFullYear()}`;
 }
 
 export function scanCompanyReview(

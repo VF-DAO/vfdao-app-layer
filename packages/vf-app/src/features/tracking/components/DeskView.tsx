@@ -225,7 +225,7 @@ function CertificateDeskCard({
     <CertificateBadge
       certificate={certificate}
       detail={
-        <p className="mb-1 text-sm text-muted-foreground">
+        <div className="mb-1 text-sm text-muted-foreground">
           {kind} of{' '}
           <Link
             href={href}
@@ -240,7 +240,7 @@ function CertificateDeskCard({
               certificate.subjectId
             )}
           </Link>
-        </p>
+        </div>
       }
       actions={
         state !== 'revoked' ? (
