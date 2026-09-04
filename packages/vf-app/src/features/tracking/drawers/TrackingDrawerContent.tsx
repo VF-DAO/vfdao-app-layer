@@ -155,7 +155,7 @@ export function drawerCopy(action: TrackingDrawerAction): {
     case 'issue-certificate':
       return {
         title: 'Issue certificate',
-        subtitle: 'Certifier only',
+        subtitle: 'Company review (expiry) or lot stamp',
         icon: <Award className="h-5 w-5 text-primary" />,
       };
   }
@@ -190,7 +190,7 @@ function StudioChoices() {
       id: 'issue-certificate' as const,
       icon: <Award className="h-5 w-5" />,
       title: 'Issue certificate',
-      description: 'Certifier stamp for a lot or product',
+      description: 'Company review (with expiry) or a lot stamp',
       show: canIssueCertificate(actor.role),
     },
   ];

@@ -14,6 +14,9 @@ export type EventKind = (typeof EVENT_KINDS)[number];
 export const CERTIFICATE_STATUSES = ['active', 'revoked', 'expired'] as const;
 export type CertificateStatus = (typeof CERTIFICATE_STATUSES)[number];
 
+export const CERTIFICATE_SUBJECT_TYPES = ['org', 'lot', 'product'] as const;
+export type CertificateSubjectType = (typeof CERTIFICATE_SUBJECT_TYPES)[number];
+
 export interface Org {
   accountId: string;
   name: string;
@@ -56,7 +59,7 @@ export interface ChainEvent {
 
 export interface Certificate {
   id: string;
-  subjectType: 'product' | 'lot';
+  subjectType: CertificateSubjectType;
   subjectId: string;
   standard: string;
   issuerAccountId: string;
@@ -86,6 +89,8 @@ export interface LotBundle {
   product: Product;
   events: ChainEvent[];
   certificates: Certificate[];
+  /** Company review of the producer. Not a stamp on this lot. */
+  orgCertificates?: Certificate[];
   producer?: Org;
   /** VF shelf promo only. Unlisted lots still resolve. */
   vfListed?: boolean;
@@ -120,7 +125,7 @@ export interface AddEventInput {
 }
 
 export interface IssueCertificateInput {
-  subjectType: 'product' | 'lot';
+  subjectType: CertificateSubjectType;
   subjectId: string;
   standard: string;
   issuerAccountId: string;

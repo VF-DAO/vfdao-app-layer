@@ -34,11 +34,30 @@ vi.mock('@/hooks/use-standing', () => ({
   }),
 }));
 
-vi.mock('@/features/tracking', () => ({
-  useOrgRole: () => ({ data: { accountId: 'green-valley.near', role: 'producer' }, loading: false }),
-  useVfListed: () => ({ data: true, loading: false }),
-  useScanHistory: () => ({ data: [], loading: false }),
-}));
+vi.mock('@/features/tracking', async () => {
+  const actual = await vi.importActual<typeof import('@/features/tracking')>('@/features/tracking');
+  return {
+    ...actual,
+    useOrgRole: () => ({ data: { accountId: 'green-valley.near', role: 'producer' }, loading: false }),
+    useVfListed: () => ({ data: true, loading: false }),
+    useScanHistory: () => ({ data: [], loading: false }),
+    useCertificates: () => ({
+      data: [
+        {
+          id: 'cert-vegcert-green-valley-org',
+          subjectType: 'org',
+          subjectId: 'green-valley.near',
+          standard: 'VegCert Facility Standard 2026',
+          issuerAccountId: 'vegcert.near',
+          issuedAt: '2026-03-01T08:00:00.000Z',
+          expiresAt: '2027-03-01T08:00:00.000Z',
+          status: 'active',
+        },
+      ],
+      loading: false,
+    }),
+  };
+});
 
 describe('ProfileView', () => {
   it('shows the OnSocial face, standing, and VF shelf — not activity or inventory', () => {
@@ -54,6 +73,12 @@ describe('ProfileView', () => {
     expect(screen.getByText('2')).toBeInTheDocument();
     expect(screen.getByText('stand with them')).toBeInTheDocument();
     expect(screen.getByText('On the VF shelf')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Company review' })).toBeInTheDocument();
+    expect(screen.getByText('VegCert Facility Standard 2026')).toBeInTheDocument();
+    expect(screen.getByText(/Until /)).toBeInTheDocument();
+    expect(
+      screen.getByText('About this producer — not every product. A company review does not certify every SKU.')
+    ).toBeInTheDocument();
 
     expect(screen.queryByText('Activity')).not.toBeInTheDocument();
     expect(screen.queryByText('DAO Votes')).not.toBeInTheDocument();

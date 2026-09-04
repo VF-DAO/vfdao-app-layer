@@ -151,6 +151,16 @@ export const fixtureEvents: ChainEvent[] = [
 
 export const fixtureCertificates: Certificate[] = [
   {
+    id: 'cert-vegcert-green-valley-org',
+    subjectType: 'org',
+    subjectId: FIXTURE_PRODUCER_ID,
+    standard: 'VegCert Facility Standard 2026',
+    issuerAccountId: FIXTURE_CERTIFIER_ID,
+    issuedAt: '2026-03-01T08:00:00.000Z',
+    expiresAt: '2027-03-01T08:00:00.000Z',
+    status: 'active',
+  },
+  {
     id: 'cert-vegcert-2403',
     subjectType: 'lot',
     subjectId: FIXTURE_LOT_ID,

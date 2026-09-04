@@ -16,6 +16,35 @@ describe('local tracker', () => {
     expect(bundle?.certificates[0]?.standard).toMatch(/VegCert/);
     expect(bundle?.vfListed).toBe(true);
     expect(bundle?.events.filter((event) => event.kind === 'tested')).toHaveLength(2);
+    expect(bundle?.certificates.every((certificate) => certificate.subjectType !== 'org')).toBe(true);
+    expect(bundle?.orgCertificates?.map((certificate) => certificate.id)).toContain(
+      'cert-vegcert-green-valley-org'
+    );
+    expect((await tracker.getCertificates('green-valley.near')).some((item) => item.subjectType === 'org')).toBe(
+      true
+    );
+  });
+
+  it('requires expiry on a company review and keeps it off the lot list', async () => {
+    const tracker = createLocalTracker();
+    await expect(
+      tracker.issueCertificate({
+        subjectType: 'org',
+        subjectId: 'green-valley.near',
+        standard: 'VegCert Facility Standard 2026',
+        issuerAccountId: 'vegcert.near',
+      })
+    ).rejects.toThrow(/expiry/);
+    const issued = await tracker.issueCertificate({
+      subjectType: 'org',
+      subjectId: 'green-valley.near',
+      standard: 'VegCert Facility Standard 2026',
+      issuerAccountId: 'vegcert.near',
+      expiresAt: '2028-03-01T00:00:00.000Z',
+    });
+    const bundle = await tracker.getLotBundle(FIXTURE_LOT_ID);
+    expect(bundle?.certificates.map((certificate) => certificate.id)).not.toContain(issued.id);
+    expect(bundle?.orgCertificates?.map((certificate) => certificate.id)).toContain(issued.id);
   });
 
   it('resolves an unlisted producer lot without a VF shelf flag', async () => {

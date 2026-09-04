@@ -16,7 +16,8 @@ import {
 } from '@/features/onsocial/profile';
 import { getBannerUrl } from '@/features/onsocial/profile-service';
 import { useAppDrawer } from '@/features/shell';
-import { useOrgRole, useScanHistory, useVfListed } from '@/features/tracking';
+import { CertificateBadge } from '@/features/tracking/components/CertificateBadge';
+import { orgCertificatesFor, useCertificates, useOrgRole, useScanHistory, useVfListed } from '@/features/tracking';
 import { useProfile } from '@/hooks/use-profile';
 
 interface ProfileViewProps {
@@ -67,6 +68,7 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
   const org = useOrgRole(accountId);
   const listed = useVfListed(accountId);
   const scans = useScanHistory(accountId);
+  const certificates = useCertificates(accountId);
   const [copied, setCopied] = useState(false);
   const { openDrawer } = useAppDrawer();
   const faceShape = profileAvatarShapeForAccount(kind, accountId);
@@ -78,10 +80,12 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
   const tags = profile?.tags?.slice(0, 6) ?? [];
   const bannerUrl = getBannerUrl(profile);
   const recentScans = isOwnProfile ? (scans.data?.slice(0, 3) ?? []) : [];
+  const companyReviews = orgCertificatesFor(certificates.data ?? [], accountId);
   const showStudio = isOwnProfile && Boolean(org.data);
   const showShelf = Boolean(listed.data);
   const showTrail = recentScans.length > 0;
-  const showVfMarks = showShelf || showStudio || showTrail;
+  const showReview = companyReviews.length > 0;
+  const showVfMarks = showShelf || showStudio || showTrail || showReview;
 
   const handleCopyAddress = () => {
     void navigator.clipboard.writeText(accountId);
@@ -248,6 +252,20 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
             </div>
 
             <div className="space-y-5">
+              {showReview && (
+                <section className="space-y-3">
+                  <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Company review
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    About this producer — not every product. A company review does not certify every SKU.
+                  </p>
+                  {companyReviews.map((certificate) => (
+                    <CertificateBadge key={certificate.id} certificate={certificate} />
+                  ))}
+                </section>
+              )}
+
               {(showShelf || showStudio) && (
                 <div className="flex flex-wrap items-center gap-3">
                   {showShelf && (

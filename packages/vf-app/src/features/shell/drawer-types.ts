@@ -4,7 +4,7 @@ export type TrackingDrawerAction =
   | { id: 'register-product' }
   | { id: 'create-lot'; productId?: string }
   | { id: 'record-event'; lotId?: string }
-  | { id: 'issue-certificate'; subjectId?: string; subjectType?: 'lot' | 'product' };
+  | { id: 'issue-certificate'; subjectId?: string; subjectType?: 'org' | 'lot' | 'product' };
 
 export type AppDrawerAction =
   | TrackingDrawerAction

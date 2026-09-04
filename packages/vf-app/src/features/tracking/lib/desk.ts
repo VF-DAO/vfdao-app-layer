@@ -76,9 +76,13 @@ export function lotBundleHref(lotId: string): string {
 }
 
 export function certificateBundleHref(certificate: Certificate): string {
-  return certificate.subjectType === 'lot'
-    ? scanHref(certificate.subjectId)
-    : `/products/${certificate.subjectId}`;
+  if (certificate.subjectType === 'lot') {
+    return scanHref(certificate.subjectId);
+  }
+  if (certificate.subjectType === 'org') {
+    return `/profile/${encodeURIComponent(certificate.subjectId)}`;
+  }
+  return `/products/${certificate.subjectId}`;
 }
 
 export function eventBundleHref(event: ChainEvent): string {

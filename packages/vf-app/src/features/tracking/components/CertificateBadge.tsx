@@ -2,10 +2,11 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { ShieldCheck } from 'lucide-react';
 import type { Certificate } from '../types';
-import { isCertificateActive } from '../lib/status';
+import { certificateUntilLabel, isCertificateActive } from '../lib/status';
 
 export function CertificateBadge({ certificate }: { certificate: Certificate }) {
   const active = isCertificateActive(certificate);
+  const until = certificateUntilLabel(certificate);
   return (
     <div className="flex items-start gap-3 rounded-2xl border border-verified/30 bg-verified/5 p-4">
       <ShieldCheck className="mt-0.5 h-5 w-5 text-verified" />
@@ -23,11 +24,7 @@ export function CertificateBadge({ certificate }: { certificate: Certificate }) 
             {certificate.issuerAccountId}
           </Link>
         </p>
-        {certificate.expiresAt && (
-          <p className="text-xs text-muted-foreground">
-            Expires {new Date(certificate.expiresAt).toLocaleDateString()}
-          </p>
-        )}
+        {until && <p className="text-xs text-muted-foreground">{until}</p>}
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ import {
 } from '../lib/desk';
 import { createId } from '../lib/ids';
 import { parseScanCode } from '../lib/qr';
+import { assertOrgCertificateExpiry } from '../lib/status';
 import type {
   AddEventInput,
   Certificate,
@@ -105,13 +106,20 @@ function toBundle(store: TrackingStore, lot: Lot): LotBundle {
     .filter((event) => event.lotId === lot.id)
     .sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
   const certificates = store.certificates.filter(
-    (certificate) => certificate.subjectId === lot.id || certificate.subjectId === product.id
+    (certificate) =>
+      certificate.subjectType !== 'org' &&
+      (certificate.subjectId === lot.id || certificate.subjectId === product.id)
+  );
+  const orgCertificates = store.certificates.filter(
+    (certificate) =>
+      certificate.subjectType === 'org' && certificate.subjectId === lot.producerAccountId
   );
   return {
     lot,
     product,
     events,
     certificates,
+    orgCertificates,
     producer: store.orgs.find((org) => org.accountId === product.producerAccountId),
     vfListed: store.listings.some((listing) => listing.orgAccountId === lot.producerAccountId),
   };
@@ -263,6 +271,7 @@ export function createLocalTracker(): TrackerApi {
     },
 
     async issueCertificate(input: IssueCertificateInput): Promise<Certificate> {
+      assertOrgCertificateExpiry(input.subjectType, input.expiresAt);
       const certificate: Certificate = {
         id: createId('cert'),
         subjectType: input.subjectType,
