@@ -8,6 +8,12 @@ vi.mock('./LotQrCard', () => ({
   LotQrCard: () => <div>QR card</div>,
 }));
 
+vi.mock('@/components/ui/stand-with-button', () => ({
+  StandWithButton: ({ targetAccountId }: { targetAccountId: string }) => (
+    <button type="button">Stand with {targetAccountId}</button>
+  ),
+}));
+
 const listedBundle: LotBundle = {
   lot: {
     id: FIXTURE_LOT_ID,
@@ -72,9 +78,20 @@ describe('LotBundleView', () => {
     render(<LotBundleView bundle={listedBundle} />);
 
     expect(screen.getByText('On the VF shelf')).toBeInTheDocument();
-    expect(screen.getByText('Stamped by vegcert.near')).toBeInTheDocument();
-    expect(screen.getByText(/stamped by nordic-mill.near/i)).toBeInTheDocument();
-    expect(screen.getByText(/stamped by plant-lab.near/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Green Valley Farms' })).toHaveAttribute(
+      'href',
+      '/profile/green-valley.near'
+    );
+    expect(screen.getByRole('button', { name: 'Stand with green-valley.near' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'vegcert.near' })).toHaveAttribute('href', '/profile/vegcert.near');
+    expect(screen.getByRole('link', { name: 'nordic-mill.near' })).toHaveAttribute(
+      'href',
+      '/profile/nordic-mill.near'
+    );
+    expect(screen.getByRole('link', { name: 'plant-lab.near' })).toHaveAttribute(
+      'href',
+      '/profile/plant-lab.near'
+    );
     expect(screen.queryByText('Not recorded yet')).not.toBeInTheDocument();
     expect(screen.queryByText('Verified vegan')).not.toBeInTheDocument();
   });
