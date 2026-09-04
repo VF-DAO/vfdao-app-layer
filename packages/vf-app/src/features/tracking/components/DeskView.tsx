@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Award, PackagePlus, StickyNote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { ProfileAvatar, ProfileName } from '@/components/ui/profile-avatar';
 import { useAppDrawer } from '@/features/shell';
 import { useStudioActor } from '../hooks/use-studio-actor';
 import {
@@ -14,14 +15,9 @@ import {
 } from '../hooks/use-tracker';
 import { certificateBundleHref, deskTitle, eventBundleHref } from '../lib/desk';
 import { canIssueCertificate, canRecordEvent, canRegisterProduct, roleLabel } from '../lib/roles';
-import {
-  certificateReviewState,
-  certificateStateLabel,
-  certificateUntilLabel,
-  eventKindLabel,
-  groupCertificatesByReview,
-} from '../lib/status';
+import { certificateReviewState, eventKindLabel, groupCertificatesByReview } from '../lib/status';
 import type { Certificate } from '../types';
+import { CertificateBadge } from './CertificateBadge';
 import { ProducerDesk } from './ProducerDesk';
 import { TrackingBackendBadge } from './TrackingBackendBadge';
 
@@ -106,7 +102,6 @@ export function DeskView() {
       {showCerts && (
         <CertifierReviews
           certificates={certificates.data ?? []}
-          empty={!certificates.loading && (certificates.data?.length ?? 0) === 0}
           onRevoke={(certificate) =>
             openDrawer({
               id: 'revoke-certificate',
@@ -151,16 +146,15 @@ const REVIEW_SECTIONS: { key: keyof ReturnType<typeof groupCertificatesByReview>
 
 function CertifierReviews({
   certificates,
-  empty,
   onRevoke,
 }: {
   certificates: Certificate[];
-  empty: boolean;
   onRevoke: (certificate: Certificate) => void;
 }) {
   const reviews = certificates.filter((certificate) => certificate.subjectType === 'org');
   const lotStamps = certificates.filter((certificate) => certificate.subjectType !== 'org');
   const groups = groupCertificatesByReview(reviews);
+  const noneYet = reviews.length === 0 && lotStamps.length === 0;
 
   return (
     <div className="space-y-8">
@@ -184,28 +178,31 @@ function CertifierReviews({
             </div>
           ) : null
         )}
-        {reviews.length === 0 && (
+        {noneYet && (
+          <p className="text-sm text-muted-foreground">
+            No company reviews or lot stamps from this wallet yet.
+          </p>
+        )}
+        {!noneYet && reviews.length === 0 && (
           <p className="text-sm text-muted-foreground">No company reviews from this wallet yet.</p>
         )}
       </section>
 
-      <section className="space-y-3">
-        <h2 className="text-xl font-semibold text-foreground">Lot stamps</h2>
-        {lotStamps.map((certificate) => (
-          <CertificateDeskCard
-            key={certificate.id}
-            certificate={certificate}
-            kind={certificate.subjectType === 'lot' ? 'Lot stamp' : 'Product stamp'}
-            onRevoke={onRevoke}
-          />
-        ))}
-        {lotStamps.length === 0 && (
-          <p className="text-sm text-muted-foreground">No lot stamps from this wallet yet.</p>
-        )}
-      </section>
-
-      {empty && (
-        <p className="text-sm text-muted-foreground">No certificates issued from this wallet yet.</p>
+      {!noneYet && (
+        <section className="space-y-3">
+          <h2 className="text-xl font-semibold text-foreground">Lot stamps</h2>
+          {lotStamps.map((certificate) => (
+            <CertificateDeskCard
+              key={certificate.id}
+              certificate={certificate}
+              kind={certificate.subjectType === 'lot' ? 'Lot stamp' : 'Product stamp'}
+              onRevoke={onRevoke}
+            />
+          ))}
+          {lotStamps.length === 0 && (
+            <p className="text-sm text-muted-foreground">No lot stamps from this wallet yet.</p>
+          )}
+        </section>
       )}
     </div>
   );
@@ -221,29 +218,37 @@ function CertificateDeskCard({
   onRevoke: (certificate: Certificate) => void;
 }) {
   const state = certificateReviewState(certificate);
-  const until = certificateUntilLabel(certificate);
+  const href = certificateBundleHref(certificate);
+  const isOrg = certificate.subjectType === 'org';
 
   return (
-    <Card className="border border-border p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <Link href={certificateBundleHref(certificate)} className="min-w-0 flex-1">
-          <h3 className="text-lg font-semibold text-foreground">{certificate.standard}</h3>
-          <p className="text-sm text-muted-foreground">
-            {kind} {certificate.subjectId}
-            {until ? ` · ${until}` : ''} · {certificateStateLabel(state, certificate.subjectType)}
-          </p>
-        </Link>
-        {state !== 'revoked' && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => onRevoke(certificate)}
+    <CertificateBadge
+      certificate={certificate}
+      detail={
+        <div className="mb-1 text-sm text-muted-foreground">
+          {kind} of{' '}
+          <Link
+            href={href}
+            className="inline-flex items-center gap-1.5 align-middle font-medium text-foreground hover:text-primary"
           >
+            {isOrg ? (
+              <>
+                <ProfileAvatar accountId={certificate.subjectId} size="xs" />
+                <ProfileName accountId={certificate.subjectId} />
+              </>
+            ) : (
+              certificate.subjectId
+            )}
+          </Link>
+        </div>
+      }
+      actions={
+        state !== 'revoked' ? (
+          <Button type="button" variant="outline" size="sm" onClick={() => onRevoke(certificate)}>
             Revoke
           </Button>
-        )}
-      </div>
-    </Card>
+        ) : undefined
+      }
+    />
   );
 }

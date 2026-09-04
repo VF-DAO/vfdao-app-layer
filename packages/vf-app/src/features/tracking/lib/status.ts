@@ -38,13 +38,47 @@ export function orgCertificatesFor(certificates: Certificate[], accountId: strin
     .sort((a, b) => Date.parse(b.issuedAt) - Date.parse(a.issuedAt));
 }
 
+const REVIEW_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
+
+/** Day-month-year in UTC so a Kalmar carton does not show 3/1/2027. */
+export function formatReviewDay(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  const month = REVIEW_MONTHS[date.getUTCMonth()];
+  return `${date.getUTCDate()} ${month} ${date.getUTCFullYear()}`;
+}
+
+export function scanCompanyReview(
+  certificates: Certificate[] | undefined,
+  now = Date.now()
+): Certificate | null {
+  const items = [...(certificates ?? [])].sort(
+    (a, b) => Date.parse(b.issuedAt) - Date.parse(a.issuedAt)
+  );
+  return items.find((item) => isCertificateActive(item, now)) ?? items[0] ?? null;
+}
+
+export function splitOrgReviews(
+  certificates: Certificate[],
+  accountId: string,
+  now = Date.now()
+): { current: Certificate | null; earlier: Certificate[] } {
+  const items = orgCertificatesFor(certificates, accountId);
+  const live = items.filter((item) => isCertificateActive(item, now));
+  const current = live[0] ?? items[0] ?? null;
+  return {
+    current,
+    earlier: items.filter((item) => item.id !== current?.id),
+  };
+}
+
 export function certificateUntilLabel(certificate: Certificate, now = Date.now()): string | null {
   const state = certificateReviewState(certificate, now);
   if (state === 'revoked') {
     return certificate.revokeReason ? `Revoked — ${certificate.revokeReason}` : 'Revoked';
   }
   if (!certificate.expiresAt) return null;
-  const day = new Date(certificate.expiresAt).toLocaleDateString();
+  const day = formatReviewDay(certificate.expiresAt);
   if (state === 'lapsed') return `Review lapsed ${day}`;
   if (state === 'due') return `Due ${day}`;
   return `Until ${day}`;

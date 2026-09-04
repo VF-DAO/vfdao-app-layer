@@ -34,9 +34,12 @@ export {
   certificateReviewState,
   certificateStateLabel,
   certificateUntilLabel,
+  formatReviewDay,
   groupCertificatesByReview,
   isCertificateActive,
   orgCertificatesFor,
+  scanCompanyReview,
+  splitOrgReviews,
 } from './lib/status';
 export { useStudioActor } from './hooks/use-studio-actor';
 export {

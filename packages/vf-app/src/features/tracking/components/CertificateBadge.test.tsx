@@ -1,7 +1,22 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import type { Certificate } from '../types';
 import { CertificateBadge } from './CertificateBadge';
+
+vi.mock('@/hooks/use-profile', () => ({
+  useProfile: (accountId: string | null | undefined) => ({
+    profile:
+      accountId === 'vegcert.near'
+        ? { accountId, name: 'VegCert International', kind: 'org' }
+        : accountId
+          ? { accountId, kind: 'org' }
+          : null,
+    displayName: accountId === 'vegcert.near' ? 'VegCert International' : (accountId ?? ''),
+    profileImageUrl: null,
+    loading: false,
+    kind: 'org',
+  }),
+}));
 
 const cert = (overrides: Partial<Certificate> = {}): Certificate => ({
   id: 'cert-org',
@@ -16,10 +31,15 @@ const cert = (overrides: Partial<Certificate> = {}): Certificate => ({
 });
 
 describe('CertificateBadge', () => {
-  it('shows an active company review without a vegan-on-pack mark', () => {
+  it('shows an active company review with the issuer face, not a vegan-on-pack mark', () => {
     render(<CertificateBadge certificate={cert()} />);
     expect(screen.getByText('Active')).toBeInTheDocument();
-    expect(screen.getByText(/Until /)).toBeInTheDocument();
+    expect(screen.getByText('Until 1 Mar 2027')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'VegCert International' })).toHaveAttribute(
+      'href',
+      '/profile/vegcert.near'
+    );
+    expect(screen.queryByText('vegcert.near')).not.toBeInTheDocument();
     expect(screen.queryByText('Verified vegan')).not.toBeInTheDocument();
   });
 
@@ -32,7 +52,7 @@ describe('CertificateBadge', () => {
       />
     );
     expect(screen.getByText('Lapsed')).toBeInTheDocument();
-    expect(screen.getByText(/Review lapsed /)).toBeInTheDocument();
+    expect(screen.getByText('Review lapsed 1 Mar 2026')).toBeInTheDocument();
     expect(screen.queryByText('Active')).not.toBeInTheDocument();
   });
 
