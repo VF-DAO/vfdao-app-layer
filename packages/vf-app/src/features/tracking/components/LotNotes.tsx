@@ -27,8 +27,7 @@ export function LotNotes({ lotId }: { lotId: string }) {
       <div>
         <h3 className="text-lg font-semibold text-foreground">Notes on this lot</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Taste notes and replies. Not a company review. Does not rank Explore. Stand with the farm if
-          you mean the org.
+          Taste notes on this carton. Not a company review.
         </p>
       </div>
 

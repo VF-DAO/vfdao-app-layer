@@ -106,6 +106,7 @@ describe('LotBundleView', () => {
       'href',
       '/profile/green-valley.near'
     );
+    expect(screen.getByText('this drink')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Stand with green-valley.near' })).toBeInTheDocument();
     const vegcertLinks = screen.getAllByRole('link', { name: 'vegcert.near' });
     expect(vegcertLinks).toHaveLength(2);

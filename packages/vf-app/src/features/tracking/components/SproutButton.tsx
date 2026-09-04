@@ -40,16 +40,14 @@ export function SproutButton({
     >
       <Sprout className="h-4 w-4" />
       {stats.viewerSprouted ? 'Sprouted' : 'Sprout'}
-      {stats.count > 0 && (
-        <span
-          className={cn(
-            'ml-0.5 rounded-full px-1.5 py-0.5 text-xs font-medium',
-            stats.viewerSprouted ? 'bg-verified/20 text-primary' : 'bg-muted text-muted-foreground'
-          )}
-        >
-          {stats.count}
-        </span>
-      )}
+      <span
+        className={cn(
+          'ml-0.5 rounded-full px-1.5 py-0.5 text-xs font-medium',
+          stats.viewerSprouted ? 'bg-verified/20 text-primary' : 'bg-muted text-muted-foreground'
+        )}
+      >
+        {stats.count}
+      </span>
     </Button>
   );
 }
