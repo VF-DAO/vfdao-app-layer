@@ -140,6 +140,49 @@ export interface RecordScanInput {
   accountId?: string;
 }
 
+/** Product or lot only. Orgs use protocol standing, not sprouts. */
+export const VOICE_SUBJECT_TYPES = ['product', 'lot'] as const;
+export type VoiceSubjectType = (typeof VOICE_SUBJECT_TYPES)[number];
+
+export interface Sprout {
+  id: string;
+  subjectType: VoiceSubjectType;
+  subjectId: string;
+  accountId: string;
+  at: string;
+}
+
+export interface Note {
+  id: string;
+  subjectType: VoiceSubjectType;
+  subjectId: string;
+  parentId?: string;
+  body: string;
+  accountId: string;
+  at: string;
+}
+
+export interface SproutStats {
+  subjectType: VoiceSubjectType;
+  subjectId: string;
+  count: number;
+  viewerSprouted: boolean;
+}
+
+export interface ToggleSproutInput {
+  subjectType: VoiceSubjectType;
+  subjectId: string;
+  accountId: string;
+}
+
+export interface AddNoteInput {
+  subjectType: VoiceSubjectType;
+  subjectId: string;
+  accountId: string;
+  body: string;
+  parentId?: string;
+}
+
 export type TrackerBackend = 'local' | 'onsocial';
 
 export interface TrackerStatus {

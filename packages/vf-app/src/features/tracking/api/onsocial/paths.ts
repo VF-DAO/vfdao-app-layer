@@ -10,7 +10,9 @@ export type TrackingRecordKind =
   | 'certificate'
   | 'org'
   | 'scan'
-  | 'listed';
+  | 'listed'
+  | 'sprout'
+  | 'note';
 
 export function normalizeAppId(appId = DEFAULT_APP_ID): string {
   return appId.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-') || DEFAULT_APP_ID;
@@ -89,7 +91,7 @@ export function pathMatchesAppPrefix(
   return rel === normalized || rel.startsWith(`${normalized}/`);
 }
 
-const PATH_KIND = /\/(product|lot|event|certificate|org|scan|listed)(?:\/|$)/;
+const PATH_KIND = /\/(product|lot|event|certificate|org|scan|listed|sprout|note)(?:\/|$)/;
 
 export function kindFromPath(path: string): TrackingRecordKind | null {
   const match = PATH_KIND.exec(path);

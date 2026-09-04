@@ -1,6 +1,7 @@
 import type { TrackerApi } from './tracker-api';
 import type {
   AddEventInput,
+  AddNoteInput,
   Certificate,
   ChainEvent,
   CreateLotInput,
@@ -8,11 +9,15 @@ import type {
   Listing,
   Lot,
   LotBundle,
+  Note,
   Org,
   Product,
   RecordScanInput,
   RegisterProductInput,
   ScanRecord,
+  Sprout,
+  SproutStats,
+  ToggleSproutInput,
   TrackerStatus,
 } from '../types';
 
@@ -68,5 +73,29 @@ export function createHttpTracker(): TrackerApi {
       request<Certificate>('/api/tracking/certificates', { method: 'POST', body: JSON.stringify(input) }),
     recordScan: (input: RecordScanInput) =>
       request<ScanRecord>('/api/tracking/scans', { method: 'POST', body: JSON.stringify(input) }),
+    async listSprouts(subjectType, subjectId) {
+      return request<Sprout[]>(
+        `/api/tracking/sprouts?subjectType=${encodeURIComponent(subjectType)}&subjectId=${encodeURIComponent(subjectId)}`
+      );
+    },
+    async getSproutStats(subjectType, subjectId, viewerAccountId) {
+      const sprouts = await request<Sprout[]>(
+        `/api/tracking/sprouts?subjectType=${encodeURIComponent(subjectType)}&subjectId=${encodeURIComponent(subjectId)}`
+      );
+      return {
+        subjectType,
+        subjectId,
+        count: sprouts.length,
+        viewerSprouted: Boolean(viewerAccountId && sprouts.some((item) => item.accountId === viewerAccountId)),
+      };
+    },
+    toggleSprout: (input: ToggleSproutInput) =>
+      request<SproutStats>('/api/tracking/sprouts', { method: 'POST', body: JSON.stringify(input) }),
+    listNotes: (subjectType, subjectId) =>
+      request<Note[]>(
+        `/api/tracking/notes?subjectType=${encodeURIComponent(subjectType)}&subjectId=${encodeURIComponent(subjectId)}`
+      ),
+    addNote: (input: AddNoteInput) =>
+      request<Note>('/api/tracking/notes', { method: 'POST', body: JSON.stringify(input) }),
   };
 }

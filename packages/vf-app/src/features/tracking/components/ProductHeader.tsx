@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { StandWithButton } from '@/components/ui/stand-with-button';
+import { SproutButton } from './SproutButton';
 import type { Org, Product } from '../types';
 
 export function ProductHeader({
@@ -20,7 +21,10 @@ export function ProductHeader({
         <p className="text-sm font-medium text-muted-foreground">{product.brand}</p>
         {vfListed && <Badge variant="primary">On the VF shelf</Badge>}
       </div>
-      <h1 className="text-3xl font-bold text-foreground sm:text-4xl md:text-5xl">{product.name}</h1>
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="text-3xl font-bold text-foreground sm:text-4xl md:text-5xl">{product.name}</h1>
+        <SproutButton subjectType="product" subjectId={product.id} />
+      </div>
       <p className="max-w-2xl text-muted-foreground">{product.description}</p>
       {producer && (
         <div className="flex flex-wrap items-center gap-3">

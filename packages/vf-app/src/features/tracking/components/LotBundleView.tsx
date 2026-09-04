@@ -3,6 +3,7 @@ import type { LotBundle } from '../types';
 import { encodeLotQr } from '../lib/qr';
 import { CertificateBadge } from './CertificateBadge';
 import { IngredientList } from './IngredientList';
+import { LotNotes } from './LotNotes';
 import { LotQrCard } from './LotQrCard';
 import { ProductHeader } from './ProductHeader';
 import { StampTimeline } from './StampTimeline';
@@ -64,6 +65,8 @@ export function LotBundleView({ bundle }: { bundle: LotBundle }) {
         <h3 className="mb-4 text-lg font-semibold text-foreground">Stamps</h3>
         <StampTimeline events={bundle.events} />
       </Card>
+
+      <LotNotes lotId={bundle.lot.id} />
     </div>
   );
 }

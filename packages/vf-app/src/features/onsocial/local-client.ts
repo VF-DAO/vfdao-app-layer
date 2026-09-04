@@ -117,6 +117,10 @@ export function createLocalOnSocialClient(appId = DEFAULT_APP_ID): OnSocialClien
         } catch {
           value = raw;
         }
+        if (value === null) {
+          delete store[path];
+          return;
+        }
         put(store, path, value, session.actorId);
       });
       writeJson(LOCAL_KV_KEY, store);

@@ -1,5 +1,6 @@
 import type {
   AddEventInput,
+  AddNoteInput,
   Certificate,
   ChainEvent,
   CreateLotInput,
@@ -7,12 +8,17 @@ import type {
   Listing,
   Lot,
   LotBundle,
+  Note,
   Org,
   Product,
   RecordScanInput,
   RegisterProductInput,
   ScanRecord,
+  Sprout,
+  SproutStats,
+  ToggleSproutInput,
   TrackerStatus,
+  VoiceSubjectType,
 } from '../types';
 
 export interface TrackerApi {
@@ -38,4 +44,13 @@ export interface TrackerApi {
   addEvent(input: AddEventInput): Promise<ChainEvent>;
   issueCertificate(input: IssueCertificateInput): Promise<Certificate>;
   recordScan(input: RecordScanInput): Promise<ScanRecord>;
+  listSprouts(subjectType: VoiceSubjectType, subjectId: string): Promise<Sprout[]>;
+  getSproutStats(
+    subjectType: VoiceSubjectType,
+    subjectId: string,
+    viewerAccountId?: string
+  ): Promise<SproutStats>;
+  toggleSprout(input: ToggleSproutInput): Promise<SproutStats>;
+  listNotes(subjectType: VoiceSubjectType, subjectId: string): Promise<Note[]>;
+  addNote(input: AddNoteInput): Promise<Note>;
 }

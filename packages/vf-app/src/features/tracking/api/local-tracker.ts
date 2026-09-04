@@ -9,8 +9,10 @@ import {
 import { createId } from '../lib/ids';
 import { parseScanCode } from '../lib/qr';
 import { assertOrgCertificateExpiry } from '../lib/status';
+import { assertVoiceSubjectType, normalizeNoteBody, sproutRecordId } from '../lib/voice';
 import type {
   AddEventInput,
+  AddNoteInput,
   Certificate,
   ChainEvent,
   CreateLotInput,
@@ -18,16 +20,23 @@ import type {
   Listing,
   Lot,
   LotBundle,
+  Note,
   Org,
   Product,
   RecordScanInput,
   RegisterProductInput,
   ScanRecord,
+  Sprout,
+  SproutStats,
+  ToggleSproutInput,
   TrackerStatus,
+  VoiceSubjectType,
 } from '../types';
 
 const STORAGE_KEY = 'vf.tracking.v1';
 const SCAN_KEY = 'vf.tracking.scans.v1';
+const SPROUT_KEY = 'vf.tracking.sprouts.v1';
+const NOTE_KEY = 'vf.tracking.notes.v1';
 
 interface TrackingStore {
   orgs: Org[];
@@ -302,5 +311,101 @@ export function createLocalTracker(): TrackerApi {
       persistScans(scans.slice(0, 50));
       return scan;
     },
+
+    async listSprouts(subjectType: VoiceSubjectType, subjectId: string): Promise<Sprout[]> {
+      return loadSprouts().filter(
+        (item) => item.subjectType === subjectType && item.subjectId === subjectId
+      );
+    },
+
+    async getSproutStats(
+      subjectType: VoiceSubjectType,
+      subjectId: string,
+      viewerAccountId?: string
+    ): Promise<SproutStats> {
+      const sprouts = await this.listSprouts(subjectType, subjectId);
+      return {
+        subjectType,
+        subjectId,
+        count: sprouts.length,
+        viewerSprouted: Boolean(viewerAccountId && sprouts.some((item) => item.accountId === viewerAccountId)),
+      };
+    },
+
+    async toggleSprout(input: ToggleSproutInput): Promise<SproutStats> {
+      const subjectType = assertVoiceSubjectType(input.subjectType);
+      const accountId = input.accountId.trim();
+      if (!accountId) {
+        throw new Error('Connect a wallet to sprout.');
+      }
+      const sprouts = loadSprouts();
+      const id = sproutRecordId(subjectType, input.subjectId, accountId);
+      const next = sprouts.some((item) => item.id === id)
+        ? sprouts.filter((item) => item.id !== id)
+        : [
+            ...sprouts,
+            {
+              id,
+              subjectType,
+              subjectId: input.subjectId,
+              accountId,
+              at: new Date().toISOString(),
+            },
+          ];
+      persistSprouts(next);
+      return this.getSproutStats(subjectType, input.subjectId, accountId);
+    },
+
+    async listNotes(subjectType: VoiceSubjectType, subjectId: string): Promise<Note[]> {
+      return loadNotes()
+        .filter((item) => item.subjectType === subjectType && item.subjectId === subjectId)
+        .sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+    },
+
+    async addNote(input: AddNoteInput): Promise<Note> {
+      const subjectType = assertVoiceSubjectType(input.subjectType);
+      const accountId = input.accountId.trim();
+      if (!accountId) {
+        throw new Error('Connect a wallet to leave a note.');
+      }
+      const body = normalizeNoteBody(input.body);
+      const notes = loadNotes();
+      if (input.parentId) {
+        const parent = notes.find((item) => item.id === input.parentId);
+        if (!parent || parent.subjectId !== input.subjectId) {
+          throw new Error('That note is gone.');
+        }
+        if (parent.parentId) {
+          throw new Error('Reply to the original note.');
+        }
+      }
+      const note: Note = {
+        id: createId('note'),
+        subjectType,
+        subjectId: input.subjectId,
+        parentId: input.parentId,
+        body,
+        accountId,
+        at: new Date().toISOString(),
+      };
+      persistNotes([...notes, note]);
+      return note;
+    },
   };
+}
+
+function loadSprouts(): Sprout[] {
+  return readJson<Sprout[]>(SPROUT_KEY, []);
+}
+
+function persistSprouts(sprouts: Sprout[]): void {
+  writeJson(SPROUT_KEY, sprouts);
+}
+
+function loadNotes(): Note[] {
+  return readJson<Note[]>(NOTE_KEY, []);
+}
+
+function persistNotes(notes: Note[]): void {
+  writeJson(NOTE_KEY, notes);
 }

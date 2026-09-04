@@ -20,6 +20,8 @@ const KINDS: TrackingRecordKind[] = [
   'org',
   'scan',
   'listed',
+  'sprout',
+  'note',
 ];
 
 function resolveKind(type: string, appId: string): TrackingRecordKind {

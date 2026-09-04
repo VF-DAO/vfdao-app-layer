@@ -27,6 +27,11 @@ describe('OnSocial core paths', () => {
     expect(kindFromPath('vegan-friends.sputnik-dao.near/apps/vf-tracker/listed/green-valley.near')).toBe(
       'listed'
     );
+    expect(recordPath('sprout', 'product/prd-1/cafe.near')).toBe(
+      'apps/vf-tracker/sprout/product/prd-1/cafe.near'
+    );
+    expect(kindFromPath('cafe.near/apps/vf-tracker/sprout/product/prd-1/cafe.near')).toBe('sprout');
+    expect(kindFromPath('cafe.near/apps/vf-tracker/note/note-1')).toBe('note');
     expect(matchesRecordType('apps/vf-tracker/lot/lot-1', 'lot')).toBe(true);
     expect(matchesRecordType('apps/vf-tracker/lot/lot-1', 'vf-tracker-lot')).toBe(true);
     expect(matchesRecordType('apps/vf-tracker/lot/lot-1', 'apps')).toBe(true);
