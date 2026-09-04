@@ -38,6 +38,12 @@ export {
   isCertificateActive,
   orgCertificatesFor,
 } from './lib/status';
+export {
+  buildOrgCertSoulboundCollection,
+  buildOrgCertSoulboundMint,
+  buildOrgCertSoulboundRevoke,
+  orgReviewCollectionId,
+} from './lib/org-cert-soulbound';
 export { useStudioActor } from './hooks/use-studio-actor';
 export {
   useCertificates,
