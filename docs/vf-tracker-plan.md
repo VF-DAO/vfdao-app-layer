@@ -203,6 +203,7 @@ Hub reads:
 
 - List a kind → `queryByPrefix('product' \| 'lot' \| …)` (`dataType=apps` + `dataId=vf-tracker`, then path prefix)
 - Scan / lot bundle → `queryByJsonContains({ id })` / `{ lotId }` / `{ subjectId }` (works across writer accounts)
+- Production reads (`ONSOCIAL_API_KEY` or `NEXT_PUBLIC_TRACKER_BACKEND=onsocial`) return empty/null when core has no row. They do **not** fall back to Green Valley fixtures. Override with `TRACKER_ALLOW_FIXTURES=1`.
 - VF shelf badge → `listed/{org}` (`queryByPath` or `{ orgAccountId }` where kind is `listed`). Absence is not a failure.
 - Exact row when the account is known → `queryByPath`
 - Do **not** query `dataType: vf-tracker-lot`

@@ -34,7 +34,7 @@ import { asListing, isListingForOrg } from '../../lib/listing';
 import { cloneFixtures } from '../fixtures';
 import { createLocalTracker } from '../local-tracker';
 import type { TrackerApi } from '../tracker-api';
-import { getOnSocialConfig, isOnSocialConfigured } from './config';
+import { allowTrackerFixtures, getOnSocialConfig, isOnSocialConfigured } from './config';
 import { coreSetPayload, kindFromPath, recordPath } from './paths';
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -83,6 +83,34 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
   const config = getOnSocialConfig();
   const local = createLocalTracker();
   const live = isOnSocialConfigured();
+  const allowFixtures = allowTrackerFixtures();
+
+  async function firstOrFixture<T>(
+    found: T | null | undefined,
+    load: () => Promise<T | null>
+  ): Promise<T | null> {
+    if (found) return found;
+    return allowFixtures ? load() : null;
+  }
+
+  async function listOrFixture<T>(found: T[], load: () => Promise<T[]>): Promise<T[]> {
+    if (found.length > 0) return found;
+    return allowFixtures ? load() : [];
+  }
+
+  async function readCatch<T>(
+    error: unknown,
+    load: () => Promise<T>,
+    empty: T,
+    label: string
+  ): Promise<T> {
+    if (allowFixtures) {
+      console.warn(`[tracking] OnSocial ${label} fell back to local fixtures`, error);
+      return load();
+    }
+    console.warn(`[tracking] OnSocial ${label} failed; not using fixtures`, error);
+    return empty;
+  }
 
   async function write(path: string, value: unknown): Promise<void> {
     const payload = coreSetPayload(path, value);
@@ -98,7 +126,7 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
     message: string
   ): Promise<Org> {
     const row = await client.queryByPath(recordPath('org', accountId, config.appId));
-    const org = asOrg(row?.value) ?? (await local.getOrg(accountId));
+    const org = asOrg(row?.value) ?? (allowFixtures ? await local.getOrg(accountId) : null);
     if (!org || !allowed(org.role)) {
       throw new Error(message);
     }
@@ -119,11 +147,13 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
       ) {
         return true;
       }
-      if (live) {
+      if (!allowFixtures) {
         return false;
       }
     } catch {
-      // fall through
+      if (!allowFixtures) {
+        return false;
+      }
     }
     return cloneFixtures().listings.some((listing) => listing.orgAccountId === accountId);
   }
@@ -140,8 +170,12 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
         note: live
           ? client.session?.token
             ? 'Writes go to OnSocial core with a session key. Users do not sign every product or scan.'
-            : 'Reads can use OnAPI. Writes wait for an OnSocial portal session so the app can be listed.'
-          : 'Local OnSocial seam. Same Set and query path as core; swap the client when the SDK ships.',
+            : allowFixtures
+              ? 'Reads can use OnAPI. Fixtures stay on (TRACKER_ALLOW_FIXTURES). Writes wait for an OnSocial portal session so the app can be listed.'
+              : 'Reads can use OnAPI. Missing lots stay missing; fixtures are off. Writes wait for an OnSocial portal session so the app can be listed.'
+          : allowFixtures
+            ? 'Local OnSocial seam. Same Set and query path as core; swap the client when the SDK ships.'
+            : 'Local OnSocial seam. Fixtures are off. Missing lots stay missing.',
       };
     },
 
@@ -149,10 +183,9 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
       try {
         const rows = await client.queryByPrefix('product');
         const products = rows.map((row) => asProduct(row.value)).filter((item): item is Product => Boolean(item));
-        return products.length > 0 ? products : await local.listProducts();
+        return listOrFixture(products, () => local.listProducts());
       } catch (error) {
-        console.warn('[tracking] OnSocial product list fell back to local fixtures', error);
-        return local.listProducts();
+        return readCatch(error, () => local.listProducts(), [], 'product list');
       }
     },
 
@@ -166,10 +199,9 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
             .filter((item): item is Product => Boolean(item)),
           accountId
         );
-        return products.length > 0 ? products : await local.listProductsForAccount(accountId);
+        return listOrFixture(products, () => local.listProductsForAccount(accountId));
       } catch (error) {
-        console.warn('[tracking] OnSocial producer products fell back to local fixtures', error);
-        return local.listProductsForAccount(accountId);
+        return readCatch(error, () => local.listProductsForAccount(accountId), [], 'producer products');
       }
     },
 
@@ -180,10 +212,9 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
         if (fromPath) return fromPath;
         const rows = await client.queryByJsonContains({ id: productId });
         const fromJson = rows.map((item) => asProduct(item.value)).find((item): item is Product => Boolean(item));
-        return fromJson ?? (await local.getProduct(productId));
+        return firstOrFixture(fromJson, () => local.getProduct(productId));
       } catch (error) {
-        console.warn('[tracking] OnSocial product read fell back to local fixtures', error);
-        return local.getProduct(productId);
+        return readCatch(error, () => local.getProduct(productId), null, 'product read');
       }
     },
 
@@ -193,10 +224,9 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
         const lots = rows
           .map((row) => asLot(row.value))
           .filter((item): item is Lot => item !== null && item.productId === productId);
-        return lots.length > 0 ? lots : await local.listLots(productId);
+        return listOrFixture(lots, () => local.listLots(productId));
       } catch (error) {
-        console.warn('[tracking] OnSocial lot list fell back to local fixtures', error);
-        return local.listLots(productId);
+        return readCatch(error, () => local.listLots(productId), [], 'lot list');
       }
     },
 
@@ -210,10 +240,9 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
             .filter((item): item is Lot => Boolean(item)),
           accountId
         );
-        return lots.length > 0 ? lots : await local.listLotsForAccount(accountId);
+        return listOrFixture(lots, () => local.listLotsForAccount(accountId));
       } catch (error) {
-        console.warn('[tracking] OnSocial producer lots fell back to local fixtures', error);
-        return local.listLotsForAccount(accountId);
+        return readCatch(error, () => local.listLotsForAccount(accountId), [], 'producer lots');
       }
     },
 
@@ -224,10 +253,9 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
         if (fromPath) return fromPath;
         const rows = await client.queryByJsonContains({ id: lotId });
         const fromJson = rows.map((item) => asLot(item.value)).find((item): item is Lot => Boolean(item));
-        return fromJson ?? (await local.getLot(lotId));
+        return firstOrFixture(fromJson, () => local.getLot(lotId));
       } catch (error) {
-        console.warn('[tracking] OnSocial lot read fell back to local fixtures', error);
-        return local.getLot(lotId);
+        return readCatch(error, () => local.getLot(lotId), null, 'lot read');
       }
     },
 
@@ -238,10 +266,9 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
           .map((row) => asEvent(row.value))
           .filter((item): item is ChainEvent => item !== null && item.lotId === lotId)
           .sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
-        return events.length > 0 ? events : await local.getEvents(lotId);
+        return listOrFixture(events, () => local.getEvents(lotId));
       } catch (error) {
-        console.warn('[tracking] OnSocial events fell back to local fixtures', error);
-        return local.getEvents(lotId);
+        return readCatch(error, () => local.getEvents(lotId), [], 'events');
       }
     },
 
@@ -255,10 +282,9 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
             .filter((item): item is ChainEvent => Boolean(item)),
           accountId
         );
-        return events.length > 0 ? events : await local.listEventsForAccount(accountId);
+        return listOrFixture(events, () => local.listEventsForAccount(accountId));
       } catch (error) {
-        console.warn('[tracking] OnSocial org events fell back to local fixtures', error);
-        return local.listEventsForAccount(accountId);
+        return readCatch(error, () => local.listEventsForAccount(accountId), [], 'org events');
       }
     },
 
@@ -268,10 +294,9 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
         const certificates = rows
           .map((row) => asCertificate(row.value))
           .filter((item): item is Certificate => item !== null && item.subjectId === subjectId);
-        return certificates.length > 0 ? certificates : await local.getCertificates(subjectId);
+        return listOrFixture(certificates, () => local.getCertificates(subjectId));
       } catch (error) {
-        console.warn('[tracking] OnSocial certificates fell back to local fixtures', error);
-        return local.getCertificates(subjectId);
+        return readCatch(error, () => local.getCertificates(subjectId), [], 'certificates');
       }
     },
 
@@ -285,10 +310,9 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
             .filter((item): item is Certificate => Boolean(item)),
           accountId
         );
-        return certificates.length > 0 ? certificates : await local.listCertificatesForAccount(accountId);
+        return listOrFixture(certificates, () => local.listCertificatesForAccount(accountId));
       } catch (error) {
-        console.warn('[tracking] OnSocial issuer certs fell back to local fixtures', error);
-        return local.listCertificatesForAccount(accountId);
+        return readCatch(error, () => local.listCertificatesForAccount(accountId), [], 'issuer certs');
       }
     },
 
@@ -333,16 +357,10 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
         const listings = rows
           .map((row) => asListing(row.value))
           .filter((item): item is Listing => Boolean(item));
-        if (listings.length > 0) {
-          return listings;
-        }
-        if (live) {
-          return [];
-        }
+        return listOrFixture(listings, () => local.listListed());
       } catch (error) {
-        console.warn('[tracking] OnSocial listed shelf fell back to local fixtures', error);
+        return readCatch(error, () => local.listListed(), [], 'listed shelf');
       }
-      return local.listListed();
     },
 
     async getOrg(accountId: string): Promise<Org | null> {
@@ -352,10 +370,9 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
         if (fromPath) return fromPath;
         const rows = await client.queryByJsonContains({ accountId });
         const fromJson = rows.map((item) => asOrg(item.value)).find((item): item is Org => Boolean(item));
-        return fromJson ?? (await local.getOrg(accountId));
+        return firstOrFixture(fromJson, () => local.getOrg(accountId));
       } catch (error) {
-        console.warn('[tracking] OnSocial org read fell back to local fixtures', error);
-        return local.getOrg(accountId);
+        return readCatch(error, () => local.getOrg(accountId), null, 'org read');
       }
     },
 
@@ -367,9 +384,9 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
         const scans = rows
           .map((row) => asScan(row.value))
           .filter((item): item is ScanRecord => item !== null && (!accountId || item.accountId === accountId));
-        return scans.length > 0 ? scans : await local.listScans(accountId);
-      } catch {
-        return local.listScans(accountId);
+        return listOrFixture(scans, () => local.listScans(accountId));
+      } catch (error) {
+        return readCatch(error, () => local.listScans(accountId), [], 'scans');
       }
     },
 
