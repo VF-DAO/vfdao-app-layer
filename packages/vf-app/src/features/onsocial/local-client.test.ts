@@ -173,4 +173,31 @@ describe('local OnSocial client', () => {
       })
     ).rejects.toThrow(/Certifier role required/);
   });
+
+  it('revokes a company review on the certifier path', async () => {
+    const tracker = createOnSocialTracker(createLocalOnSocialClient());
+    const issued = await tracker.issueCertificate({
+      subjectType: 'org',
+      subjectId: 'green-valley.near',
+      standard: 'VegCert Facility Standard 2026',
+      issuerAccountId: 'vegcert.near',
+      expiresAt: '2028-03-01T00:00:00.000Z',
+      evidenceCid: 'bafytestevidencecid0000000000000000000000000000',
+    });
+    await expect(
+      tracker.revokeCertificate({
+        certificateId: issued.id,
+        issuerAccountId: 'green-valley.near',
+        revokeReason: 'Not VegCert',
+      })
+    ).rejects.toThrow(/Certifier role required/);
+    const revoked = await tracker.revokeCertificate({
+      certificateId: issued.id,
+      issuerAccountId: 'vegcert.near',
+      revokeReason: 'Site closed',
+    });
+    expect(revoked.status).toBe('revoked');
+    const reviews = await tracker.getCertificates('green-valley.near');
+    expect(reviews.find((item) => item.id === issued.id)?.revokeReason).toBe('Site closed');
+  });
 });

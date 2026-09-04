@@ -47,6 +47,49 @@ describe('local tracker', () => {
     expect(bundle?.orgCertificates?.map((certificate) => certificate.id)).toContain(issued.id);
   });
 
+  it('stores evidence and revokes a company review on the same record', async () => {
+    const tracker = createLocalTracker();
+    const issued = await tracker.issueCertificate({
+      subjectType: 'org',
+      subjectId: 'green-valley.near',
+      standard: 'VegCert Facility Standard 2026',
+      issuerAccountId: 'vegcert.near',
+      expiresAt: '2028-03-01T00:00:00.000Z',
+      evidenceCid: 'bafytestevidencecid0000000000000000000000000000',
+    });
+    expect(issued.evidenceCid).toBe('bafytestevidencecid0000000000000000000000000000');
+    await expect(
+      tracker.revokeCertificate({
+        certificateId: issued.id,
+        issuerAccountId: 'green-valley.near',
+        revokeReason: 'Not the issuer',
+      })
+    ).rejects.toThrow(/issuer/);
+    await expect(
+      tracker.revokeCertificate({
+        certificateId: issued.id,
+        issuerAccountId: 'vegcert.near',
+        revokeReason: '   ',
+      })
+    ).rejects.toThrow(/reason/);
+    const revoked = await tracker.revokeCertificate({
+      certificateId: issued.id,
+      issuerAccountId: 'vegcert.near',
+      revokeReason: 'Site closed',
+    });
+    expect(revoked.status).toBe('revoked');
+    expect(revoked.revokeReason).toBe('Site closed');
+    const bundle = await tracker.getLotBundle(FIXTURE_LOT_ID);
+    expect(bundle?.orgCertificates?.find((item) => item.id === issued.id)?.status).toBe('revoked');
+    await expect(
+      tracker.revokeCertificate({
+        certificateId: issued.id,
+        issuerAccountId: 'vegcert.near',
+        revokeReason: 'Again',
+      })
+    ).rejects.toThrow(/Already revoked/);
+  });
+
   it('resolves an unlisted producer lot without a VF shelf flag', async () => {
     const tracker = createLocalTracker();
     const product = await tracker.registerProduct({

@@ -4,7 +4,20 @@ export type TrackingDrawerAction =
   | { id: 'register-product' }
   | { id: 'create-lot'; productId?: string }
   | { id: 'record-event'; lotId?: string }
-  | { id: 'issue-certificate'; subjectId?: string; subjectType?: 'org' | 'lot' | 'product' };
+  | {
+      id: 'issue-certificate';
+      subjectId?: string;
+      subjectType?: 'org' | 'lot' | 'product';
+      onIssued?: () => void;
+    }
+  | {
+      id: 'revoke-certificate';
+      certificateId: string;
+      standard: string;
+      subjectId: string;
+      subjectType?: 'org' | 'lot' | 'product';
+      onRevoked?: () => void;
+    };
 
 export type AppDrawerAction =
   | TrackingDrawerAction

@@ -1,7 +1,7 @@
 import type { OnSocialClient } from '@/features/onsocial';
 import { createId } from '../../lib/ids';
 import { parseScanCode } from '../../lib/qr';
-import { assertOrgCertificateExpiry } from '../../lib/status';
+import { assertOrgCertificateExpiry, assertRevokeReason } from '../../lib/status';
 import {
   canCreateLot,
   canIssueCertificate,
@@ -23,6 +23,7 @@ import type {
   Product,
   RecordScanInput,
   RegisterProductInput,
+  RevokeCertificateInput,
   ScanRecord,
   Sprout,
   SproutStats,
@@ -172,6 +173,23 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
       throw new Error(message);
     }
     return org;
+  }
+
+  async function findCertificate(certificateId: string): Promise<Certificate | null> {
+    try {
+      const byPath = await client.queryByPath(recordPath('certificate', certificateId, config.appId));
+      const fromPath = asCertificate(byPath?.value);
+      if (fromPath?.id === certificateId) return fromPath;
+      const rows = await client.queryByJsonContains({ id: certificateId });
+      const fromRows = rows
+        .map((row) => asCertificate(row.value))
+        .find((item) => item?.id === certificateId);
+      if (fromRows) return fromRows;
+    } catch (error) {
+      console.warn('[tracking] OnSocial certificate lookup failed', error);
+    }
+    if (!allowFixtures) return null;
+    return cloneFixtures().certificates.find((item) => item.id === certificateId) ?? null;
   }
 
   async function isVfListed(accountId: string): Promise<boolean> {
@@ -508,6 +526,30 @@ export function createOnSocialTracker(client: OnSocialClient): TrackerApi {
         expiresAt: input.expiresAt,
         status: 'active',
         evidenceCid: input.evidenceCid,
+      };
+      await write(recordPath('certificate', certificate.id, config.appId), certificate);
+      return certificate;
+    },
+
+    async revokeCertificate(input: RevokeCertificateInput): Promise<Certificate> {
+      const reason = assertRevokeReason(input.revokeReason);
+      const org = await requireOrg(
+        input.issuerAccountId,
+        canIssueCertificate,
+        'Certifier role required.'
+      );
+      const existing = await findCertificate(input.certificateId);
+      if (!existing) throw new Error('Certificate not found');
+      if (existing.issuerAccountId !== org.accountId) {
+        throw new Error('Only the issuer can revoke this stamp.');
+      }
+      if (existing.status === 'revoked') {
+        throw new Error('Already revoked.');
+      }
+      const certificate: Certificate = {
+        ...existing,
+        status: 'revoked',
+        revokeReason: reason,
       };
       await write(recordPath('certificate', certificate.id, config.appId), certificate);
       return certificate;

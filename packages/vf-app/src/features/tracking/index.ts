@@ -15,6 +15,7 @@ export type {
   Product,
   RecordScanInput,
   RegisterProductInput,
+  RevokeCertificateInput,
   ScanRecord,
   Sprout,
   SproutStats,
@@ -29,7 +30,14 @@ export { getClientTracker, getServerTracker } from './api/resolve-tracker';
 export { FIXTURE_LOT_ID, FIXTURE_PRODUCT_ID } from './api/fixtures';
 export { encodeLotQr, parseScanCode, scanHref, scanPublicUrl } from './lib/qr';
 export { vfShelfCountLabel } from './lib/listing';
-export { certificateUntilLabel, isCertificateActive, orgCertificatesFor } from './lib/status';
+export {
+  certificateReviewState,
+  certificateStateLabel,
+  certificateUntilLabel,
+  groupCertificatesByReview,
+  isCertificateActive,
+  orgCertificatesFor,
+} from './lib/status';
 export { useStudioActor } from './hooks/use-studio-actor';
 export {
   useCertificates,
@@ -64,4 +72,5 @@ export {
   IssueCertificateForm,
   RecordEventForm,
   RegisterProductForm,
+  RevokeCertificateForm,
 } from './components/StudioForms';

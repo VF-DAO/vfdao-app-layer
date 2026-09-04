@@ -133,6 +133,33 @@ describe('LotBundleView', () => {
     expect(screen.queryByRole('link', { name: 'All lots for this product' })).not.toBeInTheDocument();
   });
 
+  it('keeps a lapsed company review as context, not a live lot stamp', () => {
+    render(
+      <LotBundleView
+        bundle={{
+          ...listedBundle,
+          orgCertificates: [
+            {
+              id: 'cert-org-lapsed',
+              subjectType: 'org',
+              subjectId: 'green-valley.near',
+              standard: 'VegCert Facility Standard 2025',
+              issuerAccountId: 'vegcert.near',
+              issuedAt: '2025-03-01T08:00:00.000Z',
+              expiresAt: '2026-03-01T08:00:00.000Z',
+              status: 'active',
+            },
+          ],
+        }}
+      />
+    );
+
+    expect(screen.getByRole('heading', { name: 'Company review' })).toBeInTheDocument();
+    expect(screen.getByText('Lapsed')).toBeInTheDocument();
+    expect(screen.getByText(/Review lapsed /)).toBeInTheDocument();
+    expect(screen.queryByText('Verified vegan')).not.toBeInTheDocument();
+  });
+
   it('still resolves an unlisted lot without a shelf badge', () => {
     render(
       <LotBundleView

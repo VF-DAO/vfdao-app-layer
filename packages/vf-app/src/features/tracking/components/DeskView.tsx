@@ -14,7 +14,14 @@ import {
 } from '../hooks/use-tracker';
 import { certificateBundleHref, deskTitle, eventBundleHref } from '../lib/desk';
 import { canIssueCertificate, canRecordEvent, canRegisterProduct, roleLabel } from '../lib/roles';
-import { certificateUntilLabel, eventKindLabel } from '../lib/status';
+import {
+  certificateReviewState,
+  certificateStateLabel,
+  certificateUntilLabel,
+  eventKindLabel,
+  groupCertificatesByReview,
+} from '../lib/status';
+import type { Certificate } from '../types';
 import { ProducerDesk } from './ProducerDesk';
 import { TrackingBackendBadge } from './TrackingBackendBadge';
 
@@ -78,7 +85,9 @@ export function DeskView() {
               size="sm"
               className="flex-1 sm:flex-none"
               aria-label="Issue certificate"
-              onClick={() => openDrawer({ id: 'issue-certificate' })}
+              onClick={() =>
+                openDrawer({ id: 'issue-certificate', onIssued: () => void certificates.reload() })
+              }
             >
               <Award className="h-4 w-4" />
               <span className="sm:hidden">Certify</span>
@@ -95,29 +104,20 @@ export function DeskView() {
       )}
 
       {showCerts && (
-        <section className="space-y-3">
-          <h2 className="text-xl font-semibold text-foreground">Certificates</h2>
-          {certificates.data?.map((certificate) => (
-            <Card key={certificate.id} className="border border-border p-5">
-              <Link href={certificateBundleHref(certificate)} className="block">
-                <h3 className="text-lg font-semibold text-foreground">{certificate.standard}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {certificate.subjectType === 'org'
-                    ? 'Company review'
-                    : certificate.subjectType === 'lot'
-                      ? 'Lot stamp'
-                      : 'Product stamp'}{' '}
-                  {certificate.subjectId}
-                  {certificateUntilLabel(certificate) ? ` · ${certificateUntilLabel(certificate)}` : ''} ·{' '}
-                  {certificate.status}
-                </p>
-              </Link>
-            </Card>
-          ))}
-          {certificates.data?.length === 0 && !certificates.loading && (
-            <p className="text-sm text-muted-foreground">No certificates issued from this wallet yet.</p>
-          )}
-        </section>
+        <CertifierReviews
+          certificates={certificates.data ?? []}
+          empty={!certificates.loading && (certificates.data?.length ?? 0) === 0}
+          onRevoke={(certificate) =>
+            openDrawer({
+              id: 'revoke-certificate',
+              certificateId: certificate.id,
+              standard: certificate.standard,
+              subjectId: certificate.subjectId,
+              subjectType: certificate.subjectType === 'product' ? 'product' : certificate.subjectType,
+              onRevoked: () => void certificates.reload(),
+            })
+          }
+        />
       )}
 
       {showEvents && (
@@ -139,5 +139,111 @@ export function DeskView() {
         </section>
       )}
     </div>
+  );
+}
+
+const REVIEW_SECTIONS: { key: keyof ReturnType<typeof groupCertificatesByReview>; title: string }[] = [
+  { key: 'due', title: 'Due' },
+  { key: 'active', title: 'Active' },
+  { key: 'lapsed', title: 'Lapsed' },
+  { key: 'revoked', title: 'Revoked' },
+];
+
+function CertifierReviews({
+  certificates,
+  empty,
+  onRevoke,
+}: {
+  certificates: Certificate[];
+  empty: boolean;
+  onRevoke: (certificate: Certificate) => void;
+}) {
+  const reviews = certificates.filter((certificate) => certificate.subjectType === 'org');
+  const lotStamps = certificates.filter((certificate) => certificate.subjectType !== 'org');
+  const groups = groupCertificatesByReview(reviews);
+
+  return (
+    <div className="space-y-8">
+      <section className="space-y-3">
+        <h2 className="text-xl font-semibold text-foreground">Company reviews</h2>
+        <p className="text-sm text-muted-foreground">
+          Facility clock. Due is inside 30 days. Lapsed and revoked stay visible — they do not certify SKUs.
+        </p>
+        {REVIEW_SECTIONS.map(({ key, title }) =>
+          groups[key].length > 0 ? (
+            <div key={key} className="space-y-3">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{title}</h3>
+              {groups[key].map((certificate) => (
+                <CertificateDeskCard
+                  key={certificate.id}
+                  certificate={certificate}
+                  kind="Company review"
+                  onRevoke={onRevoke}
+                />
+              ))}
+            </div>
+          ) : null
+        )}
+        {reviews.length === 0 && (
+          <p className="text-sm text-muted-foreground">No company reviews from this wallet yet.</p>
+        )}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-xl font-semibold text-foreground">Lot stamps</h2>
+        {lotStamps.map((certificate) => (
+          <CertificateDeskCard
+            key={certificate.id}
+            certificate={certificate}
+            kind={certificate.subjectType === 'lot' ? 'Lot stamp' : 'Product stamp'}
+            onRevoke={onRevoke}
+          />
+        ))}
+        {lotStamps.length === 0 && (
+          <p className="text-sm text-muted-foreground">No lot stamps from this wallet yet.</p>
+        )}
+      </section>
+
+      {empty && (
+        <p className="text-sm text-muted-foreground">No certificates issued from this wallet yet.</p>
+      )}
+    </div>
+  );
+}
+
+function CertificateDeskCard({
+  certificate,
+  kind,
+  onRevoke,
+}: {
+  certificate: Certificate;
+  kind: string;
+  onRevoke: (certificate: Certificate) => void;
+}) {
+  const state = certificateReviewState(certificate);
+  const until = certificateUntilLabel(certificate);
+
+  return (
+    <Card className="border border-border p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <Link href={certificateBundleHref(certificate)} className="min-w-0 flex-1">
+          <h3 className="text-lg font-semibold text-foreground">{certificate.standard}</h3>
+          <p className="text-sm text-muted-foreground">
+            {kind} {certificate.subjectId}
+            {until ? ` · ${until}` : ''} · {certificateStateLabel(state, certificate.subjectType)}
+          </p>
+        </Link>
+        {state !== 'revoked' && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => onRevoke(certificate)}
+          >
+            Revoke
+          </Button>
+        )}
+      </div>
+    </Card>
   );
 }
