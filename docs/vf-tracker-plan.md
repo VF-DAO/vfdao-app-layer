@@ -61,7 +61,8 @@ Links, not shared folders:
 
 Do **not** treat an org cert as “every SKU is certified.” Scan still composes lot stamps. The org cert is context: this company is under review until a date.
 
-QR: `vf:lot:<lotId>` (keep ids globally unique).
+QR payload on chain / in-app: `vf:lot:<lotId>` (keep ids globally unique).  
+Printed carton QR: the hub URL a phone camera opens, e.g. `https://app.vfdao.org/scan/vf%3Alot%3Alot-oatmilk-nordic-2403`.
 
 Ingredients, claims, category: **fields on the product**. Never path branches. Never a homemade company tree.
 

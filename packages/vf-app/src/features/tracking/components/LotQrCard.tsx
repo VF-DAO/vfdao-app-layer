@@ -4,17 +4,18 @@ import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { encodeLotQr } from '../lib/qr';
+import { encodeLotQr, scanPublicUrl } from '../lib/qr';
 
 export function LotQrCard({ lotId, lotLabel }: { lotId: string; lotLabel?: string }) {
-  const code = encodeLotQr(lotId);
+  const lotCode = encodeLotQr(lotId);
+  const url = scanPublicUrl(lotId);
   const [svg, setSvg] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    void QRCode.toString(code, { type: 'svg', margin: 1, width: 192 })
+    void QRCode.toString(url, { type: 'svg', margin: 1, width: 192 })
       .then((next) => {
         if (!cancelled) setSvg(next);
       })
@@ -26,25 +27,25 @@ export function LotQrCard({ lotId, lotLabel }: { lotId: string; lotLabel?: strin
     return () => {
       cancelled = true;
     };
-  }, [code]);
+  }, [url]);
 
   async function copyCode() {
-    await navigator.clipboard.writeText(code);
+    await navigator.clipboard.writeText(url);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1600);
   }
 
   async function downloadPng() {
-    const url = await QRCode.toDataURL(code, { margin: 1, width: 512 });
+    const png = await QRCode.toDataURL(url, { margin: 1, width: 512 });
     const link = document.createElement('a');
-    link.href = url;
+    link.href = png;
     link.download = `${lotId}.png`;
     link.click();
   }
 
   async function shareCode() {
     if (typeof navigator.share === 'function') {
-      await navigator.share({ title: lotLabel ?? 'Lot QR', text: code });
+      await navigator.share({ title: lotLabel ?? 'Lot QR', text: url, url });
       return;
     }
     await copyCode();
@@ -53,8 +54,9 @@ export function LotQrCard({ lotId, lotLabel }: { lotId: string; lotLabel?: strin
   return (
     <Card className="border border-border p-6">
       <p className="text-sm text-muted-foreground">Lot QR</p>
-      <h3 className="text-lg font-semibold text-foreground">Share this batch</h3>
-      <p className="mt-1 font-mono text-xs text-muted-foreground">{code}</p>
+      <h3 className="text-lg font-semibold text-foreground">Print this on the carton</h3>
+      <p className="mt-1 break-all font-mono text-xs text-foreground">{url}</p>
+      <p className="mt-1 font-mono text-xs text-muted-foreground">{lotCode}</p>
       <div className="mt-4 flex justify-center rounded-2xl bg-white p-4">
         {svg ? (
           <div
