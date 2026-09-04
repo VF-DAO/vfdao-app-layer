@@ -107,8 +107,8 @@ UI is not a lock.
 
 VegCert and peers are already public names. VF must **not** vote them into existence.
 
-- Scan shows every **lot** certificate, labeled as the issuer account.
-- Company review (`subjectType: org`) shows on the producer profile and as scan **context**. It does not stamp every product.
+- Scan shows every **lot** certificate, labeled as the issuer’s OnSocial face (`profile/` name + avatar).
+- Company review (`subjectType: org`) is scan **context**, not a second gallery: one live chip (active or due). If none live, one muted lapsed/revoked chip. Profile leads with the current review; earlier years sit under Earlier reviews. Desk uses the same badge. It does not stamp every product.
 - “VF listed / featured” is optional promo, not accreditation.
 - A nobody can write a cert as themselves; it shows as them, with no VF promo.
 - Soulbound token issuance (Scarces) later **mirrors the org cert** onto the producer wallet, with the same expiry. Do not mint one token per lot. Do not make the token the gate to stamp.

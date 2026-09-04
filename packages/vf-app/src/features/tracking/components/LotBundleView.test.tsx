@@ -26,6 +26,21 @@ vi.mock('./LotNotes', () => ({
   ),
 }));
 
+vi.mock('@/hooks/use-profile', () => ({
+  useProfile: (accountId: string | null | undefined) => ({
+    profile:
+      accountId === 'vegcert.near'
+        ? { accountId, name: 'VegCert International', kind: 'org' }
+        : accountId
+          ? { accountId, kind: 'org' }
+          : null,
+    displayName: accountId === 'vegcert.near' ? 'VegCert International' : (accountId ?? ''),
+    profileImageUrl: null,
+    loading: false,
+    kind: 'org',
+  }),
+}));
+
 const listedBundle: LotBundle = {
   lot: {
     id: FIXTURE_LOT_ID,
@@ -87,6 +102,16 @@ const listedBundle: LotBundle = {
       expiresAt: '2027-03-01T08:00:00.000Z',
       status: 'active',
     },
+    {
+      id: 'cert-org-lapsed',
+      subjectType: 'org',
+      subjectId: 'green-valley.near',
+      standard: 'VegCert Facility Standard 2025',
+      issuerAccountId: 'vegcert.near',
+      issuedAt: '2025-03-01T08:00:00.000Z',
+      expiresAt: '2026-03-01T08:00:00.000Z',
+      status: 'active',
+    },
   ],
   producer: {
     accountId: 'green-valley.near',
@@ -108,9 +133,10 @@ describe('LotBundleView', () => {
     );
     expect(screen.getByText('this drink')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Stand with green-valley.near' })).toBeInTheDocument();
-    const vegcertLinks = screen.getAllByRole('link', { name: 'vegcert.near' });
+    const vegcertLinks = screen.getAllByRole('link', { name: 'VegCert International' });
     expect(vegcertLinks).toHaveLength(2);
     expect(vegcertLinks.every((link) => link.getAttribute('href') === '/profile/vegcert.near')).toBe(true);
+    expect(screen.queryByText('vegcert.near')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'nordic-mill.near' })).toHaveAttribute(
       'href',
       '/profile/nordic-mill.near'
@@ -121,9 +147,8 @@ describe('LotBundleView', () => {
     );
     expect(screen.getByRole('heading', { name: 'Company review' })).toBeInTheDocument();
     expect(screen.getByText('VegCert Facility Standard 2026')).toBeInTheDocument();
-    expect(
-      screen.getByText('About the producer — not this lot. A company review does not certify every SKU.')
-    ).toBeInTheDocument();
+    expect(screen.getByText('About the producer — not this carton.')).toBeInTheDocument();
+    expect(screen.queryByText('VegCert Facility Standard 2025')).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Lot certificates' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sprout' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Notes on this lot' })).toBeInTheDocument();

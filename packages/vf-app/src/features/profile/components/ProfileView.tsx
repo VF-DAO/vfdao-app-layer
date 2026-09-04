@@ -17,7 +17,7 @@ import {
 import { getBannerUrl } from '@/features/onsocial/profile-service';
 import { useAppDrawer } from '@/features/shell';
 import { CertificateBadge } from '@/features/tracking/components/CertificateBadge';
-import { orgCertificatesFor, useCertificates, useOrgRole, useScanHistory, useVfListed } from '@/features/tracking';
+import { splitOrgReviews, useCertificates, useOrgRole, useScanHistory, useVfListed } from '@/features/tracking';
 import { useProfile } from '@/hooks/use-profile';
 
 interface ProfileViewProps {
@@ -80,11 +80,14 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
   const tags = profile?.tags?.slice(0, 6) ?? [];
   const bannerUrl = getBannerUrl(profile);
   const recentScans = isOwnProfile ? (scans.data?.slice(0, 3) ?? []) : [];
-  const companyReviews = orgCertificatesFor(certificates.data ?? [], accountId);
+  const { current: currentReview, earlier: earlierReviews } = splitOrgReviews(
+    certificates.data ?? [],
+    accountId
+  );
   const showStudio = isOwnProfile && Boolean(org.data);
   const showShelf = Boolean(listed.data);
   const showTrail = recentScans.length > 0;
-  const showReview = companyReviews.length > 0;
+  const showReview = Boolean(currentReview);
   const showVfMarks = showShelf || showStudio || showTrail || showReview;
 
   const handleCopyAddress = () => {
@@ -252,7 +255,7 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
             </div>
 
             <div className="space-y-5">
-              {showReview && (
+              {showReview && currentReview && (
                 <section className="space-y-3">
                   <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     Company review
@@ -260,9 +263,19 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
                   <p className="text-sm text-muted-foreground">
                     About this producer — not every product. A company review does not certify every SKU.
                   </p>
-                  {companyReviews.map((certificate) => (
-                    <CertificateBadge key={certificate.id} certificate={certificate} />
-                  ))}
+                  <CertificateBadge certificate={currentReview} />
+                  {earlierReviews.length > 0 && (
+                    <details className="group">
+                      <summary className="cursor-pointer text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+                        Earlier reviews
+                      </summary>
+                      <div className="mt-3 space-y-3">
+                        {earlierReviews.map((certificate) => (
+                          <CertificateBadge key={certificate.id} certificate={certificate} />
+                        ))}
+                      </div>
+                    </details>
+                  )}
                 </section>
               )}
 
