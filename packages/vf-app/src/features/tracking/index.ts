@@ -21,7 +21,7 @@ export { CERTIFICATE_SUBJECT_TYPES, EVENT_KINDS, ORG_ROLES } from './types';
 export type { TrackerApi } from './api/tracker-api';
 export { getClientTracker, getServerTracker } from './api/resolve-tracker';
 export { FIXTURE_LOT_ID, FIXTURE_PRODUCT_ID } from './api/fixtures';
-export { encodeLotQr, parseScanCode, scanHref } from './lib/qr';
+export { encodeLotQr, parseScanCode, scanHref, scanPublicUrl } from './lib/qr';
 export { vfShelfCountLabel } from './lib/listing';
 export { certificateUntilLabel, isCertificateActive, orgCertificatesFor } from './lib/status';
 export { useStudioActor } from './hooks/use-studio-actor';

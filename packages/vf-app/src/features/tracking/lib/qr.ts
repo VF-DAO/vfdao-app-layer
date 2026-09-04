@@ -41,3 +41,19 @@ export function parseScanCode(raw: string): { lotId: string } | null {
 export function scanHref(lotId: string): string {
   return `/scan/${encodeURIComponent(encodeLotQr(lotId))}`;
 }
+
+export const DEFAULT_HUB_ORIGIN = 'https://app.vfdao.org';
+
+/** Origin printed on carton QRs. Phone cameras open https links, not vf:lot:. */
+export function hubOrigin(): string {
+  const fromEnv = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, '');
+  if (fromEnv) return fromEnv;
+  if (typeof window !== 'undefined' && window.location.origin) {
+    return window.location.origin;
+  }
+  return DEFAULT_HUB_ORIGIN;
+}
+
+export function scanPublicUrl(lotId: string): string {
+  return `${hubOrigin()}${scanHref(lotId)}`;
+}
