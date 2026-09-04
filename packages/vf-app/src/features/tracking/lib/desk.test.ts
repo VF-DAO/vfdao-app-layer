@@ -55,7 +55,7 @@ describe('desk lists', () => {
       true
     );
     expect(certificatesForAccount(fixtures.certificates, FIXTURE_CERTIFIER_ID).map((item) => item.subjectType)).toEqual(
-      ['lot', 'org']
+      ['lot', 'org', 'org']
     );
     expect(certificateBundleHref(fixtures.certificates.find((item) => item.subjectType === 'lot')!)).toBe(
       lotBundleHref(FIXTURE_LOT_ID)

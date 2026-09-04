@@ -16,6 +16,7 @@ import {
   IssueCertificateForm,
   RecordEventForm,
   RegisterProductForm,
+  RevokeCertificateForm,
 } from '../components/StudioForms';
 
 function ChoiceButton({
@@ -103,13 +104,35 @@ export function TrackingDrawerContent({ action }: { action: TrackingDrawerAction
     );
   }
 
+  if (action.id === 'revoke-certificate') {
+    return (
+      <div className="space-y-3">
+        <RevokeCertificateForm
+          chrome="plain"
+          certificateId={action.certificateId}
+          standard={action.standard}
+          subjectId={action.subjectId}
+          subjectType={action.subjectType}
+          onSuccess={() => {
+            action.onRevoked?.();
+            closeDrawer();
+          }}
+        />
+        <DrawerBackToStudio />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
       <IssueCertificateForm
         chrome="plain"
         subjectId={action.subjectId}
         subjectType={action.subjectType}
-        onSuccess={() => closeDrawer()}
+        onSuccess={() => {
+          action.onIssued?.();
+          closeDrawer();
+        }}
       />
       <DrawerBackToStudio />
     </div>
@@ -156,6 +179,12 @@ export function drawerCopy(action: TrackingDrawerAction): {
       return {
         title: 'Issue certificate',
         subtitle: 'Company review (expiry) or lot stamp',
+        icon: <Award className="h-5 w-5 text-primary" />,
+      };
+    case 'revoke-certificate':
+      return {
+        title: 'Revoke certificate',
+        subtitle: 'Stays on the graph as revoked',
         icon: <Award className="h-5 w-5 text-primary" />,
       };
   }

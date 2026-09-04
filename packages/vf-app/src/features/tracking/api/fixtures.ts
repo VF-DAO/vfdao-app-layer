@@ -161,6 +161,16 @@ export const fixtureCertificates: Certificate[] = [
     status: 'active',
   },
   {
+    id: 'cert-vegcert-green-valley-org-2025',
+    subjectType: 'org',
+    subjectId: FIXTURE_PRODUCER_ID,
+    standard: 'VegCert Facility Standard 2025',
+    issuerAccountId: FIXTURE_CERTIFIER_ID,
+    issuedAt: '2025-03-01T08:00:00.000Z',
+    expiresAt: '2026-03-01T08:00:00.000Z',
+    status: 'active',
+  },
+  {
     id: 'cert-vegcert-2403',
     subjectType: 'lot',
     subjectId: FIXTURE_LOT_ID,

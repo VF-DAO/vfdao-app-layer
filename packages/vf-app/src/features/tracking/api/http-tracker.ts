@@ -14,6 +14,7 @@ import type {
   Product,
   RecordScanInput,
   RegisterProductInput,
+  RevokeCertificateInput,
   ScanRecord,
   Sprout,
   SproutStats,
@@ -71,6 +72,11 @@ export function createHttpTracker(): TrackerApi {
       request<ChainEvent>('/api/tracking/events', { method: 'POST', body: JSON.stringify(input) }),
     issueCertificate: (input: IssueCertificateInput) =>
       request<Certificate>('/api/tracking/certificates', { method: 'POST', body: JSON.stringify(input) }),
+    revokeCertificate: (input: RevokeCertificateInput) =>
+      request<Certificate>('/api/tracking/certificates/revoke', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
     recordScan: (input: RecordScanInput) =>
       request<ScanRecord>('/api/tracking/scans', { method: 'POST', body: JSON.stringify(input) }),
     async listSprouts(subjectType, subjectId) {

@@ -8,7 +8,7 @@ import {
 } from '../lib/desk';
 import { createId } from '../lib/ids';
 import { parseScanCode } from '../lib/qr';
-import { assertOrgCertificateExpiry } from '../lib/status';
+import { assertOrgCertificateExpiry, assertRevokeReason } from '../lib/status';
 import { assertVoiceSubjectType, normalizeNoteBody, sproutRecordId } from '../lib/voice';
 import type {
   AddEventInput,
@@ -25,6 +25,7 @@ import type {
   Product,
   RecordScanInput,
   RegisterProductInput,
+  RevokeCertificateInput,
   ScanRecord,
   Sprout,
   SproutStats,
@@ -293,6 +294,22 @@ export function createLocalTracker(): TrackerApi {
         evidenceCid: input.evidenceCid,
       };
       store.certificates.push(certificate);
+      persist(store);
+      return certificate;
+    },
+
+    async revokeCertificate(input: RevokeCertificateInput): Promise<Certificate> {
+      const reason = assertRevokeReason(input.revokeReason);
+      const certificate = store.certificates.find((item) => item.id === input.certificateId);
+      if (!certificate) throw new Error('Certificate not found');
+      if (certificate.issuerAccountId !== input.issuerAccountId) {
+        throw new Error('Only the issuer can revoke this stamp.');
+      }
+      if (certificate.status === 'revoked') {
+        throw new Error('Already revoked.');
+      }
+      certificate.status = 'revoked';
+      certificate.revokeReason = reason;
       persist(store);
       return certificate;
     },

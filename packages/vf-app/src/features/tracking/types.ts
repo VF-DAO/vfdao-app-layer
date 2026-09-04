@@ -133,6 +133,15 @@ export interface IssueCertificateInput {
   evidenceCid?: string;
 }
 
+export interface RevokeCertificateInput {
+  certificateId: string;
+  issuerAccountId: string;
+  revokeReason: string;
+}
+
+/** Computed review clock. `status` stays `active` until the issuer revokes. */
+export type CertificateReviewState = 'active' | 'due' | 'lapsed' | 'revoked';
+
 export interface RecordScanInput {
   code: string;
   lotId: string;

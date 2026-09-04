@@ -8,6 +8,7 @@ import type {
   IssueCertificateInput,
   RecordScanInput,
   RegisterProductInput,
+  RevokeCertificateInput,
 } from '../types';
 
 export function useTrackingMutations() {
@@ -36,6 +37,8 @@ export function useTrackingMutations() {
     addEvent: (input: AddEventInput) => run(() => getClientTracker().addEvent(input)),
     issueCertificate: (input: IssueCertificateInput) =>
       run(() => getClientTracker().issueCertificate(input)),
+    revokeCertificate: (input: RevokeCertificateInput) =>
+      run(() => getClientTracker().revokeCertificate(input)),
     recordScan: (input: RecordScanInput) => run(() => getClientTracker().recordScan(input)),
   };
 }

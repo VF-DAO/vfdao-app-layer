@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { uploadToIPFS } from '@/services/ipfs-upload';
 import { type CertificateSubjectType, EVENT_KINDS, type EventKind, type Product } from '../types';
 import { useStudioActor } from '../hooks/use-studio-actor';
 import { useLotsForAccount, useProductsForAccount } from '../hooks/use-tracker';
@@ -313,6 +314,9 @@ export function IssueCertificateForm({
     initialSubjectType === 'org' ? 'VegCert Facility Standard 2026' : 'VegCert Vegan Standard 2026'
   );
   const [expiresAt, setExpiresAt] = useState('');
+  const [evidenceCid, setEvidenceCid] = useState('');
+  const [evidenceName, setEvidenceName] = useState('');
+  const [uploading, setUploading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const allowed = canIssueCertificate(actor.role);
   const isOrg = subjectType === 'org';
@@ -338,6 +342,7 @@ export function IssueCertificateForm({
             standard,
             issuerAccountId: actor.accountId ?? 'vegcert.near',
             expiresAt: expiresAt || undefined,
+            evidenceCid: evidenceCid || undefined,
           }).then(() => {
             onSuccess?.();
           });
@@ -387,10 +392,123 @@ export function IssueCertificateForm({
             required={isOrg}
           />
         </div>
+        <div>
+          <FieldLabel>Evidence (optional)</FieldLabel>
+          <Input
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = '';
+              if (!file) return;
+              setFormError(null);
+              setUploading(true);
+              void uploadToIPFS(file)
+                .then((result) => {
+                  if (!result.cid) {
+                    setFormError('Evidence stores on OnSocial when a media key is set. You can issue without it.');
+                    setEvidenceCid('');
+                    setEvidenceName('');
+                    return;
+                  }
+                  setEvidenceCid(result.cid);
+                  setEvidenceName(file.name);
+                })
+                .catch((err: unknown) => {
+                  setFormError(err instanceof Error ? err.message : 'Evidence upload failed');
+                })
+                .finally(() => {
+                  setUploading(false);
+                });
+            }}
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            Photo of the review pack. Stored on OnSocial. Not required to stamp.
+          </p>
+          {evidenceName && evidenceCid && (
+            <p className="mt-1 text-xs text-muted-foreground">Attached · {evidenceName}</p>
+          )}
+        </div>
         {!allowed && <p className="text-sm text-orange">{actor.reason ?? 'Certifier role required.'}</p>}
-        {(formError || error) && <p className="text-sm text-orange">{formError ?? error}</p>}
-        <Button type="submit" variant="verified" disabled={pending || actor.pending || !allowed || !id}>
+        {(formError ?? error) && <p className="text-sm text-orange">{formError ?? error}</p>}
+        <Button
+          type="submit"
+          variant="verified"
+          disabled={pending || actor.pending || uploading || !allowed || !id}
+        >
           {pending ? 'Saving…' : isOrg ? 'Issue company review' : 'Issue lot stamp'}
+        </Button>
+      </form>
+    </FormChrome>
+  );
+}
+
+export function RevokeCertificateForm({
+  certificateId,
+  standard,
+  subjectId,
+  subjectType = 'org',
+  chrome = 'card',
+  onSuccess,
+}: {
+  certificateId: string;
+  standard: string;
+  subjectId: string;
+  subjectType?: CertificateSubjectType;
+  chrome?: 'card' | 'plain';
+  onSuccess?: () => void;
+}) {
+  const actor = useStudioActor();
+  const { revokeCertificate, pending, error } = useTrackingMutations();
+  const [reason, setReason] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
+  const allowed = canIssueCertificate(actor.role);
+  const kind = subjectType === 'org' ? 'company review' : 'lot stamp';
+
+  return (
+    <FormChrome chrome={chrome} title="Revoke certificate">
+      <form
+        className="space-y-3"
+        onSubmit={(event) => {
+          event.preventDefault();
+          setFormError(null);
+          if (!reason.trim()) {
+            setFormError('Revoke needs a reason.');
+            return;
+          }
+          if (!actor.accountId) {
+            setFormError('Connect the certifier wallet that issued this stamp.');
+            return;
+          }
+          void revokeCertificate({
+            certificateId,
+            issuerAccountId: actor.accountId,
+            revokeReason: reason,
+          }).then(() => {
+            onSuccess?.();
+          });
+        }}
+      >
+        <p className="text-sm text-muted-foreground">
+          Revoke writes on your path. The {kind} stays visible as revoked — it is not deleted.
+        </p>
+        <p className="text-sm text-foreground">
+          {standard}
+          <span className="block text-muted-foreground">{subjectId}</span>
+        </p>
+        <div>
+          <FieldLabel>Reason</FieldLabel>
+          <Textarea
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+            placeholder="Site closed, standard withdrawn, …"
+            required
+          />
+        </div>
+        {!allowed && <p className="text-sm text-orange">{actor.reason ?? 'Certifier role required.'}</p>}
+        {(formError ?? error) && <p className="text-sm text-orange">{formError ?? error}</p>}
+        <Button type="submit" variant="orange" disabled={pending || actor.pending || !allowed || !reason.trim()}>
+          {pending ? 'Saving…' : 'Revoke'}
         </Button>
       </form>
     </FormChrome>

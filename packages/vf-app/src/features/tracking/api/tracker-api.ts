@@ -13,6 +13,7 @@ import type {
   Product,
   RecordScanInput,
   RegisterProductInput,
+  RevokeCertificateInput,
   ScanRecord,
   Sprout,
   SproutStats,
@@ -43,6 +44,7 @@ export interface TrackerApi {
   createLot(input: CreateLotInput): Promise<Lot>;
   addEvent(input: AddEventInput): Promise<ChainEvent>;
   issueCertificate(input: IssueCertificateInput): Promise<Certificate>;
+  revokeCertificate(input: RevokeCertificateInput): Promise<Certificate>;
   recordScan(input: RecordScanInput): Promise<ScanRecord>;
   listSprouts(subjectType: VoiceSubjectType, subjectId: string): Promise<Sprout[]>;
   getSproutStats(
