@@ -67,7 +67,7 @@ export function RegisterProductForm({
             producerAccountId: actor.accountId ?? 'demo.near',
           }).then((product) => {
             onSuccess?.();
-            router.push(`/products/${product.id}`);
+            router.push('/studio');
           });
         }}
       >
