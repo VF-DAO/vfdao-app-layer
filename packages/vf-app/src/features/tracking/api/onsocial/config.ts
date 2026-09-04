@@ -33,6 +33,18 @@ export function isOnSocialConfigured(): boolean {
   return Boolean(process.env.ONSOCIAL_API_KEY) || process.env.NEXT_PUBLIC_TRACKER_BACKEND === 'onsocial';
 }
 
+/**
+ * Green Valley fixtures stay on for local demo.
+ * When OnSocial is configured, missing rows stay missing so a shop scan
+ * cannot resolve a carton QR to the fixture oat drink.
+ * Override: TRACKER_ALLOW_FIXTURES=1 (on) or =0 (off).
+ */
+export function allowTrackerFixtures(): boolean {
+  if (process.env.TRACKER_ALLOW_FIXTURES === '1') return true;
+  if (process.env.TRACKER_ALLOW_FIXTURES === '0') return false;
+  return !isOnSocialConfigured();
+}
+
 export function publicTrackerBackend(): 'local' | 'onsocial' {
   return process.env.NEXT_PUBLIC_TRACKER_BACKEND === 'onsocial' ? 'onsocial' : 'local';
 }
