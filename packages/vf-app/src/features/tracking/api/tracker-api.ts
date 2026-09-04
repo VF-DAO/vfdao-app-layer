@@ -4,6 +4,7 @@ import type {
   ChainEvent,
   CreateLotInput,
   IssueCertificateInput,
+  Listing,
   Lot,
   LotBundle,
   Org,
@@ -30,6 +31,7 @@ export interface TrackerApi {
   resolveScan(code: string): Promise<LotBundle | null>;
   getOrg(accountId: string): Promise<Org | null>;
   isListed(accountId: string): Promise<boolean>;
+  listListed(): Promise<Listing[]>;
   listScans(accountId?: string): Promise<ScanRecord[]>;
   registerProduct(input: RegisterProductInput): Promise<Product>;
   createLot(input: CreateLotInput): Promise<Lot>;

@@ -1,7 +1,6 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { PortfolioDashboard } from '@/features/portfolio';
 import { HomeHub } from '@/features/home';
 import { useWallet } from '@/features/wallet';
 import { useProfile } from '@/hooks/use-profile';
@@ -63,6 +62,7 @@ export default function Home() {
 
           {/* Simplified Hero Content */}
           <div className="text-center mb-12">
+            {(walletLoading || !isConnected) && (
             <motion.div 
               className="mb-12 flex justify-center"
               initial={{ opacity: 0, y: 20 }}
@@ -79,27 +79,6 @@ export default function Home() {
                   >
                     <Logo className="w-24 h-18 sm:w-32 sm:h-24 md:w-40 md:h-30" />
                   </motion.div>
-                </div>
-              ) : isConnected ? (
-                <div className="text-center">
-                  <motion.h1 
-                    className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-4"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, ease: "easeOut" }}
-                  >
-                    <span className="text-primary">Hello</span> <span className="text-verified">
-                      {displayUsername ?? ''}
-                    </span>
-                  </motion.h1>
-                  <motion.p 
-                    className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: 0.2, ease: "easeOut" }}
-                  >
-                    Scan a product or open studio.
-                  </motion.p>
                 </div>
               ) : (
                 <div className="text-center">
@@ -121,6 +100,7 @@ export default function Home() {
                 </div>
               )}
             </motion.div>
+            )}
 
             {!walletLoading && (
               <motion.div
@@ -130,7 +110,6 @@ export default function Home() {
                 transition={{ duration: 0.4, delay: 0.3 }}
               >
                 <HomeHub accountId={accountId} />
-                <PortfolioDashboard />
               </motion.div>
             )}
           </div>

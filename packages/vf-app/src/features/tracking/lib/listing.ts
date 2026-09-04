@@ -1,10 +1,22 @@
-export function isListingForOrg(value: unknown, accountId: string): boolean {
+import type { Listing } from '../types';
+
+export function asListing(value: unknown): Listing | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return false;
+    return null;
   }
   const record = value as Record<string, unknown>;
-  if (record.orgAccountId === accountId) {
-    return record.status !== 'revoked';
+  if (typeof record.orgAccountId !== 'string' || !record.orgAccountId) {
+    return null;
   }
-  return false;
+  if (record.status === 'revoked') {
+    return null;
+  }
+  return {
+    orgAccountId: record.orgAccountId,
+    listedAt: typeof record.listedAt === 'string' ? record.listedAt : '',
+  };
+}
+
+export function isListingForOrg(value: unknown, accountId: string): boolean {
+  return asListing(value)?.orgAccountId === accountId;
 }
