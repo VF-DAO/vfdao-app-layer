@@ -115,6 +115,7 @@ describe('LotBundleView', () => {
     expect(screen.getByText('VegCert Vegan Standard 2026')).toBeInTheDocument();
     expect(screen.queryByText('Not recorded yet')).not.toBeInTheDocument();
     expect(screen.queryByText('Verified vegan')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'All lots for this product' })).not.toBeInTheDocument();
   });
 
   it('still resolves an unlisted lot without a shelf badge', () => {

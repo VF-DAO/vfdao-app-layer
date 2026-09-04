@@ -152,7 +152,7 @@ Optional later: featured boost, larger bond to be **featured** as an issuer (sti
 
 ## Cleanup while we restructure
 
-When we touch a surface, delete leftovers that fight the model. Do not keep a parallel “verified vegan” rollup, kind checklist, or farm-to-shelf template next to the attestation graph.
+When we touch a surface, delete leftovers that fight the model. Do not keep a parallel “verified vegan” rollup, kind checklist, or farm-to-shelf template next to the attestation graph. Public `/products/[id]` is gone — inventory lives on `/studio`, a lot opens on `/scan`.
 
 Do **not** use cleanup as a chance to add product-option paths or a second compose. Expand products as fields and lots.
 
