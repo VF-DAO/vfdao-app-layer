@@ -113,6 +113,26 @@ VegCert and peers are already public names. VF must **not** vote them into exist
 - A nobody can write a cert as themselves; it shows as them, with no VF promo.
 - Soulbound token issuance (Scarces) later **mirrors the org cert** onto the producer wallet, with the same expiry. Do not mint one token per lot. Do not make the token the gate to stamp.
 
+### Soulbound mirror (do not call Scarces until `@onsocial/sdk` is on npm)
+
+The graph cert is the source of truth. The token is a wallet badge.
+
+| Rule | Detail |
+| --- | --- |
+| Subject | `subjectType: org` only. Lot / product stamps stay `certificate/` writes. |
+| When to mint | Active or due reviews. Not lapsed. Not revoked. Expiry required. |
+| Receiver | Producer `subjectId`. Issuer does **not** keep the badge. |
+| Collection | Per issuer: `vf-org-review-{issuer-slug}`. `transferable: false`, `renewable: true`, `burnable: true`, `appId: vf-tracker`. |
+| Clock | `expiresAt` → NEP-177 `expires_at` (ms). Scarces `renew` uses ns (`ms * 1_000_000`). |
+| Extra | `{ vfTracker: { kind: 'org-cert', certificateId, issuerAccountId, subjectId, standard, expiresAt } }` |
+| Revoke | Certifier `Set` on the cert, then `os.scarces.tokens.revoke(tokenId, collectionId, reason)`. |
+| Lane | Scarces is wallet-paid, not the session/`Set` lane. |
+| Who mints | The **issuer**. VF does not mint as itself. |
+
+Payload builders live in `packages/vf-app/src/features/tracking/lib/org-cert-soulbound.ts`. They do not import the SDK or hit a contract.
+
+Do **not** mint one token per lot. Do **not** gate stamping on a badge. Do **not** put a VF vegan symbol on the card. Do **not** list the badge on the Scarces market.
+
 ---
 
 ## Money (`veganfriends.tkn.near`)
@@ -184,6 +204,8 @@ Do **not** use cleanup as a chance to add product-option paths or a second compo
 - OnSocial feed loves / comments for products (voice stays under `apps/vf-tracker`)
 - A second org “fan” graph next to standing
 - Calling consumer notes “reviews” (company review is the org cert)
+- Minting a Scarces token per lot, or treating the badge as the gate to stamp
+- Calling Scarces / `@onsocial/sdk` from the hub before the package is on npm
 
 ---
 
@@ -197,7 +219,7 @@ Do **not** use cleanup as a chance to add product-option paths or a second compo
 6. Deploy VF Boost + VF social-spend (`veganfriends.tkn.near`)
 7. Listing bond → `listed/` grant
 8. Per-org groups when a farm has many wallets
-9. Scarces soulbound mint for **org** certs only (facility / season review). Lot certs stay OnSocial `certificate/` writes.
+9. Scarces soulbound mint for **org** certs only (facility / season review) — after `@onsocial/sdk` ships. Use `buildOrgCertSoulboundMint`. Lot certs stay OnSocial `certificate/` writes.
 
 ---
 
