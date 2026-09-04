@@ -74,12 +74,14 @@ Company face is `{account}/profile/` on core:
 
 - Optional `profile/kind`: `person` | `org` | `dao` (omit = person)
 - Optional `profile/industry` when `kind` is `org`
+- Face line: `profile/bio` (short)
+- About page: `profile/about` (essay), `profile/lead`, `profile/photos` (max 3), `profile/aboutAlign`
 - Avatar / banner stored as `ipfs://` and shown from `cdn.onsocial.id`
 - DAO workspace (`.sputnik-dao.near`) always squares; people pick Person or Organization only
 
 `kind=org` is a look. It does **not** grant tracker writes. VF role stays `{owner}/apps/vf-tracker/org/{id}`.
 
-Hub profile is that same face: `name` + `bio` (the OnSocial description), standing, optional `listed/` shelf mark, and a Studio door on your own writer profile. Not inventory. Not fake activity KPIs.
+Hub profile is that same face: `name` + `bio`, the OnSocial **About** page when they wrote one, standing, optional `listed/` shelf mark, and a Studio door on your own writer profile. Not inventory. Not fake activity KPIs. Do **not** invent a VF-only about CMS — read/write the same `profile/` keys OnSocial About studio uses.
 
 Standing is protocol-level, next to profile — the same edge OnSocial reads:
 
@@ -249,7 +251,7 @@ Optional protocol-wide follow-up (any app, not VF-only): `app_relpath` + `os.que
 
 Hub identity reads:
 
-- Profile → `profilesCurrent` (`profile/name`, `bio`, `kind`, `industry`, `avatar`, `banner`, `links`)
+- Profile → `profilesCurrent` (`profile/name`, `bio`, `about`, `lead`, `photos`, `aboutAlign`, `kind`, `industry`, `avatar`, `banner`, `links`)
 - Face shape → `kind` + DAO workspace heuristic
 - Standing → `standingsCurrent` (`{from}/standing/{to}`, `{ v: 1, since }`). Counts from `standingCounts` / `standingOutCounts`. Not `dataType=apps`.
 

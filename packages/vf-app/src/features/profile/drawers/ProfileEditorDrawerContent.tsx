@@ -9,8 +9,15 @@ import { ImageUpload } from '@/components/ui/image-upload';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ProfileAvatar } from '@/components/ui/profile-avatar';
+import { cidFromMediaRef, toIpfsUri } from '@/features/onsocial/media';
+import {
+  PROFILE_ABOUT_MAX,
+  PROFILE_ABOUT_PHOTOS_MAX,
+  PROFILE_BIO_MAX,
+  PROFILE_INDUSTRY_OPTIONS,
+  PROFILE_LEAD_MAX,
+} from '@/features/onsocial/profile';
 import { useAppDrawer } from '@/features/shell/drawer-context';
-import { PROFILE_INDUSTRY_OPTIONS } from '@/features/onsocial/profile';
 import { useProfileEditor } from '@/hooks/use-profile-editor';
 import { getIPFSUrl } from '@/services/ipfs-upload';
 
@@ -358,9 +365,9 @@ export function ProfileEditorDrawerContent() {
               Bio
               {formState.bio && (
                 <span
-                  className={`text-xs ${formState.bio.length > 280 ? 'text-orange' : formState.bio.length > 240 ? 'text-orange/70' : 'text-muted-foreground'}`}
+                  className={`text-xs ${formState.bio.length > PROFILE_BIO_MAX ? 'text-orange' : formState.bio.length > PROFILE_BIO_MAX - 40 ? 'text-orange/70' : 'text-muted-foreground'}`}
                 >
-                  ({formState.bio.length}/280)
+                  ({formState.bio.length}/{PROFILE_BIO_MAX})
                 </span>
               )}
             </Label>
@@ -368,16 +375,106 @@ export function ProfileEditorDrawerContent() {
               id="description"
               value={formState.bio}
               onChange={(event) => {
-                if (event.target.value.length <= 280) {
+                if (event.target.value.length <= PROFILE_BIO_MAX) {
                   updateField('bio', event.target.value);
                 }
               }}
               rows={3}
-              maxLength={280}
+              maxLength={PROFILE_BIO_MAX}
               className="w-full resize-none rounded-2xl border border-border bg-transparent px-4 py-3 text-sm leading-relaxed placeholder:font-medium placeholder:text-primary placeholder:opacity-60 hover:border-muted-foreground/50 focus:border-muted-foreground/50 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-              placeholder="Share a bit about yourself"
+              placeholder="Short line on your face"
               disabled={isSubmitting}
             />
+            <p className="text-xs text-muted-foreground">The face line. The business story is About, below.</p>
+          </div>
+
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground">About</p>
+              <p className="text-xs text-muted-foreground">
+                Same OnSocial About page. Farms, mills, and people write it once — VF reads it here.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="about-lead" className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                Lead
+                {formState.lead && (
+                  <span className="text-xs text-muted-foreground">
+                    ({formState.lead.length}/{PROFILE_LEAD_MAX})
+                  </span>
+                )}
+              </Label>
+              <Input
+                id="about-lead"
+                value={formState.lead}
+                onChange={(event) => {
+                  if (event.target.value.length <= PROFILE_LEAD_MAX) {
+                    updateField('lead', event.target.value);
+                  }
+                }}
+                placeholder="Oats from Kalmar. Logged, not claimed."
+                disabled={isSubmitting}
+                maxLength={PROFILE_LEAD_MAX}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="about" className="flex items-center gap-2 text-sm font-medium">
+                The story
+                {formState.about && (
+                  <span
+                    className={`text-xs ${formState.about.length > PROFILE_ABOUT_MAX - 100 ? 'text-orange' : 'text-muted-foreground'}`}
+                  >
+                    ({formState.about.length}/{PROFILE_ABOUT_MAX})
+                  </span>
+                )}
+              </Label>
+              <textarea
+                id="about"
+                value={formState.about}
+                onChange={(event) => {
+                  if (event.target.value.length <= PROFILE_ABOUT_MAX) {
+                    updateField('about', event.target.value);
+                  }
+                }}
+                rows={6}
+                maxLength={PROFILE_ABOUT_MAX}
+                className="w-full resize-y rounded-2xl border border-border bg-transparent px-4 py-3 text-sm leading-relaxed placeholder:font-medium placeholder:text-primary placeholder:opacity-60 hover:border-muted-foreground/50 focus:border-muted-foreground/50 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="Who you are, what you grow or stamp, and how to read the business."
+                disabled={isSubmitting}
+              />
+            </div>
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">
+                About photos ({formState.photos.length}/{PROFILE_ABOUT_PHOTOS_MAX})
+              </p>
+              {formState.photos.map((ref, index) => (
+                <ImageUpload
+                  key={`${ref}-${index}`}
+                  currentIpfsCid={cidFromMediaRef(ref) ?? undefined}
+                  onUpload={(result) => {
+                    const next = [...formState.photos];
+                    next[index] = toIpfsUri(result.cid);
+                    updateField('photos', next);
+                  }}
+                  onClear={() => {
+                    updateField(
+                      'photos',
+                      formState.photos.filter((_, itemIndex) => itemIndex !== index)
+                    );
+                  }}
+                  disabled={isSubmitting}
+                />
+              ))}
+              {formState.photos.length < PROFILE_ABOUT_PHOTOS_MAX && (
+                <ImageUpload
+                  onUpload={(result) => {
+                    updateField('photos', [...formState.photos, toIpfsUri(result.cid)]);
+                  }}
+                  onClear={() => undefined}
+                  disabled={isSubmitting}
+                />
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">

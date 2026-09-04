@@ -24,6 +24,9 @@ export interface UseProfileEditorOptions {
 export interface ProfileEditorState {
   name: string;
   bio: string;
+  about: string;
+  lead: string;
+  photos: string[];
   imageUrl: string;
   imageIpfsCid: string;
   backgroundImageUrl: string;
@@ -59,6 +62,9 @@ export function useProfileEditor(options: UseProfileEditorOptions = {}) {
     return {
       name: profile?.name ?? '',
       bio: profile?.bio ?? '',
+      about: profile?.about ?? '',
+      lead: profile?.lead ?? '',
+      photos: profile?.photos ?? [],
       imageUrl: avatar.url,
       imageIpfsCid: avatar.cid,
       backgroundImageUrl: banner.url,
@@ -126,6 +132,15 @@ export function useProfileEditor(options: UseProfileEditorOptions = {}) {
     if (name !== undefined) data.name = name;
     const bio = changed(formState.bio, initial.bio);
     if (bio !== undefined) data.bio = bio;
+    const about = changed(formState.about, initial.about);
+    if (about !== undefined) data.about = about;
+    const lead = changed(formState.lead, initial.lead);
+    if (lead !== undefined) data.lead = lead;
+    const nextPhotos = formState.photos.map((ref) => ref.trim()).filter(Boolean);
+    const prevPhotos = initial.photos.map((ref) => ref.trim()).filter(Boolean);
+    if (nextPhotos.join('\0') !== prevPhotos.join('\0')) {
+      data.photos = nextPhotos.length > 0 ? nextPhotos : prevPhotos.length > 0 ? null : undefined;
+    }
     const location = changed(formState.location, initial.location);
     if (location !== undefined) data.location = location;
 
@@ -208,6 +223,9 @@ export function useProfileEditor(options: UseProfileEditorOptions = {}) {
         accountId: accountId ?? '',
         name: update.name === null ? undefined : (update.name ?? profile?.name),
         bio: update.bio === null ? undefined : (update.bio ?? profile?.bio),
+        about: update.about === null ? undefined : (update.about ?? profile?.about),
+        lead: update.lead === null ? undefined : (update.lead ?? profile?.lead),
+        photos: update.photos === null ? undefined : (update.photos ?? profile?.photos),
         location: update.location === null ? undefined : (update.location ?? profile?.location),
         industry:
           nextKind === 'org'
@@ -284,6 +302,9 @@ export function useProfileEditor(options: UseProfileEditorOptions = {}) {
     return (
       formState.name !== initial.name ||
       formState.bio !== initial.bio ||
+      formState.about !== initial.about ||
+      formState.lead !== initial.lead ||
+      formState.photos.join('\0') !== initial.photos.join('\0') ||
       formState.imageUrl !== initial.imageUrl ||
       formState.imageIpfsCid !== initial.imageIpfsCid ||
       formState.backgroundImageUrl !== initial.backgroundImageUrl ||

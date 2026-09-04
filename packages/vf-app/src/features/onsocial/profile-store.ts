@@ -21,6 +21,9 @@ function seedProfiles(): ProfileStore {
       ...(org.role === 'producer'
         ? {
             bio: 'Family farm in Kalmar. We grow oats and log every lot from field to carton.',
+            lead: 'Oats from Kalmar. Logged, not claimed.',
+            about:
+              'We grow oats in Kalmar County and log every lot from field to carton. A café scan shows the farm, the mill, and the vegan stamp — not a brand story.\n\nCompany review is VegCert’s clock on us. It does not certify every SKU.',
             location: 'Kalmar County, Sweden',
           }
         : org.role === 'processor'

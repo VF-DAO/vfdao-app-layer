@@ -7,6 +7,7 @@ import {
   materializeProfile,
   profileAvatarShapeForAccount,
   profileFromCurrentRows,
+  profileHasAbout,
   profileOrgLineLabel,
   resolveDisplayProfileKind,
 } from './profile';
@@ -32,12 +33,18 @@ describe('OnSocial profile face', () => {
         kind: 'org',
         industry: 'Agriculture',
         bio: null,
+        about: 'We grow oats in Kalmar.',
+        lead: 'Logged, not claimed.',
+        photos: ['ipfs://bafyaboutphoto000000000000000000000000000000'],
       })
     ).toEqual({
       'profile/name': 'Green Valley Farms',
       'profile/kind': 'org',
       'profile/industry': 'Agriculture',
       'profile/bio': null,
+      'profile/about': 'We grow oats in Kalmar.',
+      'profile/lead': 'Logged, not claimed.',
+      'profile/photos': '["ipfs://bafyaboutphoto000000000000000000000000000000"]',
     });
   });
 
@@ -46,6 +53,9 @@ describe('OnSocial profile face', () => {
       { accountId: 'green-valley.near', field: 'name', value: 'Green Valley Farms' },
       { accountId: 'green-valley.near', field: 'kind', value: 'org' },
       { accountId: 'green-valley.near', field: 'industry', value: 'Agriculture' },
+      { accountId: 'green-valley.near', field: 'about', value: 'We grow oats in Kalmar.' },
+      { accountId: 'green-valley.near', field: 'lead', value: 'Logged, not claimed.' },
+      { accountId: 'green-valley.near', field: 'profile/photos', value: '["ipfs://bafyabout"]' },
       { accountId: 'green-valley.near', field: 'links', value: '{"website":"https://greenvalley.example"}' },
     ]);
     expect(profile).toMatchObject({
@@ -53,9 +63,14 @@ describe('OnSocial profile face', () => {
       name: 'Green Valley Farms',
       kind: 'org',
       industry: 'Agriculture',
+      about: 'We grow oats in Kalmar.',
+      lead: 'Logged, not claimed.',
+      photos: ['ipfs://bafyabout'],
       links: { website: 'https://greenvalley.example' },
     });
     expect(profileOrgLineLabel(profile?.industry)).toBe('Agriculture');
+    expect(profileHasAbout(profile)).toBe(true);
+    expect(profileHasAbout({ accountId: 'x.near', bio: 'Face only' })).toBe(false);
     expect(materializeProfile('x.near', {}).kind).toBeUndefined();
   });
 

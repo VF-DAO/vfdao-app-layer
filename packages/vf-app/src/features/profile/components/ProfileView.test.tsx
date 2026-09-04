@@ -14,6 +14,9 @@ vi.mock('@/hooks/use-profile', () => ({
       kind: 'org',
       industry: 'Agriculture',
       bio: 'Family farm in Kalmar. We grow oats and log every lot from field to carton.',
+      lead: 'Oats from Kalmar. Logged, not claimed.',
+      about:
+        'We grow oats in Kalmar County and log every lot from field to carton. A café scan shows the farm, the mill, and the vegan stamp — not a brand story.',
       location: 'Kalmar County, Sweden',
     },
     loading: false,
@@ -67,6 +70,13 @@ describe('ProfileView', () => {
     expect(
       screen.getByText('Family farm in Kalmar. We grow oats and log every lot from field to carton.')
     ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'About' })).toBeInTheDocument();
+    expect(screen.getByText('Oats from Kalmar. Logged, not claimed.')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'We grow oats in Kalmar County and log every lot from field to carton. A café scan shows the farm, the mill, and the vegan stamp — not a brand story.'
+      )
+    ).toBeInTheDocument();
     expect(screen.getByText('Agriculture')).toBeInTheDocument();
     expect(screen.getByText('Kalmar County, Sweden')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Stand with' })).toBeInTheDocument();
@@ -82,7 +92,6 @@ describe('ProfileView', () => {
 
     expect(screen.queryByText('Activity')).not.toBeInTheDocument();
     expect(screen.queryByText('DAO Votes')).not.toBeInTheDocument();
-    expect(screen.queryByText('About')).not.toBeInTheDocument();
     expect(screen.queryByText('Barista Oat Drink')).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Studio' })).not.toBeInTheDocument();
   });

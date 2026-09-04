@@ -11,6 +11,7 @@ import { ProfileAvatar } from '@/components/ui/profile-avatar';
 import { StandingCount, StandWithButton } from '@/components/ui/stand-with-button';
 import {
   profileAvatarShapeForAccount,
+  profileHasAbout,
   profileKindFaceLabel,
   profileOrgLineLabel,
 } from '@/features/onsocial/profile';
@@ -19,6 +20,7 @@ import { useAppDrawer } from '@/features/shell';
 import { CertificateBadge } from '@/features/tracking/components/CertificateBadge';
 import { orgCertificatesFor, useCertificates, useOrgRole, useScanHistory, useVfListed } from '@/features/tracking';
 import { useProfile } from '@/hooks/use-profile';
+import { ProfileAbout } from './ProfileAbout';
 
 interface ProfileViewProps {
   accountId: string;
@@ -85,6 +87,7 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
   const showShelf = Boolean(listed.data);
   const showTrail = recentScans.length > 0;
   const showReview = companyReviews.length > 0;
+  const showAbout = profileHasAbout(profile);
   const showVfMarks = showShelf || showStudio || showTrail || showReview;
 
   const handleCopyAddress = () => {
@@ -244,6 +247,12 @@ export function ProfileView({ accountId, isOwnProfile = false }: ProfileViewProp
             <StandingCount targetAccountId={accountId} subject={isOwnProfile ? 'you' : 'them'} />
           </div>
         </div>
+
+        {showAbout && (
+          <div className="pt-8">
+            <ProfileAbout profile={profile} />
+          </div>
+        )}
 
         {showVfMarks && (
           <>
