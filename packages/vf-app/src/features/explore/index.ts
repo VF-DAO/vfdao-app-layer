@@ -1,2 +1,2 @@
-// Explore feature exports
-export { ComingSoon } from './components/ComingSoon';
+export { ExploreShelf } from './components/ExploreShelf';
+export { ShelfFaceRow } from './components/ShelfFaceRow';

@@ -76,6 +76,7 @@ describe('HomeHub', () => {
     expect(openDrawer).toHaveBeenCalledWith({ id: 'scan' });
 
     expect(screen.getByRole('heading', { name: 'On the VF shelf' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Explore' })).toHaveAttribute('href', '/explore');
     expect(screen.getByRole('link', { name: /green valley farms/i })).toHaveAttribute(
       'href',
       '/profile/green-valley.near'
@@ -115,7 +116,7 @@ describe('HomeHub', () => {
     render(<HomeHub accountId="green-valley.near" />);
 
     expect(screen.getByRole('link', { name: /studio/i })).toHaveAttribute('href', '/studio');
-    expect(screen.getByText('On the VF shelf')).toBeInTheDocument();
+    expect(screen.getByText(/^On the VF shelf$/)).toBeInTheDocument();
     expect(screen.queryByText('Barista Oat Drink')).not.toBeInTheDocument();
     expect(screen.queryByText('All products')).not.toBeInTheDocument();
   });

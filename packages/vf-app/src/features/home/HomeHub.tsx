@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowRight, ScanLine, Warehouse } from 'lucide-react';
 import { ProfileAvatar } from '@/components/ui/profile-avatar';
 import { StandingCount } from '@/components/ui/stand-with-button';
+import { ShelfFaceRow } from '@/features/explore/components/ShelfFaceRow';
 import { useAppDrawer } from '@/features/shell';
 import { useOrgRole, useScanHistory, useVfListed, useVfShelf } from '@/features/tracking';
 import { useMultipleProfiles, useProfile } from '@/hooks/use-profile';
@@ -33,33 +34,6 @@ function ActionCard({
         <p className="text-sm text-muted-foreground">{description}</p>
       </div>
     </button>
-  );
-}
-
-function AccountRow({
-  accountId,
-  name,
-  imageUrl,
-}: {
-  accountId: string;
-  name: string;
-  imageUrl?: string | null;
-}) {
-  return (
-    <Link
-      href={`/profile/${encodeURIComponent(accountId)}`}
-      className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-muted/20 px-4 py-3 transition-colors hover:border-primary/30"
-    >
-      <span className="flex min-w-0 items-center gap-3">
-        <ProfileAvatar
-          accountId={accountId}
-          size="md"
-          {...(imageUrl ? { profileImageUrl: imageUrl } : {})}
-        />
-        <span className="truncate font-medium text-foreground">{name}</span>
-      </span>
-      <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-    </Link>
   );
 }
 
@@ -152,7 +126,7 @@ export function HomeHub({ accountId }: { accountId?: string | null }) {
           <ul className="space-y-2">
             {standWith.map((id) => (
               <li key={id}>
-                <AccountRow
+                <ShelfFaceRow
                   accountId={id}
                   name={faces.getDisplayName(id)}
                   imageUrl={faces.getProfileImageUrl(id)}
@@ -189,11 +163,16 @@ export function HomeHub({ accountId }: { accountId?: string | null }) {
 
       {teaser.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-lg font-semibold text-foreground">On the VF shelf</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-foreground">On the VF shelf</h2>
+            <Link href="/explore" className="text-sm text-primary">
+              Explore
+            </Link>
+          </div>
           <ul className="space-y-2">
             {teaser.map((item) => (
               <li key={item.orgAccountId}>
-                <AccountRow
+                <ShelfFaceRow
                   accountId={item.orgAccountId}
                   name={faces.getDisplayName(item.orgAccountId)}
                   imageUrl={faces.getProfileImageUrl(item.orgAccountId)}

@@ -20,3 +20,7 @@ export function asListing(value: unknown): Listing | null {
 export function isListingForOrg(value: unknown, accountId: string): boolean {
   return asListing(value)?.orgAccountId === accountId;
 }
+
+export function vfShelfCountLabel(count: number): string {
+  return count === 1 ? '1 on the VF shelf' : `${count} on the VF shelf`;
+}
