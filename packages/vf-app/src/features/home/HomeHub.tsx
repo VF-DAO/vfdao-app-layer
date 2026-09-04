@@ -141,8 +141,8 @@ export function HomeHub({ accountId }: { accountId?: string | null }) {
         <section className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-foreground">Your trail</h2>
-            <Link href="/dashboard/history" className="text-sm text-primary">
-              History
+            <Link href="/trail" className="text-sm text-primary">
+              See all
             </Link>
           </div>
           <ul className="space-y-2">

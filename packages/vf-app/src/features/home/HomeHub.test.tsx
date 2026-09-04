@@ -101,6 +101,7 @@ describe('HomeHub', () => {
       '/profile/vegcert.near'
     );
     expect(screen.getByRole('heading', { name: 'Your trail' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'See all' })).toHaveAttribute('href', '/trail');
     expect(screen.getByRole('link', { name: 'vf:lot:lot-oatmilk-nordic-2403' })).toHaveAttribute(
       'href',
       '/scan/vf%3Alot%3Alot-oatmilk-nordic-2403'
