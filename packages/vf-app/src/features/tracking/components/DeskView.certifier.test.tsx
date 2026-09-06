@@ -24,6 +24,28 @@ vi.mock('../hooks/use-studio-actor', () => ({
   }),
 }));
 
+vi.mock('@/hooks/use-profile', () => ({
+  useProfile: (accountId: string | null | undefined) => ({
+    profile:
+      accountId === 'vegcert.near'
+        ? { accountId, name: 'VegCert International', kind: 'org' }
+        : accountId === 'green-valley.near'
+          ? { accountId, name: 'Green Valley Farms', kind: 'org' }
+          : accountId
+            ? { accountId, kind: 'org' }
+            : null,
+    displayName:
+      accountId === 'vegcert.near'
+        ? 'VegCert International'
+        : accountId === 'green-valley.near'
+          ? 'Green Valley Farms'
+          : (accountId ?? ''),
+    profileImageUrl: null,
+    loading: false,
+    kind: 'org',
+  }),
+}));
+
 vi.mock('../hooks/use-tracker', () => ({
   useProductsForAccount: () => ({ data: [], loading: false, reload }),
   useLotsForAccount: () => ({ data: [], loading: false, reload }),
@@ -43,7 +65,12 @@ describe('Certifier desk reviews', () => {
     expect(screen.getByRole('heading', { name: 'Lapsed' })).toBeInTheDocument();
     expect(screen.getByText('VegCert Facility Standard 2026')).toBeInTheDocument();
     expect(screen.getByText('VegCert Facility Standard 2025')).toBeInTheDocument();
+    expect(screen.getByText('Until 1 Mar 2027')).toBeInTheDocument();
+    expect(screen.getByText('Review lapsed 1 Mar 2026')).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'VegCert International' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: 'Green Valley Farms' }).length).toBeGreaterThan(0);
     expect(screen.getByRole('heading', { name: 'Lot stamps' })).toBeInTheDocument();
+    expect(screen.queryByText('No certificates issued from this wallet yet.')).not.toBeInTheDocument();
 
     const revokeButtons = screen.getAllByRole('button', { name: 'Revoke' });
     await user.click(revokeButtons[0]);

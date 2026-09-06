@@ -1,6 +1,7 @@
 import { Card } from '@/components/ui/card';
 import type { LotBundle } from '../types';
 import { encodeLotQr } from '../lib/qr';
+import { scanCompanyReview } from '../lib/status';
 import { CertificateBadge } from './CertificateBadge';
 import { IngredientList } from './IngredientList';
 import { LotNotes } from './LotNotes';
@@ -10,6 +11,7 @@ import { StampTimeline } from './StampTimeline';
 
 export function LotBundleView({ bundle }: { bundle: LotBundle }) {
   const qr = encodeLotQr(bundle.lot.id);
+  const companyReview = scanCompanyReview(bundle.orgCertificates);
 
   return (
     <div className="space-y-6">
@@ -36,15 +38,13 @@ export function LotBundleView({ bundle }: { bundle: LotBundle }) {
 
       <IngredientList ingredients={bundle.product.ingredients} claims={bundle.product.claims} />
 
-      {(bundle.orgCertificates?.length ?? 0) > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-foreground">Company review</h3>
-          <p className="text-sm text-muted-foreground">
-            About the producer — not this lot. A company review does not certify every SKU.
-          </p>
-          {bundle.orgCertificates?.map((certificate) => (
-            <CertificateBadge key={certificate.id} certificate={certificate} />
-          ))}
+      {companyReview && (
+        <div className="space-y-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Company review
+          </h3>
+          <p className="text-sm text-muted-foreground">About the producer — not this carton.</p>
+          <CertificateBadge certificate={companyReview} />
         </div>
       )}
 

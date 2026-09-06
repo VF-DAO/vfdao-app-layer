@@ -1,5 +1,9 @@
+'use client';
+
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
+import { ProfileAvatar, ProfileName } from '@/components/ui/profile-avatar';
 import { resolveOnSocialMediaUrl } from '@/features/onsocial/media';
 import { ShieldAlert, ShieldCheck, ShieldOff } from 'lucide-react';
 import type { Certificate } from '../types';
@@ -36,7 +40,15 @@ const STATE_CHROME = {
   },
 };
 
-export function CertificateBadge({ certificate }: { certificate: Certificate }) {
+export function CertificateBadge({
+  certificate,
+  detail,
+  actions,
+}: {
+  certificate: Certificate;
+  detail?: ReactNode;
+  actions?: ReactNode;
+}) {
   const state = certificateReviewState(certificate);
   const chrome = STATE_CHROME[state];
   const Icon = chrome.icon;
@@ -45,21 +57,23 @@ export function CertificateBadge({ certificate }: { certificate: Certificate }) 
 
   return (
     <div className={`flex items-start gap-3 rounded-2xl border p-4 ${chrome.box}`}>
-      <Icon className={`mt-0.5 h-5 w-5 ${chrome.iconClass}`} />
-      <div className="min-w-0">
+      <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${chrome.iconClass}`} />
+      <div className="min-w-0 flex-1">
         <div className="mb-1 flex flex-wrap items-center gap-2">
           <p className="font-semibold text-foreground">{certificate.standard}</p>
           <Badge variant={chrome.badge}>{certificateStateLabel(state, certificate.subjectType)}</Badge>
         </div>
-        <p className="text-sm text-muted-foreground">
+        {detail}
+        <div className="text-sm text-muted-foreground">
           Stamped by{' '}
           <Link
             href={`/profile/${encodeURIComponent(certificate.issuerAccountId)}`}
-            className="font-medium text-foreground hover:text-primary"
+            className="inline-flex items-center gap-1.5 align-middle font-medium text-foreground hover:text-primary"
           >
-            {certificate.issuerAccountId}
+            <ProfileAvatar accountId={certificate.issuerAccountId} size="xs" />
+            <ProfileName accountId={certificate.issuerAccountId} />
           </Link>
-        </p>
+        </div>
         {until && <p className="text-xs text-muted-foreground">{until}</p>}
         {evidenceUrl && (
           <a
@@ -72,6 +86,7 @@ export function CertificateBadge({ certificate }: { certificate: Certificate }) 
           </a>
         )}
       </div>
+      {actions}
     </div>
   );
 }
